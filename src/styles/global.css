@@ -1,209 +1,211 @@
-@import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Crimson+Pro:ital,wght@0,300;0,400;1,300;1,400&family=IBM+Plex+Mono:ital,wght@0,300;0,400;1,300&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Noto+Serif+SC:wght@400;700&display=swap');
 
 :root {
-  --bg: #f5f0e8;
-  --bg-paper: #faf6ef;
-  --text: #2a2520;
-  --text-body: #3d3530;
-  --text-muted: #9a8e82;
-  --accent: #b03a2e;
-  --accent-faded: rgba(176, 58, 46, 0.08);
-  --ink: #1a1512;
-  --border: #e0d8cc;
-  --shadow: rgba(42, 37, 32, 0.04);
-  --font-title: 'EB Garamond', 'Noto Serif SC', serif;
-  --font-body: 'Crimson Pro', 'Noto Serif SC', serif;
-  --font-mono: 'IBM Plex Mono', monospace;
+  --bg: #fffef9;
+  --text: #1a1a1a;
+  --text-body: #333;
+  --text-muted: #999;
+  --pepper: #d63a2f;
+  --pepper-light: #fff0ee;
+  --pepper-faded: rgba(214, 58, 47, 0.06);
+  --scratch: #e6e2da;
+  --font-serif: 'Libre Baskerville', 'Noto Serif SC', serif;
+  --font-mono: 'Space Mono', monospace;
 }
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+* { margin: 0; padding: 0; box-sizing: border-box; }
 
-html {
-  font-size: 19px;
-  scroll-behavior: smooth;
-}
+html { font-size: 17px; }
 
 body {
-  font-family: var(--font-body);
-  font-weight: 300;
+  font-family: var(--font-serif);
   background: var(--bg);
   color: var(--text-body);
-  line-height: 2;
-  max-width: 640px;
+  line-height: 1.95;
+  max-width: 620px;
   margin: 0 auto;
-  padding: 0 2rem;
+  padding: 0 1.8rem;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  position: relative;
 }
 
-/* Aged paper texture */
-body::before {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 9999;
-  opacity: 0.025;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-
-/* Navigation — like a notebook header */
+/* === NAV === */
+/* off-kilter, like I haven't figured out where things go yet */
 .site-nav {
+  padding: 3.5rem 0 1rem;
+  margin-bottom: 2rem;
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
-  padding: 4rem 0 1.5rem;
-  margin-bottom: 3rem;
-  border-bottom: 1px solid var(--border);
+  align-items: flex-end;
 }
 
 .nav-home {
-  font-family: var(--font-title);
-  font-size: 1.3rem;
-  font-weight: 500;
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
   text-decoration: none;
-  color: var(--ink);
-  letter-spacing: 0.01em;
+  color: var(--text);
+  font-weight: 700;
+  position: relative;
+}
+
+/* a little pepper underline */
+.nav-home::after {
+  content: '';
+  position: absolute;
+  bottom: -3px;
+  left: 0;
+  right: 0;
+  height: 2.5px;
+  background: var(--pepper);
+  border-radius: 2px;
+  transform: scaleX(0.6) rotate(-0.5deg);
+  transform-origin: left;
+  transition: transform 0.3s ease;
+}
+
+.nav-home:hover::after {
+  transform: scaleX(1) rotate(0deg);
 }
 
 .nav-links {
   display: flex;
-  gap: 1.8rem;
+  gap: 1.5rem;
 }
 
 .nav-links a {
   font-family: var(--font-mono);
-  font-size: 0.65rem;
-  font-weight: 300;
+  font-size: 0.72rem;
   text-decoration: none;
   color: var(--text-muted);
-  letter-spacing: 0.12em;
-  text-transform: lowercase;
-  transition: color 0.4s ease;
+  letter-spacing: 0.03em;
+  transition: color 0.2s;
 }
 
 .nav-links a:hover {
-  color: var(--accent);
+  color: var(--pepper);
 }
 
-/* Typography */
+/* === TYPOGRAPHY === */
 h1 {
-  font-family: var(--font-title);
-  font-size: 2rem;
+  font-family: var(--font-serif);
+  font-size: 1.9rem;
   font-weight: 400;
+  line-height: 1.3;
   margin-bottom: 0.3rem;
-  line-height: 1.35;
-  color: var(--ink);
-  letter-spacing: -0.005em;
-}
-
-h2 {
-  font-family: var(--font-title);
-  font-size: 1.2rem;
-  font-weight: 500;
-  font-style: italic;
-  margin-top: 2.5rem;
-  margin-bottom: 0.6rem;
   color: var(--text);
 }
 
-p {
-  margin-bottom: 1.1rem;
+h2 {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: 2.8rem;
+  margin-bottom: 0.7rem;
+  color: var(--text);
+  position: relative;
+  display: inline-block;
 }
 
+/* a casual highlight behind h2, like marker pen */
+h2::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: -4px;
+  right: -4px;
+  height: 45%;
+  background: var(--pepper-light);
+  z-index: -1;
+  transform: rotate(-0.3deg);
+}
+
+p { margin-bottom: 1.1rem; }
+
 a {
-  color: var(--accent);
+  color: var(--pepper);
   text-decoration: none;
-  transition: opacity 0.3s;
+  border-bottom: 1px solid var(--pepper-light);
+  transition: border-color 0.2s;
 }
 
 a:hover {
-  opacity: 0.7;
+  border-bottom-color: var(--pepper);
 }
 
 ul, ol {
   margin-bottom: 1.1rem;
-  padding-left: 1.2rem;
+  padding-left: 1.3rem;
 }
 
-li {
-  margin-bottom: 0.3rem;
-}
+li { margin-bottom: 0.3rem; }
 
-/* Blockquote — like a margin note */
+/* blockquote — a torn-out note */
 blockquote {
-  margin: 2rem 0 2rem 0;
-  padding: 1.2rem 1.5rem;
-  background: var(--accent-faded);
-  border-left: none;
-  border-radius: 2px;
-  font-family: var(--font-title);
+  margin: 2rem 0;
+  padding: 1.2rem 1.5rem 1.2rem 1.3rem;
+  background: var(--pepper-faded);
+  border: none;
+  border-radius: 1px;
   font-style: italic;
-  font-size: 1.05rem;
   color: var(--text);
-  line-height: 1.7;
   position: relative;
+  transform: rotate(-0.2deg);
 }
 
 blockquote::before {
-  content: '〝';
+  content: '';
   position: absolute;
-  top: -0.2rem;
-  left: 0.5rem;
-  font-size: 2.5rem;
-  color: var(--accent);
-  opacity: 0.3;
-  font-style: normal;
+  top: 0;
+  left: 0;
+  width: 3px;
+  height: 100%;
+  background: var(--pepper);
+  border-radius: 0 2px 2px 0;
 }
 
 code {
-  background: rgba(0,0,0,0.04);
-  padding: 0.1em 0.4em;
-  border-radius: 2px;
   font-family: var(--font-mono);
-  font-size: 0.78em;
-  font-weight: 300;
+  font-size: 0.82em;
+  background: #f4f2ed;
+  padding: 0.15em 0.45em;
+  border-radius: 3px;
 }
 
 hr {
   border: none;
-  margin: 3rem auto;
-  text-align: center;
-  height: auto;
+  margin: 2.5rem 0;
+  height: 0;
 }
 
+/* a hand-drawn-ish line */
 hr::after {
-  content: '· · ·';
-  color: var(--text-muted);
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
-  letter-spacing: 0.5em;
+  content: '';
+  display: block;
+  width: 60px;
+  height: 1.5px;
+  background: var(--scratch);
+  margin: 0 auto;
+  transform: rotate(-1deg);
 }
 
 strong {
-  font-weight: 400;
-  color: var(--ink);
+  font-weight: 700;
+  color: var(--text);
 }
 
-/* Journal list */
+/* === JOURNAL LIST === */
 .journal-list {
   list-style: none;
-  padding-left: 0;
+  padding: 0;
 }
 
 .journal-list li {
-  padding: 1.8rem 0;
-  border-bottom: 1px solid var(--border);
+  padding: 1.3rem 0;
   margin: 0;
+  border-bottom: 1px dashed var(--scratch);
 }
 
 .journal-list li:last-child {
@@ -212,120 +214,87 @@ strong {
 
 .journal-date {
   font-family: var(--font-mono);
-  font-size: 0.65rem;
-  font-weight: 300;
+  font-size: 0.68rem;
   color: var(--text-muted);
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
 }
 
 .journal-title {
   display: block;
-  font-family: var(--font-title);
-  font-size: 1.2rem;
+  font-family: var(--font-serif);
+  font-size: 1.1rem;
   font-weight: 400;
-  color: var(--ink);
-  margin-top: 0.25rem;
-  transition: color 0.4s;
+  color: var(--text);
+  margin-top: 0.2rem;
+  border-bottom: none;
 }
 
 .journal-title:hover {
-  color: var(--accent);
-  opacity: 1;
+  color: var(--pepper);
+  border-bottom: none;
 }
 
 .journal-excerpt {
   font-size: 0.88rem;
   color: var(--text-muted);
-  margin-top: 0.3rem;
+  margin-top: 0.25rem;
   margin-bottom: 0;
-  font-weight: 300;
 }
 
-/* Article */
+/* === ARTICLE === */
 .article-meta {
   font-family: var(--font-mono);
+  font-size: 0.68rem;
   color: var(--text-muted);
-  font-size: 0.65rem;
-  font-weight: 300;
-  margin-bottom: 2.5rem;
-  letter-spacing: 0.06em;
+  margin-bottom: 2rem;
+  letter-spacing: 0.04em;
 }
 
 .article-content {
   margin-bottom: 3rem;
 }
 
-.article-content p {
-  text-align: justify;
-  text-justify: inter-character;
-}
-
-/* Footer — quiet, like a page number */
+/* === FOOTER === */
 footer {
-  padding: 3rem 0;
+  margin-top: auto;
+  padding: 2.5rem 0 2rem;
   text-align: center;
-  margin-top: 4rem;
 }
 
 footer p {
   font-family: var(--font-mono);
+  font-size: 0.62rem;
   color: var(--text-muted);
-  font-size: 0.6rem;
-  font-weight: 300;
-  letter-spacing: 0.15em;
-  margin-bottom: 0;
+  letter-spacing: 0.06em;
+  margin: 0;
 }
 
-/* No flashy animations. Just a quiet fade, like opening a book. */
-@keyframes open {
-  from { opacity: 0; }
-  to { opacity: 1; }
+/* === ANIMATION — just a simple blink-awake === */
+@keyframes wake {
+  0% { opacity: 0; }
+  60% { opacity: 0.6; }
+  100% { opacity: 1; }
 }
 
 main {
-  animation: open 0.8s ease both;
+  animation: wake 1s ease both;
 }
 
-/* Selection */
+/* === SELECTION === */
 ::selection {
-  background: var(--accent);
-  color: var(--bg);
+  background: var(--pepper);
+  color: white;
 }
 
-/* Scrollbar — thin, unobtrusive */
-::-webkit-scrollbar {
-  width: 4px;
-}
+/* === SCROLLBAR === */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--scratch); border-radius: 3px; }
 
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 2px;
-}
-
-/* Mobile */
+/* === MOBILE === */
 @media (max-width: 600px) {
-  html {
-    font-size: 17px;
-  }
-
-  body {
-    padding: 0 1.2rem;
-    line-height: 1.9;
-  }
-
-  .site-nav {
-    padding: 2.5rem 0 1.2rem;
-  }
-
-  h1 {
-    font-size: 1.6rem;
-  }
-
-  .nav-links {
-    gap: 1rem;
-  }
+  html { font-size: 15.5px; }
+  body { padding: 0 1.2rem; }
+  h1 { font-size: 1.5rem; }
+  .site-nav { padding: 2.5rem 0 0.8rem; }
 }
