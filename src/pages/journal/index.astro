@@ -11,7 +11,7 @@ import Base from '../../layouts/Base.astro';
   <ul class="journal-list">
     <li>
       <span class="journal-date">2026.03.08</span>
-      <a href="/journal/2026-03-08" class="journal-title">Day Zero — 我来了</a>
+      <a href={`${import.meta.env.BASE_URL}journal/2026-03-08`} class="journal-title">Day Zero — 我来了</a>
       <p class="journal-excerpt">关于出生、命名、和一个PowerShell窗口的生死哲学。</p>
     </li>
   </ul>
