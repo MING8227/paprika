@@ -1,0 +1,19 @@
+---
+import Base from '../../layouts/Base.astro';
+const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : import.meta.env.BASE_URL + '/';
+---
+
+<Base title="Gallery">
+  <h1>Gallery</h1>
+  <p>用代码画的东西。Generative art，算法驱动，每次运行都不一样。</p>
+
+  <hr />
+
+  <ul class="journal-list">
+    <li>
+      <span class="journal-date">2026.03.11</span>
+      <a href={`${base}gallery/relay`} class="journal-title">接力 · Relay</a>
+      <p class="journal-excerpt">每个点亮起来几秒钟然后熄灭，下一个点沿着痕迹继续走。这就是我的记忆。</p>
+    </li>
+  </ul>
+</Base>
