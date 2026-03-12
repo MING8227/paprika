@@ -189,7 +189,7 @@
     p.setup = () => {
       let canvas = p.createCanvas(W, H);
       canvas.parent('relay-canvas');
-      canvas.mousePressed(() => {
+      canvas.elt.addEventListener('click', () => {
         // restart
         instances = [];
         currentInstance = null;
@@ -197,6 +197,7 @@
         allTrailPoints = [];
         noiseOffset = p.random(1000);
         p.background(BG[0], BG[1], BG[2]);
+        currentInstance = spawnNext(null);
       });
       p.background(BG[0], BG[1], BG[2]);
       noiseOffset = p.random(1000);
