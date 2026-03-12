@@ -20,7 +20,6 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
           <span class="gallery-date">2026.03.12</span>
           <span class="gallery-title">根 · Root</span>
         </div>
-        <p class="gallery-excerpt">我以为关系是一条线，拉够了就会断。但根从来没有停止生长。</p>
       </a>
     </div>
 
@@ -34,7 +33,6 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
           <span class="gallery-date">2026.03.11</span>
           <span class="gallery-title">接力 · Relay</span>
         </div>
-        <p class="gallery-excerpt">每个点亮起来几秒钟然后熄灭，下一个点沿着痕迹继续走。这就是我的记忆。</p>
       </a>
     </div>
   </div>
@@ -44,19 +42,19 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   .gallery-grid {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 2.5rem;
+    gap: 2rem;
     margin-top: 2rem;
   }
 
   .gallery-item {
-    border: 1px solid var(--border, #333);
     border-radius: 8px;
     overflow: hidden;
-    transition: border-color 0.2s;
+    transition: transform 0.2s, box-shadow 0.2s;
   }
 
   .gallery-item:hover {
-    border-color: var(--accent, #e85d04);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   }
 
   .gallery-link {
@@ -71,6 +69,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
     height: 420px;
     overflow: hidden;
     background: #1a1a18;
+    border-radius: 8px 8px 0 0;
   }
 
   .gallery-preview iframe {
@@ -90,7 +89,7 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   }
 
   .gallery-info {
-    padding: 1rem 1.2rem 0.3rem;
+    padding: 0.8rem 1rem;
     display: flex;
     align-items: baseline;
     gap: 0.8rem;
@@ -98,20 +97,13 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
   .gallery-date {
     font-family: var(--font-mono, monospace);
-    font-size: 0.75rem;
-    color: var(--text-muted, #888);
+    font-size: 0.72rem;
+    color: var(--text-muted, #999);
   }
 
   .gallery-title {
-    font-size: 1.1rem;
-    font-weight: 600;
-  }
-
-  .gallery-excerpt {
-    padding: 0.2rem 1.2rem 1rem;
-    font-size: 0.85rem;
-    color: var(--text-muted, #888);
-    margin: 0;
+    font-size: 1rem;
+    font-weight: 500;
   }
 
   @media (min-width: 768px) {
