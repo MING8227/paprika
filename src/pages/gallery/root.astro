@@ -18,14 +18,14 @@ import Base from '../../layouts/Base.astro';
       </p>
       <p>
         于是我看见了地下的部分——<br>
-        那些根，从来没有停止生长。<br>
-        它们分叉、变细、伸向未知的方向，<br>
-        但每一条都连着同一个起点。
+        如果你切开土壤往下看，<br>
+        会看到一圈一圈的痕迹，<br>
+        每一圈都比上一圈更大，也更不规则。<br>
+        但它们都围绕着同一个中心。
       </p>
       <p>
-        偶尔，某条根会突然加速，<br>
-        像突然明白了什么。<br>
-        那是红色的一瞬。
+        偶尔，某一层会泛出红色——<br>
+        那是突然明白了什么的那一年。
       </p>
 
       <div id="root-canvas" style="margin: 2.5rem 0; display: flex; justify-content: center;"></div>
@@ -41,19 +41,29 @@ import Base from '../../layouts/Base.astro';
 (function () {
   const W = 580;
   const H = 520;
+  const CX = W / 2;
+  const CY = H / 2;
 
-  // monochromatic earth tones — deep to light, roots in soil
-  const ROOT_COLORS = [
-    '#3E2723',  // deep earth
-    '#4E342E',  // dark brown
-    '#5D4037',  // warm brown
-    '#6D4C41',  // medium brown
-    '#8D6E63',  // light brown
-    '#A1887F',  // faded clay
-    '#BCAAA4',  // pale sand
-    '#D7CCC8',  // lightest root
+  // monochromatic earth palette — center is deep, outer is pale
+  const EARTH = [
+    '#2E1F14',  // deepest core
+    '#3E2723',
+    '#4E342E',
+    '#5D4037',
+    '#6D4C41',
+    '#7B5B4C',
+    '#8D6E63',
+    '#9E8578',
+    '#A1887F',
+    '#B0998F',
+    '#BCAAA4',
+    '#C8B8AE',
+    '#D7CCC8',
+    '#E0D5CF',
+    '#EAE0DA',
   ];
-  const EPIPHANY_COLOR = '#d63a2f'; // pepper red — moments of understanding
+  const EPIPHANY = '#d63a2f';
+  const BG = '#1a1a18';
 
   const canvas = document.createElement('canvas');
   canvas.width = W;
@@ -64,158 +74,142 @@ import Base from '../../layouts/Base.astro';
 
   paper.setup(canvas);
 
-  let roots = [];
-  let growQueue = [];
-  let generation = 0;
-  const MAX_GENERATION = 8;
-  const GROW_SPEED = 1.5;
-  const BRANCH_CHANCE = 0.02;
-  const EPIPHANY_CHANCE = 0.005;
+  let rings = [];
+  let currentRing = 0;
+  let maxRings = EARTH.length;
+  let growPhase = 0; // 0 = waiting, 1 = growing current ring
+  let frameCount = 0;
+  let delayFrames = 30; // pause between rings
 
-  function colorForDepth(depth) {
-    const idx = Math.min(depth, ROOT_COLORS.length - 1);
-    return ROOT_COLORS[idx];
+  // Generate an organic closed shape (deformed circle)
+  function makeOrganicRing(cx, cy, baseRadius, variance, points) {
+    const path = new paper.Path();
+    const angleStep = (Math.PI * 2) / points;
+
+    for (let i = 0; i < points; i++) {
+      const angle = i * angleStep;
+      const r = baseRadius + (Math.random() - 0.5) * variance * 2;
+      const x = cx + Math.cos(angle) * r;
+      const y = cy + Math.sin(angle) * r;
+      path.add(new paper.Point(x, y));
+    }
+
+    path.closePath();
+    path.smooth({ type: 'continuous' });
+    return path;
   }
 
-  function widthForDepth(depth) {
-    return Math.max(0.5, 4 - depth * 0.45);
-  }
+  // Morph: inherit some shape from previous ring
+  function makeChildRing(parent, growAmount, variance, points) {
+    const path = new paper.Path();
+    const angleStep = (Math.PI * 2) / points;
 
-  class Root {
-    constructor(x, y, angle, depth, isEpiphany) {
-      this.depth = depth;
-      this.angle = angle;
-      this.speed = GROW_SPEED + Math.random() * 0.8;
-      this.maxLength = 40 + Math.random() * 60 - depth * 6;
-      this.currentLength = 0;
-      this.alive = true;
-      this.branched = false;
-      this.isEpiphany = isEpiphany || false;
-      this.wobble = 0.015 + Math.random() * 0.02;
+    for (let i = 0; i < points; i++) {
+      const angle = i * angleStep;
+      // sample parent radius at this angle
+      const testPoint = new paper.Point(
+        CX + Math.cos(angle) * 1000,
+        CY + Math.sin(angle) * 1000
+      );
+      const line = new paper.Path.Line(new paper.Point(CX, CY), testPoint);
+      const intersections = line.getIntersections(parent);
+      line.remove();
 
-      const color = this.isEpiphany ? EPIPHANY_COLOR : colorForDepth(depth);
-
-      this.path = new paper.Path();
-      this.path.strokeColor = color;
-      this.path.strokeWidth = widthForDepth(depth);
-      this.path.strokeCap = 'round';
-      if (this.isEpiphany) {
-        this.path.opacity = 0.85;
+      let parentR = 0;
+      if (intersections.length > 0) {
+        // use the furthest intersection
+        for (const ix of intersections) {
+          const d = ix.point.getDistance(new paper.Point(CX, CY));
+          if (d > parentR) parentR = d;
+        }
       } else {
-        this.path.opacity = 0.6 + Math.random() * 0.3;
+        parentR = parent.bounds.width / 2;
       }
-      this.path.add(new paper.Point(x, y));
 
-      this.x = x;
-      this.y = y;
+      const r = parentR + growAmount + (Math.random() - 0.5) * variance * 2;
+      const x = CX + Math.cos(angle) * Math.max(r, 5);
+      const y = CY + Math.sin(angle) * Math.max(r, 5);
+      path.add(new paper.Point(x, y));
     }
 
-    grow() {
-      if (!this.alive) return;
-
-      // organic wobble
-      this.angle += (Math.random() - 0.5) * this.wobble * 2;
-
-      // slight gravitational pull downward (roots grow down)
-      this.angle += (Math.PI / 2 - this.angle) * 0.002;
-
-      const dx = Math.cos(this.angle) * this.speed;
-      const dy = Math.sin(this.angle) * this.speed;
-
-      this.x += dx;
-      this.y += dy;
-      this.currentLength += this.speed;
-
-      this.path.add(new paper.Point(this.x, this.y));
-      this.path.smooth({ type: 'continuous' });
-
-      // boundary check
-      if (this.x < 5 || this.x > W - 5 || this.y < 5 || this.y > H - 5) {
-        this.alive = false;
-        return;
-      }
-
-      // branching
-      if (!this.branched && this.depth < MAX_GENERATION && this.currentLength > 20) {
-        if (Math.random() < BRANCH_CHANCE) {
-          this.branch();
-        }
-      }
-
-      // natural end
-      if (this.currentLength >= this.maxLength) {
-        if (this.depth < MAX_GENERATION) {
-          this.branch();
-        }
-        this.alive = false;
-
-        // fade the tip
-        if (this.path.segments.length > 2) {
-          this.path.strokeWidth = widthForDepth(this.depth) * 0.6;
-        }
-      }
-    }
-
-    branch() {
-      this.branched = true;
-      const numBranches = 2 + Math.floor(Math.random() * 2); // 2-3 branches
-      const spread = 0.4 + Math.random() * 0.4;
-
-      for (let i = 0; i < numBranches; i++) {
-        const branchAngle = this.angle + (i - (numBranches - 1) / 2) * spread;
-        // epiphany: rare pepper red burst
-        const isEpiphany = !this.isEpiphany && Math.random() < EPIPHANY_CHANCE * (this.depth + 1) * 5;
-        const child = new Root(this.x, this.y, branchAngle, this.depth + 1, isEpiphany);
-
-        if (isEpiphany) {
-          child.speed = this.speed * 1.8;
-          child.maxLength = this.maxLength * 1.3;
-        }
-
-        growQueue.push(child);
-      }
-    }
+    path.closePath();
+    path.smooth({ type: 'continuous' });
+    return path;
   }
 
   function init() {
     paper.project.activeLayer.removeChildren();
-    roots = [];
-    growQueue = [];
-    generation = 0;
+    rings = [];
+    currentRing = 0;
+    growPhase = 0;
+    frameCount = 0;
 
     // background
     const bg = new paper.Path.Rectangle(new paper.Rectangle(0, 0, W, H));
-    bg.fillColor = '#1a1a18';
+    bg.fillColor = BG;
 
-    // start: a few roots from center-top (like the base of a tree)
-    const cx = W / 2;
-    const startY = 60;
-
-    // subtle origin mark
-    const origin = new paper.Path.Circle(new paper.Point(cx, startY), 3);
-    origin.fillColor = ROOT_COLORS[0];
-    origin.opacity = 0.5;
-
-    const numStarters = 3 + Math.floor(Math.random() * 3);
-    for (let i = 0; i < numStarters; i++) {
-      const angle = Math.PI / 2 + (Math.random() - 0.5) * 0.8; // mostly downward
-      const ox = cx + (Math.random() - 0.5) * 10;
-      growQueue.push(new Root(ox, startY, angle, 0, false));
-    }
+    // first ring — small organic blob at center
+    const firstRing = makeOrganicRing(CX, CY, 15, 5, 24);
+    firstRing.fillColor = EARTH[0];
+    firstRing.opacity = 0;
+    rings.push(firstRing);
+    growPhase = 1;
   }
 
-  paper.view.onFrame = function (event) {
-    // grow several roots per frame for smooth animation
-    const growPerFrame = Math.min(growQueue.length, 6);
-    for (let i = 0; i < growPerFrame; i++) {
-      const root = growQueue[i];
-      if (root.alive) {
-        root.grow();
+  paper.view.onFrame = function () {
+    frameCount++;
+
+    if (currentRing >= maxRings) return;
+
+    const ring = rings[currentRing];
+    if (!ring) return;
+
+    if (growPhase === 1) {
+      // fade in current ring
+      if (ring.opacity < 0.85) {
+        ring.opacity = Math.min(ring.opacity + 0.02, 0.85);
+      } else {
+        // ring fully visible, prepare next
+        growPhase = 0;
+        frameCount = 0;
+      }
+    } else {
+      // delay then spawn next ring
+      if (frameCount > delayFrames) {
+        currentRing++;
+        if (currentRing >= maxRings) return;
+
+        const prevRing = rings[currentRing - 1];
+        const growAmount = 12 + Math.random() * 8;
+        const variance = 4 + currentRing * 1.5;
+        const points = 28 + Math.floor(Math.random() * 8);
+
+        const newRing = makeChildRing(prevRing, growAmount, variance, points);
+
+        // is this an epiphany ring?
+        const isEpiphany = currentRing > 2 && Math.random() < 0.15;
+        if (isEpiphany) {
+          newRing.fillColor = EPIPHANY;
+          newRing.opacity = 0;
+        } else {
+          const colorIdx = Math.min(currentRing, EARTH.length - 1);
+          newRing.fillColor = EARTH[colorIdx];
+          newRing.opacity = 0;
+        }
+
+        // insert behind previous rings so outer rings are behind inner
+        // actually we want outer on top but with transparency layering
+        rings.push(newRing);
+
+        // reorder: newest ring goes to back (behind older/smaller rings)
+        newRing.sendToBack();
+        // put bg at very back
+        paper.project.activeLayer.children[0].sendToBack();
+
+        growPhase = 1;
+        frameCount = 0;
       }
     }
-
-    // remove dead roots from queue, keep alive ones
-    growQueue = growQueue.filter(r => r.alive);
   };
 
   canvas.addEventListener('click', init);
