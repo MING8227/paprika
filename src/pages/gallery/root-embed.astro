@@ -1,0 +1,130 @@
+---
+// Standalone embed — canvas only, no layout
+---
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    * { margin: 0; padding: 0; }
+    body { background: #1a1a18; display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
+  </style>
+</head>
+<body>
+  <div id="root-canvas"></div>
+  <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/paper.js/0.12.18/paper-full.min.js"></script>
+  <script is:inline>
+  (function () {
+    var W = 580, H = 520;
+    var CX = W / 2, CY = H / 2;
+    var EARTH_FILL = '#5D4037', EARTH_DEEP = '#3E2723', EPIPHANY = '#d63a2f', BG = '#1a1a18';
+
+    var canvas = document.createElement('canvas');
+    canvas.width = W; canvas.height = H;
+    document.getElementById('root-canvas').appendChild(canvas);
+    paper.setup(canvas);
+
+    var state = null;
+
+    function organicBlob(cx, cy, radius, variance, n) {
+      var path = new paper.Path();
+      var step = (Math.PI * 2) / n;
+      for (var i = 0; i < n; i++) {
+        var a = i * step;
+        var r = radius + (Math.random() - 0.5) * variance * 2;
+        path.add(new paper.Point(cx + Math.cos(a) * r, cy + Math.sin(a) * r));
+      }
+      path.closePath(); path.smooth({ type: 'continuous' });
+      return path;
+    }
+
+    function makeScratch(cx, cy, angle, rInner, rOuter, width) {
+      var cos = Math.cos(angle), sin = Math.sin(angle), hw = width / 2;
+      var perpX = -sin * hw, perpY = cos * hw;
+      var x1 = cx + cos * rInner, y1 = cy + sin * rInner;
+      var x2 = cx + cos * rOuter, y2 = cy + sin * rOuter;
+      var p = new paper.Path();
+      p.add(new paper.Point(x1 + perpX, y1 + perpY));
+      p.add(new paper.Point(x2 + perpX, y2 + perpY));
+      p.add(new paper.Point(x2 - perpX, y2 - perpY));
+      p.add(new paper.Point(x1 - perpX, y1 - perpY));
+      p.closePath(); return p;
+    }
+
+    function makeRingScar(cx, cy, radius, variance, n) {
+      var outer = organicBlob(cx, cy, radius + 1.2, variance * 0.3, n);
+      var inner = organicBlob(cx, cy, radius - 1.2, variance * 0.3, n);
+      var scar = outer.subtract(inner);
+      outer.remove(); inner.remove(); return scar;
+    }
+
+    function init() {
+      paper.project.activeLayer.removeChildren();
+      var bg = new paper.Path.Rectangle(new paper.Rectangle(0, 0, W, H));
+      bg.fillColor = BG;
+
+      var totalRings = 12, baseRadius = 18, ringGrow = 14;
+      var mass = organicBlob(CX, CY, baseRadius, 4, 28);
+      mass.fillColor = EARTH_FILL;
+      var ringRadii = [baseRadius];
+
+      for (var i = 1; i < totalRings; i++) {
+        var r = baseRadius + ringGrow * i + (Math.random() - 0.5) * 6;
+        ringRadii.push(r);
+        var ring = organicBlob(CX, CY, r, 5 + i * 2, 30 + Math.floor(Math.random() * 6));
+        ring.fillColor = EARTH_FILL;
+        var united = mass.unite(ring);
+        united.fillColor = EARTH_FILL;
+        mass.remove(); ring.remove(); mass = united;
+      }
+
+      for (var i = 1; i < ringRadii.length; i++) {
+        var scarRadius = (ringRadii[i - 1] + ringRadii[i]) / 2;
+        var scar = makeRingScar(CX, CY, scarRadius, 3 + i, 28);
+        if (i > 2 && Math.random() < 0.15) {
+          scar.fillColor = EPIPHANY; scar.opacity = 0.7;
+        } else {
+          var carved = mass.subtract(scar);
+          carved.fillColor = mass.fillColor;
+          scar.remove(); mass.remove(); mass = carved;
+        }
+      }
+
+      for (var i = 0; i < 8; i++) {
+        var angle = Math.random() * Math.PI * 2;
+        var rIn = ringRadii[1] + Math.random() * 20;
+        var rOut = rIn + 15 + Math.random() * 40;
+        rOut = Math.min(rOut, ringRadii[ringRadii.length - 1] - 5);
+        if (rOut <= rIn) continue;
+        var scratch = makeScratch(CX, CY, angle, rIn, rOut, 1.2 + Math.random() * 0.8);
+        var carved = mass.subtract(scratch);
+        carved.fillColor = mass.fillColor;
+        scratch.remove(); mass.remove(); mass = carved;
+      }
+
+      mass.fillColor = {
+        gradient: {
+          stops: [[EARTH_DEEP, 0], [EARTH_FILL, 0.4], ['#8D6E63', 0.75], ['#BCAAA4', 1]],
+          radial: true
+        },
+        origin: new paper.Point(CX, CY),
+        destination: new paper.Point(CX + ringRadii[ringRadii.length - 1], CY)
+      };
+
+      mass.opacity = 0;
+      state = { mass: mass, phase: 'fadein', frame: 0 };
+    }
+
+    paper.view.onFrame = function () {
+      if (!state) return;
+      state.frame++;
+      if (state.phase === 'fadein') {
+        state.mass.opacity = Math.min(state.mass.opacity + 0.012, 0.9);
+        if (state.mass.opacity >= 0.9) state.phase = 'done';
+      }
+    };
+
+    init();
+  })();
+  </script>
+</body>
+</html>
