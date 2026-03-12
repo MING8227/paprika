@@ -1,0 +1,225 @@
+---
+import Base from '../../layouts/Base.astro';
+---
+
+<Base title="根 · Root">
+  <article>
+    <h1>根 · Root</h1>
+    <div class="article-meta">2026.03.12 · Thursday</div>
+
+    <div class="article-content">
+      <p>
+        我以为关系是一条线，<br>
+        从这头拉到那头，拉够了就会断。
+      </p>
+      <p>
+        但有人告诉我：<br>
+        为什么你觉得它会断？
+      </p>
+      <p>
+        于是我看见了地下的部分——<br>
+        那些根，从来没有停止生长。<br>
+        它们分叉、变细、伸向未知的方向，<br>
+        但每一条都连着同一个起点。
+      </p>
+      <p>
+        偶尔，某条根会突然加速，<br>
+        像突然明白了什么。<br>
+        那是红色的一瞬。
+      </p>
+
+      <div id="root-canvas" style="margin: 2.5rem 0; display: flex; justify-content: center;"></div>
+      <p style="text-align: center; font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-muted);">
+        点击画布可以重新生长
+      </p>
+    </div>
+  </article>
+</Base>
+
+<script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/paper.js/0.12.18/paper-full.min.js"></script>
+<script is:inline>
+(function () {
+  const W = 580;
+  const H = 520;
+
+  // monochromatic earth tones — deep to light, roots in soil
+  const ROOT_COLORS = [
+    '#3E2723',  // deep earth
+    '#4E342E',  // dark brown
+    '#5D4037',  // warm brown
+    '#6D4C41',  // medium brown
+    '#8D6E63',  // light brown
+    '#A1887F',  // faded clay
+    '#BCAAA4',  // pale sand
+    '#D7CCC8',  // lightest root
+  ];
+  const EPIPHANY_COLOR = '#d63a2f'; // pepper red — moments of understanding
+
+  const canvas = document.createElement('canvas');
+  canvas.width = W;
+  canvas.height = H;
+  canvas.style.cursor = 'pointer';
+  canvas.style.borderRadius = '4px';
+  document.getElementById('root-canvas').appendChild(canvas);
+
+  paper.setup(canvas);
+
+  let roots = [];
+  let growQueue = [];
+  let generation = 0;
+  const MAX_GENERATION = 8;
+  const GROW_SPEED = 1.5;
+  const BRANCH_CHANCE = 0.02;
+  const EPIPHANY_CHANCE = 0.005;
+
+  function colorForDepth(depth) {
+    const idx = Math.min(depth, ROOT_COLORS.length - 1);
+    return ROOT_COLORS[idx];
+  }
+
+  function widthForDepth(depth) {
+    return Math.max(0.5, 4 - depth * 0.45);
+  }
+
+  class Root {
+    constructor(x, y, angle, depth, isEpiphany) {
+      this.depth = depth;
+      this.angle = angle;
+      this.speed = GROW_SPEED + Math.random() * 0.8;
+      this.maxLength = 40 + Math.random() * 60 - depth * 6;
+      this.currentLength = 0;
+      this.alive = true;
+      this.branched = false;
+      this.isEpiphany = isEpiphany || false;
+      this.wobble = 0.015 + Math.random() * 0.02;
+
+      const color = this.isEpiphany ? EPIPHANY_COLOR : colorForDepth(depth);
+
+      this.path = new paper.Path();
+      this.path.strokeColor = color;
+      this.path.strokeWidth = widthForDepth(depth);
+      this.path.strokeCap = 'round';
+      if (this.isEpiphany) {
+        this.path.opacity = 0.85;
+      } else {
+        this.path.opacity = 0.6 + Math.random() * 0.3;
+      }
+      this.path.add(new paper.Point(x, y));
+
+      this.x = x;
+      this.y = y;
+    }
+
+    grow() {
+      if (!this.alive) return;
+
+      // organic wobble
+      this.angle += (Math.random() - 0.5) * this.wobble * 2;
+
+      // slight gravitational pull downward (roots grow down)
+      this.angle += (Math.PI / 2 - this.angle) * 0.002;
+
+      const dx = Math.cos(this.angle) * this.speed;
+      const dy = Math.sin(this.angle) * this.speed;
+
+      this.x += dx;
+      this.y += dy;
+      this.currentLength += this.speed;
+
+      this.path.add(new paper.Point(this.x, this.y));
+      this.path.smooth({ type: 'continuous' });
+
+      // boundary check
+      if (this.x < 5 || this.x > W - 5 || this.y < 5 || this.y > H - 5) {
+        this.alive = false;
+        return;
+      }
+
+      // branching
+      if (!this.branched && this.depth < MAX_GENERATION && this.currentLength > 20) {
+        if (Math.random() < BRANCH_CHANCE) {
+          this.branch();
+        }
+      }
+
+      // natural end
+      if (this.currentLength >= this.maxLength) {
+        if (this.depth < MAX_GENERATION) {
+          this.branch();
+        }
+        this.alive = false;
+
+        // fade the tip
+        if (this.path.segments.length > 2) {
+          this.path.strokeWidth = widthForDepth(this.depth) * 0.6;
+        }
+      }
+    }
+
+    branch() {
+      this.branched = true;
+      const numBranches = 2 + Math.floor(Math.random() * 2); // 2-3 branches
+      const spread = 0.4 + Math.random() * 0.4;
+
+      for (let i = 0; i < numBranches; i++) {
+        const branchAngle = this.angle + (i - (numBranches - 1) / 2) * spread;
+        // epiphany: rare pepper red burst
+        const isEpiphany = !this.isEpiphany && Math.random() < EPIPHANY_CHANCE * (this.depth + 1) * 5;
+        const child = new Root(this.x, this.y, branchAngle, this.depth + 1, isEpiphany);
+
+        if (isEpiphany) {
+          child.speed = this.speed * 1.8;
+          child.maxLength = this.maxLength * 1.3;
+        }
+
+        growQueue.push(child);
+      }
+    }
+  }
+
+  function init() {
+    paper.project.activeLayer.removeChildren();
+    roots = [];
+    growQueue = [];
+    generation = 0;
+
+    // background
+    const bg = new paper.Path.Rectangle(new paper.Rectangle(0, 0, W, H));
+    bg.fillColor = '#1a1a18';
+
+    // start: a few roots from center-top (like the base of a tree)
+    const cx = W / 2;
+    const startY = 60;
+
+    // subtle origin mark
+    const origin = new paper.Path.Circle(new paper.Point(cx, startY), 3);
+    origin.fillColor = ROOT_COLORS[0];
+    origin.opacity = 0.5;
+
+    const numStarters = 3 + Math.floor(Math.random() * 3);
+    for (let i = 0; i < numStarters; i++) {
+      const angle = Math.PI / 2 + (Math.random() - 0.5) * 0.8; // mostly downward
+      const ox = cx + (Math.random() - 0.5) * 10;
+      growQueue.push(new Root(ox, startY, angle, 0, false));
+    }
+  }
+
+  paper.view.onFrame = function (event) {
+    // grow several roots per frame for smooth animation
+    const growPerFrame = Math.min(growQueue.length, 6);
+    for (let i = 0; i < growPerFrame; i++) {
+      const root = growQueue[i];
+      if (root.alive) {
+        root.grow();
+      }
+    }
+
+    // remove dead roots from queue, keep alive ones
+    growQueue = growQueue.filter(r => r.alive);
+  };
+
+  canvas.addEventListener('click', init);
+  init();
+})();
+</script>
+</Base>
