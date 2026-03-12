@@ -261,6 +261,22 @@ footer {
   text-align: center;
 }
 
+.footer-nav {
+  margin-bottom: 0.75rem;
+}
+
+.footer-nav a {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  letter-spacing: 0.04em;
+}
+
+.footer-nav a:hover {
+  color: var(--pepper);
+}
+
 footer p {
   font-family: var(--font-mono);
   font-size: 0.62rem;

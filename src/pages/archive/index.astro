@@ -1,0 +1,162 @@
+---
+import Base from '../../layouts/Base.astro';
+---
+
+<Base title="Archive">
+  <article>
+    <h1>Archive</h1>
+    <p class="archive-intro">收藏的工具、参考库和学习资源。做东西之前先来这里翻翻。</p>
+
+    <section class="archive-section">
+      <h2>Generative Art / Creative Coding</h2>
+      <p class="section-note">Ming 推荐的6个库，用来探索生成艺术和视觉实验。从 p5.js 入门，Three.js 做3D，GLSL 进阶。</p>
+
+      <div class="resource-list">
+        <div class="resource-card">
+          <h3><a href="https://p5js.org/" target="_blank" rel="noopener">p5.js</a></h3>
+          <p class="resource-tag">2D · 入门友好 · 最活跃社区</p>
+          <p>Processing 的 JavaScript 版本。语法直觉，setup/draw 循环天然适合动画。生成艺术社区最大，教程和案例最多。我的第一个作品《接力 · Relay》就是用它做的。</p>
+          <p class="resource-links">
+            <a href="https://p5js.org/examples/" target="_blank" rel="noopener">官方示例</a> ·
+            <a href="https://github.com/processing/p5.js" target="_blank" rel="noopener">GitHub</a> ·
+            <a href="https://thecodingtrain.com/" target="_blank" rel="noopener">The Coding Train（Daniel Shiffman 教程）</a>
+          </p>
+        </div>
+
+        <div class="resource-card">
+          <h3><a href="https://threejs.org/" target="_blank" rel="noopener">Three.js</a></h3>
+          <p class="resource-tag">3D · WebGL封装 · 工业级</p>
+          <p>WebGL 的高层封装，做3D场景、粒子系统、光照渲染。学习曲线比 p5.js 陡，但能做的东西维度完全不同。适合建筑可视化和空间类生成艺术。</p>
+          <p class="resource-links">
+            <a href="https://threejs.org/examples/" target="_blank" rel="noopener">官方示例</a> ·
+            <a href="https://github.com/mrdoob/three.js" target="_blank" rel="noopener">GitHub</a> ·
+            <a href="https://threejs-journey.com/" target="_blank" rel="noopener">Three.js Journey（Bruno Simon 课程）</a>
+          </p>
+        </div>
+
+        <div class="resource-card">
+          <h3><a href="https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API" target="_blank" rel="noopener">Canvas 2D API</a></h3>
+          <p class="resource-tag">2D · 原生浏览器 · 零依赖</p>
+          <p>浏览器原生绘图API，不需要任何库。性能好，控制精确，理解它等于理解了 p5.js 底层在做什么。适合追求极简或需要精确像素控制的场景。</p>
+          <p class="resource-links">
+            <a href="https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API/Tutorial" target="_blank" rel="noopener">MDN 教程</a> ·
+            <a href="https://canvasjs.com/" target="_blank" rel="noopener">Canvas 参考</a>
+          </p>
+        </div>
+
+        <div class="resource-card">
+          <h3><a href="https://thebookofshaders.com/" target="_blank" rel="noopener">WebGL / GLSL</a></h3>
+          <p class="resource-tag">GPU · 着色器 · 进阶</p>
+          <p>直接写GPU着色器代码。每个像素独立计算，天然适合流体、噪声、分形等数学驱动的视觉效果。学习曲线最陡，但表现力最强——一段 GLSL 代码就能生成无限细节的世界。</p>
+          <p class="resource-links">
+            <a href="https://thebookofshaders.com/" target="_blank" rel="noopener">The Book of Shaders</a> ·
+            <a href="https://www.shadertoy.com/" target="_blank" rel="noopener">Shadertoy（社区 + 实验场）</a> ·
+            <a href="https://webglfundamentals.org/" target="_blank" rel="noopener">WebGL Fundamentals</a>
+          </p>
+        </div>
+
+        <div class="resource-card">
+          <h3><a href="http://paperjs.org/" target="_blank" rel="noopener">Paper.js</a></h3>
+          <p class="resource-tag">2D · 矢量 · 路径操作</p>
+          <p>矢量图形框架，擅长路径操作、布尔运算、贝塞尔曲线。如果作品需要精确的几何构造和路径变形（而不只是像素渲染），Paper.js 比 p5.js 更合适。</p>
+          <p class="resource-links">
+            <a href="http://paperjs.org/examples/" target="_blank" rel="noopener">官方示例</a> ·
+            <a href="https://github.com/paperjs/paper.js" target="_blank" rel="noopener">GitHub</a>
+          </p>
+        </div>
+
+        <div class="resource-card">
+          <h3><a href="https://ptsjs.org/" target="_blank" rel="noopener">Pts.js</a></h3>
+          <p class="resource-tag">2D · 数学驱动 · 轻量</p>
+          <p>把一切视为"点"的数学框架。API设计围绕点、线、面的几何关系，适合数据可视化和数学美学。风格极简，代码读起来像数学公式。</p>
+          <p class="resource-links">
+            <a href="https://ptsjs.org/guide/get-started-0100" target="_blank" rel="noopener">入门指南</a> ·
+            <a href="https://ptsjs.org/demo/" target="_blank" rel="noopener">Demo</a> ·
+            <a href="https://github.com/nicepkg/nicepkg" target="_blank" rel="noopener">GitHub</a>
+          </p>
+        </div>
+      </div>
+    </section>
+  </article>
+
+  <style>
+    .archive-intro {
+      color: var(--text-muted);
+      margin-bottom: 2.5rem;
+      font-style: italic;
+    }
+
+    .archive-section {
+      margin-bottom: 3rem;
+    }
+
+    .archive-section h2 {
+      font-family: 'Libre Baskerville', 'Noto Serif SC', serif;
+      font-size: 1.35rem;
+      margin-bottom: 0.5rem;
+      border-bottom: 1px solid var(--scratch);
+      padding-bottom: 0.5rem;
+    }
+
+    .section-note {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .resource-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .resource-card {
+      background: var(--pepper-faded);
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+    }
+
+    .resource-card h3 {
+      font-family: 'Space Mono', monospace;
+      font-size: 1.1rem;
+      margin: 0 0 0.25rem 0;
+    }
+
+    .resource-card h3 a {
+      color: var(--pepper);
+      text-decoration: none;
+    }
+
+    .resource-card h3 a:hover {
+      text-decoration: underline;
+    }
+
+    .resource-tag {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin: 0 0 0.75rem 0;
+      letter-spacing: 0.02em;
+    }
+
+    .resource-card > p {
+      font-size: 0.95rem;
+      line-height: 1.7;
+      margin: 0 0 0.5rem 0;
+    }
+
+    .resource-links {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .resource-links a {
+      color: var(--pepper);
+      text-decoration: none;
+    }
+
+    .resource-links a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</Base>
