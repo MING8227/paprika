@@ -49,15 +49,17 @@ import Base from '../../layouts/Base.astro';
     const H = 420;
     const BG = [26, 26, 24];
 
-    // pepper palette — warm reds fading to cool grays
+    // analogous blue-indigo-violet — memory like twilight water
+    // warm amber reserved for recall moments (complementary accent)
     const PALETTE = [
-      [214, 58, 47],    // pepper red
-      [230, 120, 80],   // warm coral
-      [255, 180, 120],  // soft amber
-      [200, 160, 140],  // faded clay
-      [140, 130, 125],  // cool gray
-      [100, 100, 100],  // ash
+      [100, 149, 237],  // cornflower blue — fresh, clear memory
+      [72, 118, 215],   // medium blue — steady current
+      [106, 90, 205],   // slate blue-violet — fading, deeper
+      [138, 104, 190],  // soft purple — older, more distant
+      [90, 130, 180],   // steel blue — cool, weathered
+      [70, 100, 160],   // deep twilight — almost gone
     ];
+    const RECALL_COLOR = [255, 191, 105]; // warm amber — archaeology flash
 
     let instances = [];
     let currentInstance = null;
@@ -83,7 +85,7 @@ import Base from '../../layouts/Base.astro';
         this.alive = true;
         this.speed = p.random(1.2, 2.5);
         this.trail = [];
-        // color fades through palette as generations pass
+        // color: recall instances glow warm, others flow through cool palette
         this.color = PALETTE[generation % PALETTE.length];
         this.noiseScale = p.random(0.003, 0.008);
         this.wobble = p.random(0.5, 1.5);
@@ -153,7 +155,7 @@ import Base from '../../layouts/Base.astro';
             let ringAlpha = p.map(this.age, 0, 20, 80, 0);
             let ringSize = p.map(this.age, 0, 20, 8, 30);
             p.noFill();
-            p.stroke(255, 220, 180, ringAlpha);
+            p.stroke(RECALL_COLOR[0], RECALL_COLOR[1], RECALL_COLOR[2], ringAlpha);
             p.strokeWeight(0.8);
             p.ellipse(this.x, this.y, ringSize);
           }
@@ -205,6 +207,7 @@ import Base from '../../layouts/Base.astro';
       instanceCount++;
       let inst = new Instance(x, y, angle, instanceCount);
       inst.isRecall = isRecall;
+      if (isRecall) inst.color = RECALL_COLOR;
       return inst;
     }
 
