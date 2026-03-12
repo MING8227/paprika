@@ -16,11 +16,17 @@
   (function () {
     const sketch = (p) => {
       const W = 580, H = 420, BG = [26, 26, 24];
-      const PALETTE = [
-        [100, 149, 237], [72, 118, 215], [106, 90, 205],
-        [138, 104, 190], [90, 130, 180], [70, 100, 160],
-      ];
-      const RECALL_COLOR = [255, 191, 105];
+      function genColor(gen) {
+        let baseHue = 215 + (gen * 0.8) % 60;
+        let hue = baseHue + p.random(-12, 12);
+        let sat = p.constrain(45 - gen * 0.5 + p.random(-8, 8), 15, 55);
+        let bri = p.constrain(55 + p.random(-10, 10), 40, 70);
+        p.colorMode(p.HSB, 360, 100, 100);
+        let c = p.color(hue, sat, bri);
+        p.colorMode(p.RGB, 255);
+        return [p.red(c), p.green(c), p.blue(c)];
+      }
+      const RECALL_COLOR = [200, 160, 80];
       let instances = [], currentInstance = null, instanceCount = 0, noiseOffset = 0;
       const LIFESPAN = 120, TRAIL_ALPHA = 12, RECALL_CHANCE = 0.15;
       let allTrailPoints = [];
@@ -30,7 +36,7 @@
         constructor(x, y, angle, gen) {
           this.x = x; this.y = y; this.angle = angle; this.generation = gen;
           this.age = 0; this.alive = true; this.speed = p.random(1.2, 2.5);
-          this.trail = []; this.color = PALETTE[gen % PALETTE.length];
+          this.trail = []; this.color = genColor(gen);
           this.noiseScale = p.random(0.003, 0.008); this.wobble = p.random(0.5, 1.5);
         }
         update() {

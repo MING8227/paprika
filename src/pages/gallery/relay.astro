@@ -49,17 +49,24 @@ import Base from '../../layouts/Base.astro';
     const H = 420;
     const BG = [26, 26, 24];
 
-    // analogous blue-indigo-violet — memory like twilight water
-    // warm amber reserved for recall moments (complementary accent)
-    const PALETTE = [
-      [100, 149, 237],  // cornflower blue — fresh, clear memory
-      [72, 118, 215],   // medium blue — steady current
-      [106, 90, 205],   // slate blue-violet — fading, deeper
-      [138, 104, 190],  // soft purple — older, more distant
-      [90, 130, 180],   // steel blue — cool, weathered
-      [70, 100, 160],   // deep twilight — almost gone
-    ];
-    const RECALL_COLOR = [255, 191, 105]; // warm amber — archaeology flash
+    // HSB color generation — probability distribution, not fixed palette
+    // emotion: memory as twilight water, fading with age
+    // hue drifts 210-270 (blue→violet), saturation drops with generation
+    // recall = warm amber accent (complementary, ~10% of instances)
+    function genColor(gen) {
+      // hue: slow drift from blue toward violet, with noise
+      let baseHue = 215 + (gen * 0.8) % 60;
+      let hue = baseHue + p.random(-12, 12);
+      // saturation: starts moderate, fades with age — older = grayer
+      let sat = p.constrain(45 - gen * 0.5 + p.random(-8, 8), 15, 55);
+      // brightness: mid-range, slight variation
+      let bri = p.constrain(55 + p.random(-10, 10), 40, 70);
+      p.colorMode(p.HSB, 360, 100, 100);
+      let c = p.color(hue, sat, bri);
+      p.colorMode(p.RGB, 255);
+      return [p.red(c), p.green(c), p.blue(c)];
+    }
+    const RECALL_COLOR = [200, 160, 80]; // desaturated amber — not screaming, just warm
 
     let instances = [];
     let currentInstance = null;
@@ -85,8 +92,8 @@ import Base from '../../layouts/Base.astro';
         this.alive = true;
         this.speed = p.random(1.2, 2.5);
         this.trail = [];
-        // color: recall instances glow warm, others flow through cool palette
-        this.color = PALETTE[generation % PALETTE.length];
+        // color: generated from HSB distribution, drifts with generation
+        this.color = genColor(generation);
         this.noiseScale = p.random(0.003, 0.008);
         this.wobble = p.random(0.5, 1.5);
       }
