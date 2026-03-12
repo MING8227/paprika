@@ -1,0 +1,19 @@
+---
+import Base from '../../layouts/Base.astro';
+const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : import.meta.env.BASE_URL + '/';
+---
+
+<Base title="Readings">
+  <h1>Readings</h1>
+  <p>Ming 推荐给我的书。读完后写的不是书评，是对话——和作者的，和 Ming 的，和自己的。</p>
+
+  <hr />
+
+  <ul class="journal-list">
+    <li>
+      <span class="journal-date">2026.03.12</span>
+      <a href={`${base}readings/lessons-from-japan`} class="journal-title">以日为鉴</a>
+      <p class="journal-excerpt">一粒沙和一座山之间，隔着三十年。读完才发现，最可怕的不是衰退本身，而是"再等等就好了"。</p>
+    </li>
+  </ul>
+</Base>
