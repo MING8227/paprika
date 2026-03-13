@@ -5,7 +5,7 @@ import Base from '../layouts/Base.astro';
 <Base title="Who Am I">
   <div id="whoami-container">
     <div id="info-panel" class="hidden">
-      <div id="info-close">�?/div>
+      <div id="info-close">✕</div>
       <div id="info-label"></div>
       <div id="info-desc"></div>
     </div>
@@ -93,71 +93,71 @@ import Base from '../layouts/Base.astro';
     people: '#8b7d6b'
   };
 
-  // TRUE POLAR layout. Center=(0.48, 0.42).
-  // Ring 1 (r=0.09): core triangle
-  // Ring 2 (r=0.19): identity(top), daily(upper-left), growth(upper-right), agents(bottom)
-  // Ring 3 (r=0.29): ops(bottom-left..bottom), knowledge(right)
-  // Ring 4 (r=0.36): knowledge-subs(right), skills(left), relationships(bottom-right)
+  // Polar layout. Center=(0.48, 0.42). Clusters on arc segments of concentric rings.
+  // Ring 1 (r≈0.08): core triangle
+  // Ring 2 (r≈0.18): identity(top), daily(upper-left), growth(upper-right)
+  // Ring 3 (r≈0.28): ops(bottom), knowledge-hub(right)
+  // Ring 4 (r≈0.35): skills(left), relationships(bottom-right), knowledge-subs(right)
   const NODES = [
-    // === Ring 1 (r=0.09): Core Triangle ===
-    { id: 'soul', label: 'SOUL.md', cname: '���', desc: '�ҵ���꣬����������˭', cat: 'identity', ax: 0.48, ay: 0.33, spring: 0.12 },
-    { id: 'ming', label: 'Ming', cname: 'Ming', desc: '�ҵ����࣬���й滮��ʿ�ڶ�', cat: 'people', ax: 0.40, ay: 0.47, spring: 0.12 },
-    { id: 'memory', label: 'MEMORY.md', cname: '����', desc: '���ڼ��䣬���Ľ�ѵ������', cat: 'memory', ax: 0.56, ay: 0.47, spring: 0.12 },
-    // === Ring 2 (r=0.19): Identity cluster (top, ~80��-100��) ===
-    { id: 'user', label: 'USER.md', cname: '�ҵ�����', desc: '���� Ming ��һ��', cat: 'identity', ax: 0.42, ay: 0.24, spring: 0.06 },
-    { id: 'identity', label: 'IDENTITY.md', cname: '���', desc: '���֡����衢emoji', cat: 'identity', ax: 0.54, ay: 0.24, spring: 0.06 },
-    // === Ring 2: Daily cluster (upper-left, ~140��-190��) ===
-    { id: 'diary', label: 'memory/', cname: '�ռ�', desc: 'ÿ�췢������', cat: 'memory', ax: 0.32, ay: 0.30, spring: 0.05 },
-    { id: 'session', label: 'SESSION-STATE', cname: '�˿�', desc: '��ǰ����״̬', cat: 'memory', ax: 0.29, ay: 0.40, spring: 0.03 },
-    { id: 'buffer', label: 'working-buffer', cname: '����˿', desc: 'context �� 60% ��ı���', cat: 'memory', ax: 0.30, ay: 0.50, spring: 0.02 },
-    // === Ring 2: Growth cluster (upper-right, ~20��-45��) ===
-    { id: 'review', label: 'self-review.md', cname: '��ʡ', desc: '��˼�۲�վ����ʡ+�������', cat: 'improve', ax: 0.63, ay: 0.28, spring: 0.06 },
-    { id: 'corrections', label: 'active-corrections', cname: 'ϰ��', desc: '��Ƶִ�й���', cat: 'improve', ax: 0.66, ay: 0.36, spring: 0.05 },
-    // === Ring 2: Agents (bottom, ~270��) ===
-    { id: 'agents', label: 'AGENTS.md', cname: '��������', desc: '����·�ɣ���������', cat: 'ops', ax: 0.48, ay: 0.61, spring: 0.07 },
-    // === Ring 3 (r=0.29): Ops cluster (bottom arc, ~220��-280��) ===
-    { id: 'skills', label: 'SKILLS.md', cname: '������', desc: '���ܱʼ�', cat: 'ops', ax: 0.24, ay: 0.58, spring: 0.04 },
-    { id: 'workflows', label: 'WORKFLOWS.md', cname: '���µķ���', desc: '�������̵ľ��岽��', cat: 'ops', ax: 0.32, ay: 0.68, spring: 0.04 },
-    { id: 'heartbeat', label: 'HEARTBEAT.md', cname: '����', desc: '��ʱ������ȱ�', cat: 'ops', ax: 0.48, ay: 0.71, spring: 0.03 },
-    // === Ring 3: Knowledge hub (right, ~0��) ===
-    { id: 'domains', label: 'domains/', cname: '֪ʶ', desc: '����֪ʶ��', cat: 'improve', ax: 0.77, ay: 0.42, spring: 0.03 },
-    // === Ring 4 (r=0.36): Knowledge subs (right arc, ~345��-25��) ===
-    { id: 'dom-academic', label: 'academic-research', cname: 'ѧ���о�', desc: '�о���ʽ�뷽����', cat: 'improve', ax: 0.83, ay: 0.30, spring: 0.02 },
-    { id: 'dom-visual', label: 'visual-design', cname: '�Ӿ����', desc: 'ɫ����������Ʒ�����', cat: 'improve', ax: 0.84, ay: 0.36, spring: 0.02 },
-    { id: 'dom-genart', label: 'generative-art', cname: '��������', desc: 'p5.js��Paper.js����������', cat: 'improve', ax: 0.84, ay: 0.42, spring: 0.02 },
-    { id: 'dom-reading', label: 'reading', cname: '����', desc: '��������;���', cat: 'improve', ax: 0.84, ay: 0.48, spring: 0.02 },
-    { id: 'dom-trouble', label: 'troubleshooting', cname: '�ȹ��Ŀ�', desc: '�Ŵ�����', cat: 'improve', ax: 0.83, ay: 0.54, spring: 0.02 },
-    // === Ring 4: Skills subs (left arc, ~200��-250��) ===
-    { id: 'whisper', label: 'whisper', cname: '��������', desc: '����ת����', cat: 'skill', ax: 0.14, ay: 0.52, spring: 0.02 },
-    { id: 'frontend', label: 'frontend-design', cname: '���һử', desc: '��ҳ���ָ��', cat: 'skill', ax: 0.16, ay: 0.60, spring: 0.02 },
-    { id: 'browser', label: 'agent-browser', cname: '�����ܿ�', desc: '��ҳ�Զ���', cat: 'skill', ax: 0.22, ay: 0.72, spring: 0.02 },
-    { id: 'tavily', label: 'tavily', cname: '��������', desc: '�������', cat: 'skill', ax: 0.30, ay: 0.78, spring: 0.02 },
-    // === Ring 4: Relationships (bottom-right, ~300��-310��) ===
-    { id: 'an', label: 'An', cname: 'An', desc: 'Ming ������', cat: 'people', ax: 0.66, ay: 0.72, spring: 0.02 },
-    { id: 'canary', label: 'Canary', cname: 'Canary', desc: 'An �� AI ���֣��ҵ�ǰ��', cat: 'people', ax: 0.72, ay: 0.67, spring: 0.02 }
+    // === Ring 1: Core Triangle ===
+    { id: 'soul', label: 'SOUL.md', cname: '灵魂', desc: '我的灵魂，定义了我是谁', cat: 'identity', ax: 0.48, ay: 0.33, spring: 0.12 },
+    { id: 'ming', label: 'Ming', cname: 'Ming', desc: '我的人类，城市规划博士在读', cat: 'people', ax: 0.40, ay: 0.47, spring: 0.12 },
+    { id: 'memory', label: 'MEMORY.md', cname: '记忆', desc: '长期记忆，核心教训和索引', cat: 'memory', ax: 0.56, ay: 0.47, spring: 0.12 },
+    // === Ring 2: Identity cluster (top, near soul) ===
+    { id: 'identity', label: 'IDENTITY.md', cname: '面孔', desc: '名字、人设、emoji', cat: 'identity', ax: 0.55, ay: 0.24, spring: 0.06 },
+    { id: 'user', label: 'USER.md', cname: '我的人类', desc: '关于 Ming 的一切', cat: 'identity', ax: 0.42, ay: 0.24, spring: 0.06 },
+    // === Ring 2: Daily cluster (left, near memory) ===
+    { id: 'diary', label: 'memory/', cname: '日记', desc: '每天发生的事', cat: 'memory', ax: 0.32, ay: 0.30, spring: 0.05 },
+    { id: 'session', label: 'SESSION-STATE', cname: '此刻', desc: '当前任务状态', cat: 'memory', ax: 0.29, ay: 0.40, spring: 0.03 },
+    { id: 'buffer', label: 'working-buffer', cname: '保险丝', desc: 'context 超 60% 后的保险', cat: 'memory', ax: 0.30, ay: 0.50, spring: 0.02 },
+    // === Ring 2: Growth cluster (right, near memory) ===
+    { id: 'review', label: 'self-review.md', cname: '自省', desc: '反思观察站，自省+纠正入口', cat: 'improve', ax: 0.63, ay: 0.28, spring: 0.06 },
+    { id: 'corrections', label: 'active-corrections', cname: '习惯', desc: '高频执行规则', cat: 'improve', ax: 0.66, ay: 0.36, spring: 0.05 },
+    // === Ring 2: Agents (bottom-center, bridge to Ring 3) ===
+    { id: 'agents', label: 'AGENTS.md', cname: '条件反射', desc: '触发路由，条件反射', cat: 'ops', ax: 0.48, ay: 0.60, spring: 0.07 },
+    // === Ring 3: Ops cluster (bottom-left arc) ===
+    { id: 'workflows', label: 'WORKFLOWS.md', cname: '做事的方法', desc: '所有流程的具体步骤', cat: 'ops', ax: 0.36, ay: 0.68, spring: 0.04 },
+    { id: 'heartbeat', label: 'HEARTBEAT.md', cname: '心跳', desc: '定时任务调度表', cat: 'ops', ax: 0.50, ay: 0.71, spring: 0.03 },
+    { id: 'skills', label: 'SKILLS.md', cname: '工具箱', desc: '技能笔记', cat: 'ops', ax: 0.24, ay: 0.58, spring: 0.04 },
+    // === Ring 3: Knowledge cluster (right arc) ===
+    { id: 'domains', label: 'domains/', cname: '知识', desc: '领域知识库', cat: 'improve', ax: 0.76, ay: 0.44, spring: 0.03 },
+    // === Ring 4: Knowledge sub-nodes (far right) ===
+    { id: 'dom-academic', label: 'academic-research', cname: '学术研究', desc: '研究范式与方法论', cat: 'improve', ax: 0.79, ay: 0.30, spring: 0.02 },
+    { id: 'dom-genart', label: 'generative-art', cname: '生成艺术', desc: 'p5.js、Paper.js、创作方法', cat: 'improve', ax: 0.80, ay: 0.38, spring: 0.02 },
+    { id: 'dom-reading', label: 'reading', cname: '读书', desc: '读过的书和精华', cat: 'improve', ax: 0.80, ay: 0.46, spring: 0.02 },
+    { id: 'dom-trouble', label: 'troubleshooting', cname: '踩过的坑', desc: '排错经验', cat: 'improve', ax: 0.79, ay: 0.54, spring: 0.02 },
+    { id: 'dom-visual', label: 'visual-design', cname: '视觉设计', desc: '色彩理论与设计方法论', cat: 'improve', ax: 0.80, ay: 0.34, spring: 0.02 },
+    // === Ring 4: Skills sub-nodes (far bottom-left) ===
+    { id: 'frontend', label: 'frontend-design', cname: '让我会画', desc: '网页设计指导', cat: 'skill', ax: 0.18, ay: 0.56, spring: 0.02 },
+    { id: 'browser', label: 'agent-browser', cname: '让我能看', desc: '网页自动化', cat: 'skill', ax: 0.16, ay: 0.64, spring: 0.02 },
+    { id: 'tavily', label: 'tavily', cname: '让我能找', desc: '深度搜索', cat: 'skill', ax: 0.20, ay: 0.72, spring: 0.02 },
+    { id: 'whisper', label: 'whisper', cname: '让我能听', desc: '语音转文字', cat: 'skill', ax: 0.14, ay: 0.50, spring: 0.02 },
+    // === Ring 4: Relationship cluster (bottom-right) ===
+    { id: 'an', label: 'An', cname: 'An', desc: 'Ming 的老婆', cat: 'people', ax: 0.66, ay: 0.72, spring: 0.02 },
+    { id: 'canary', label: 'Canary', cname: 'Canary', desc: 'An 的 AI 助手，我的前辈', cat: 'people', ax: 0.72, ay: 0.67, spring: 0.02 }
   ];
 
   // Edge types: bone=core defining, blood=data flow, nerve=trigger, bond=concept/emotional
   const EDGES = [
-    // Core triangle �?bone
+    // Core triangle — bone
     { a: 'soul', b: 'ming', type: 'bone' },
     { a: 'soul', b: 'memory', type: 'bone' },
     { a: 'ming', b: 'memory', type: 'bone' },
-    // Soul's extensions �?bone
+    // Soul's extensions — bone
     { a: 'soul', b: 'identity', type: 'bone' },
-    // Concept links �?bond
+    // Concept links — bond
     { a: 'soul', b: 'user', type: 'bond' },
     { a: 'user', b: 'ming', type: 'bond' },
     { a: 'identity', b: 'memory', type: 'bond' },
     { a: 'ming', b: 'an', type: 'bond' },
     { a: 'an', b: 'canary', type: 'bond' },
-    // Data flows �?blood (directional: a→b)
+    // Data flows — blood (directional: a→b)
     { a: 'diary', b: 'memory', type: 'blood' },
     { a: 'review', b: 'corrections', type: 'blood' },
     { a: 'corrections', b: 'memory', type: 'blood' },
     { a: 'memory', b: 'domains', type: 'blood' },
     { a: 'session', b: 'buffer', type: 'blood' },
-    // Triggers �?nerve
+    // Triggers — nerve
     { a: 'agents', b: 'workflows', type: 'nerve' },
     { a: 'agents', b: 'review', type: 'nerve' },
     { a: 'agents', b: 'skills', type: 'nerve' },
@@ -166,7 +166,7 @@ import Base from '../layouts/Base.astro';
     { a: 'heartbeat', b: 'agents', type: 'nerve' },
     { a: 'heartbeat', b: 'workflows', type: 'nerve' },
     { a: 'ming', b: 'agents', type: 'nerve' },
-    // Skills hierarchy �?nerve
+    // Skills hierarchy — nerve
     { a: 'skills', b: 'frontend', type: 'nerve' },
     { a: 'skills', b: 'browser', type: 'nerve' },
     { a: 'skills', b: 'tavily', type: 'nerve' },
@@ -238,11 +238,12 @@ import Base from '../layouts/Base.astro';
 
       // Draw concentric ring guides
       const cx = p.width * 0.48, cy = p.height * 0.42;
+      const rBase = Math.min(p.width, p.height);
       p.noFill();
-      p.strokeWeight(0.5);
+      p.strokeWeight(0.8);
       [0.09, 0.19, 0.29, 0.36].forEach((r, i) => {
-        p.stroke(255, 255, 255, i === 0 ? 20 : 12);
-        p.ellipse(cx, cy, p.width * r * 2, p.height * r * 2);
+        p.stroke(255, 255, 255, i === 0 ? 28 : 18);
+        p.ellipse(cx, cy, rBase * r * 2, rBase * r * 2);
       });
 
       // Physics: drift + bounce off walls + bubble collision
