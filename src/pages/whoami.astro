@@ -301,6 +301,7 @@ import Base from '../layouts/Base.astro';
     };
 
     p.draw = function() {
+      try {
       p.background(26, 26, 24);
       p.drawingContext.setLineDash([]); // reset line dash at frame start
 
@@ -665,6 +666,7 @@ import Base from '../layouts/Base.astro';
         p.textSize(b.r > 40 ? 8 : 7);
         p.text(b.node.label, b.x, b.y + 10);
       }
+      } catch(err) { console.error('DRAW ERROR:', err.message, err.stack); }
     };
 
     p.mousePressed = function() {
