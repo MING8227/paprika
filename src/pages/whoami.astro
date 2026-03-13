@@ -512,7 +512,7 @@ import Base from '../layouts/Base.astro';
           const my = (ba.y + bb.y) / 2;
           p.noStroke();
           const [lr, lg, lb] = EDGE_COLORS[edge.type];
-          p.fill(lr, lg, lb, isActive ? 200 : 130);
+          p.fill(lr, lg, lb, prominent ? 200 : 130);
           p.textAlign(p.CENTER, p.CENTER);
           p.textSize(9);
           p.text(EDGE_TYPE_LABELS[edge.type], mx, my - 6);
