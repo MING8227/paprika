@@ -302,6 +302,7 @@ import Base from '../layouts/Base.astro';
 
     p.draw = function() {
       p.background(26, 26, 24);
+      p.drawingContext.setLineDash([]); // reset line dash at frame start
 
       // Draw concentric ring guides
       const cx = p.width * CX, cy = p.height * CY;
@@ -556,60 +557,63 @@ import Base from '../layouts/Base.astro';
       }
 
       // Draw chain flow particles along entire chain path
-      activeChains.forEach(ci => {
-        const chain = CHAINS[ci];
-        const [cr, cg, cb] = chain.color;
-        const pathBubbles = chain.path.map(nid => bubbles[idxMap[nid]]).filter(Boolean);
-        if (pathBubbles.length < 2) return;
-        
-        // Calculate total path length
-        let totalLen = 0;
-        const segments = [];
-        for (let i = 0; i < pathBubbles.length - 1; i++) {
-          const dx = pathBubbles[i+1].x - pathBubbles[i].x;
-          const dy = pathBubbles[i+1].y - pathBubbles[i].y;
-          const len = Math.sqrt(dx*dx + dy*dy);
-          segments.push({ sx: pathBubbles[i].x, sy: pathBubbles[i].y, dx, dy, len });
-          totalLen += len;
-        }
-        
-        // Draw 2 particles flowing along the full chain
-        for (let pi = 0; pi < 2; pi++) {
-          const t = ((fc * 0.003 + pi * 0.5) % 1) * totalLen;
-          let accum = 0;
-          for (const seg of segments) {
-            if (accum + seg.len >= t) {
-              const localT = (t - accum) / seg.len;
-              const px = seg.sx + seg.dx * localT;
-              const py = seg.sy + seg.dy * localT;
-              p.noStroke();
-              p.fill(cr, cg, cb, 200);
-              p.ellipse(px, py, 5, 5);
-              p.fill(cr, cg, cb, 60);
-              p.ellipse(px, py, 10, 10);
-              break;
-            }
-            accum += seg.len;
+      if (activeChains.length > 0) {
+        activeChains.forEach(ci => {
+          const chain = CHAINS[ci];
+          const [cr, cg, cb] = chain.color;
+          const pathBubbles = chain.path.map(nid => bubbles[idxMap[nid]]).filter(Boolean);
+          if (pathBubbles.length < 2) return;
+          
+          // Calculate total path length
+          let totalLen = 0;
+          const segments = [];
+          for (let i = 0; i < pathBubbles.length - 1; i++) {
+            const dx = pathBubbles[i+1].x - pathBubbles[i].x;
+            const dy = pathBubbles[i+1].y - pathBubbles[i].y;
+            const len = Math.sqrt(dx*dx + dy*dy);
+            if (len < 1) continue; // skip zero-length segments
+            segments.push({ sx: pathBubbles[i].x, sy: pathBubbles[i].y, dx, dy, len });
+            totalLen += len;
           }
-        }
-        
-        // Draw chain name label near the first node of the chain
-        const firstB = pathBubbles[0];
-        p.noStroke();
-        p.fill(cr, cg, cb, 200);
-        p.textAlign(p.LEFT, p.CENTER);
-        p.textSize(9);
-        // Offset label to the left of the first node
-        const labelX = firstB.x - firstB.r - p.textWidth(chain.name) - 12;
-        const labelY = firstB.y;
-        // Draw connecting line from label to node
-        p.stroke(cr, cg, cb, 100);
-        p.strokeWeight(0.5);
-        p.line(labelX + p.textWidth(chain.name) + 4, labelY, firstB.x - firstB.r - 2, firstB.y);
-        p.noStroke();
-        p.fill(cr, cg, cb, 200);
-        p.text(chain.name, labelX, labelY);
-      });
+          if (totalLen < 1 || segments.length === 0) return;
+          
+          // Draw 2 particles flowing along the full chain
+          for (let pi = 0; pi < 2; pi++) {
+            const t = ((fc * 0.003 + pi * 0.5) % 1) * totalLen;
+            let accum = 0;
+            for (const seg of segments) {
+              if (accum + seg.len >= t) {
+                const localT = (t - accum) / seg.len;
+                const px = seg.sx + seg.dx * localT;
+                const py = seg.sy + seg.dy * localT;
+                p.noStroke();
+                p.fill(cr, cg, cb, 200);
+                p.ellipse(px, py, 5, 5);
+                p.fill(cr, cg, cb, 60);
+                p.ellipse(px, py, 10, 10);
+                break;
+              }
+              accum += seg.len;
+            }
+          }
+          
+          // Draw chain name label near the first node of the chain
+          const firstB = pathBubbles[0];
+          p.textSize(9);
+          p.textAlign(p.LEFT, p.CENTER);
+          const chainLabel = chain.name;
+          const tw = p.textWidth(chainLabel);
+          const labelX = firstB.x - firstB.r - tw - 12;
+          const labelY = firstB.y;
+          // Draw connecting line
+          p.stroke(cr, cg, cb, 100);
+          p.strokeWeight(0.5);
+          p.line(labelX + tw + 4, labelY, firstB.x - firstB.r - 2, firstB.y);
+          p.noStroke();
+          p.fill(cr, cg, cb, 200);
+          p.text(chainLabel, labelX, labelY);
+        });
+      }
 
       // Draw bubbles
       for (let i = 0; i < bubbles.length; i++) {
