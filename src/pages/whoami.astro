@@ -600,21 +600,35 @@ import Base from '../layouts/Base.astro';
             }
           }
           
-          // Draw chain name label near the first node of the chain
-          const firstB = pathBubbles[0];
-          p.textSize(9);
-          p.textAlign(p.LEFT, p.CENTER);
-          const chainLabel = chain.name;
-          const tw = p.textWidth(chainLabel);
-          const labelX = firstB.x - firstB.r - tw - 12;
-          const labelY = firstB.y;
-          // Draw connecting line
-          p.stroke(cr, cg, cb, 100);
+          // Draw chain name label outside the outermost ring
+          const cx = p.width * 0.48;
+          const cy = p.height * 0.42;
+          const lastB = pathBubbles[pathBubbles.length - 1];
+          // Direction from center to last node, push label outside ring 4
+          const dx = lastB.x - cx;
+          const dy = lastB.y - cy;
+          const dist = Math.sqrt(dx*dx + dy*dy);
+          const outerR = Math.min(p.width, p.height) * 0.40; // just outside ring 4
+          const labelX = cx + (dx / (dist || 1)) * outerR;
+          const labelY = cy + (dy / (dist || 1)) * outerR;
+          // Draw connecting line from last node to label
+          p.stroke(cr, cg, cb, 80);
           p.strokeWeight(0.5);
-          p.line(labelX + tw + 4, labelY, firstB.x - firstB.r - 2, firstB.y);
+          p.drawingContext.setLineDash([3, 5]);
+          p.line(lastB.x, lastB.y, labelX, labelY);
+          p.drawingContext.setLineDash([]);
+          // Chain name (larger)
           p.noStroke();
-          p.fill(cr, cg, cb, 200);
-          p.text(chainLabel, labelX, labelY);
+          p.textSize(13);
+          const alignLeft = labelX > cx;
+          p.textAlign(alignLeft ? p.LEFT : p.RIGHT, p.BOTTOM);
+          p.fill(cr, cg, cb, 220);
+          p.text(chain.name, labelX + (alignLeft ? 6 : -6), labelY - 2);
+          // Chain description (smaller, below name)
+          p.textSize(9);
+          p.fill(cr, cg, cb, 140);
+          p.textAlign(alignLeft ? p.LEFT : p.RIGHT, p.TOP);
+          p.text(chain.desc, labelX + (alignLeft ? 6 : -6), labelY + 2);
         });
       }
 
