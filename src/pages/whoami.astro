@@ -481,23 +481,23 @@ import Base from '../layouts/Base.astro';
         const [er, eg, eb] = EDGE_COLORS[edge.type];
         const prominent = isChainEdge || isEdgeHovered || isClickChain;
         if (edge.type === 'bone') {
-          p.stroke(er, eg, eb, isDimmed ? 15 : (prominent ? 240 : 100));
-          p.strokeWeight(isDimmed ? 1 : (prominent ? 3.5 : 2.5));
+          p.stroke(er, eg, eb, isDimmed ? 35 : (prominent ? 240 : 100));
+          p.strokeWeight(isDimmed ? 1.5 : (prominent ? 3.5 : 2.5));
           p.drawingContext.setLineDash([]);
           p.line(ba.x, ba.y, bb.x, bb.y);
         } else if (edge.type === 'blood') {
-          p.stroke(er, eg, eb, isDimmed ? 12 : (prominent ? 180 : 75));
-          p.strokeWeight(isDimmed ? 0.5 : (prominent ? 2.5 : 1.5));
+          p.stroke(er, eg, eb, isDimmed ? 25 : (prominent ? 180 : 75));
+          p.strokeWeight(isDimmed ? 0.8 : (prominent ? 2.5 : 1.5));
           p.drawingContext.setLineDash([6, 4]);
           p.line(ba.x, ba.y, bb.x, bb.y);
           p.drawingContext.setLineDash([]);
         } else if (edge.type === 'nerve') {
-          p.stroke(er, eg, eb, isDimmed ? 12 : (prominent ? 170 : 70));
-          p.strokeWeight(isDimmed ? 0.5 : (prominent ? 2 : 1));
+          p.stroke(er, eg, eb, isDimmed ? 22 : (prominent ? 170 : 70));
+          p.strokeWeight(isDimmed ? 0.6 : (prominent ? 2 : 1));
           p.drawingContext.setLineDash([]);
           p.line(ba.x, ba.y, bb.x, bb.y);
         } else if (edge.type === 'bond') {
-          p.stroke(er, eg, eb, isDimmed ? 10 : (prominent ? 150 : 55));
+          p.stroke(er, eg, eb, isDimmed ? 18 : (prominent ? 150 : 55));
           p.strokeWeight(isDimmed ? 0.5 : (prominent ? 1.5 : 0.8));
           p.drawingContext.setLineDash([3, 5]);
           p.line(ba.x, ba.y, bb.x, bb.y);
@@ -624,8 +624,8 @@ import Base from '../layouts/Base.astro';
 
         // Opacity by ring: inner bright, outer dim
         const ringAlpha = [255, 220, 180, 140, 100];
-        const baseAlpha = dimmed ? 40 : ringAlpha[b.node.ring] || 100;
-        const glowAlpha = dimmed ? 0 : (isHovered ? 60 : (b.node.ring <= 1 ? 30 : 15));
+        const baseAlpha = dimmed ? 80 : ringAlpha[b.node.ring] || 100;
+        const glowAlpha = dimmed ? 0 : (isHovered ? 60 : (isOnChain ? 40 : (b.node.ring <= 1 ? 30 : 15)));
 
         // Glow
         if (glowAlpha > 0) {
