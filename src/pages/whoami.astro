@@ -215,7 +215,9 @@ import Base from '../layouts/Base.astro';
       p.textFont('Space Mono');
 
       NODES.forEach((node, i) => {
-        const baseR = p.map(connCount[node.id], 0, 7, 28, 52);
+        // Size by ring: inner = large, outer = small
+        const ringSizes = [58, 42, 32, 26, 18];
+        const baseR = ringSizes[node.ring] || 18;
         const home = polarToXY(node, p.width, p.height);
         bubbles.push({
           x: home.x + p.random(-10, 10),
@@ -388,8 +390,10 @@ import Base from '../layouts/Base.astro';
         const isSelected = i === selectedIdx;
         const dimmed = hoveredIdx >= 0 && !highlightSet.has(b.node.id);
 
-        const baseAlpha = dimmed ? 40 : 200;
-        const glowAlpha = dimmed ? 0 : (isHovered ? 60 : 20);
+        // Opacity by ring: inner bright, outer dim
+        const ringAlpha = [255, 220, 180, 140, 100];
+        const baseAlpha = dimmed ? 40 : ringAlpha[b.node.ring] || 100;
+        const glowAlpha = dimmed ? 0 : (isHovered ? 60 : (b.node.ring <= 1 ? 30 : 15));
 
         // Glow
         if (glowAlpha > 0) {
