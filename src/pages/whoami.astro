@@ -93,36 +93,39 @@ import Base from '../layouts/Base.astro';
     people: '#8b7d6b'
   };
 
+  // ax/ay = anchor position as fraction of canvas size; spring = how strongly pulled back (higher = less movement)
   const NODES = [
-    { id: 'soul', label: 'SOUL.md', desc: '我的灵魂，定义了我是谁', cat: 'identity' },
-    { id: 'identity', label: 'IDENTITY.md', desc: '名字、人设、emoji', cat: 'identity' },
-    { id: 'user', label: 'USER.md', desc: '关于 Ming 的信息', cat: 'identity' },
-    { id: 'memory', label: 'MEMORY.md', desc: '长期记忆，核心教训和索引', cat: 'memory' },
-    { id: 'diary', label: 'memory/ 日记', desc: '每天发生的事', cat: 'memory' },
-    { id: 'session', label: 'SESSION-STATE.md', desc: '当前任务状态', cat: 'memory' },
-    { id: 'buffer', label: 'working-buffer.md', desc: 'context 超 60% 后的保险', cat: 'memory' },
-    { id: 'review', label: 'self-review.md', desc: '反思观察站，自省+纠正入口', cat: 'improve' },
-    { id: 'corrections', label: 'active-corrections.md', desc: '高频执行规则', cat: 'improve' },
-    { id: 'domains', label: 'domains/', desc: '领域知识库', cat: 'improve' },
-    { id: 'agents', label: 'AGENTS.md', desc: '触发路由，条件反射', cat: 'ops' },
-    { id: 'workflows', label: 'WORKFLOWS.md', desc: '所有流程的具体步骤', cat: 'ops' },
-    { id: 'heartbeat', label: 'HEARTBEAT.md', desc: '定时任务调度表', cat: 'ops' },
-    { id: 'skills', label: 'SKILLS.md', desc: '技能笔记', cat: 'ops' },
-    { id: 'frontend', label: 'frontend-design', desc: '网页设计指导', cat: 'skill' },
-    { id: 'browser', label: 'agent-browser', desc: '网页自动化', cat: 'skill' },
-    { id: 'tavily', label: 'tavily', desc: '深度搜索', cat: 'skill' },
-    { id: 'whisper', label: 'whisper', desc: '语音转文字', cat: 'skill' },
-    { id: 'ming', label: 'Ming', desc: '我的人类，城市规划博士在读', cat: 'people' },
-    { id: 'an', label: 'An', desc: 'Ming 的老婆', cat: 'people' },
-    { id: 'canary', label: 'Canary', desc: 'An 的 AI 助手，我的前辈', cat: 'people' }
+    { id: 'soul', label: 'SOUL.md', cname: '灵魂', desc: '我的灵魂，定义了我是谁', cat: 'identity', ax: 0.45, ay: 0.10, spring: 0.06 },
+    { id: 'identity', label: 'IDENTITY.md', cname: '身份', desc: '名字、人设、emoji', cat: 'identity', ax: 0.55, ay: 0.08, spring: 0.04 },
+    { id: 'user', label: 'USER.md', cname: '我的人类', desc: '关于 Ming 的信息', cat: 'identity', ax: 0.35, ay: 0.13, spring: 0.04 },
+    { id: 'memory', label: 'MEMORY.md', cname: '长期记忆', desc: '长期记忆，核心教训和索引', cat: 'memory', ax: 0.25, ay: 0.38, spring: 0.08 },
+    { id: 'diary', label: 'memory/', cname: '每日记录', desc: '每天发生的事', cat: 'memory', ax: 0.15, ay: 0.48, spring: 0.03 },
+    { id: 'session', label: 'SESSION-STATE', cname: '当前状态', desc: '当前任务状态', cat: 'memory', ax: 0.20, ay: 0.55, spring: 0.03 },
+    { id: 'buffer', label: 'working-buffer', cname: '缓冲区', desc: 'context 超 60% 后的保险', cat: 'memory', ax: 0.12, ay: 0.60, spring: 0.02 },
+    { id: 'review', label: 'self-review.md', cname: '反思站', desc: '反思观察站，自省+纠正入口', cat: 'improve', ax: 0.72, ay: 0.38, spring: 0.05 },
+    { id: 'corrections', label: 'active-corrections', cname: '执行规则', desc: '高频执行规则', cat: 'improve', ax: 0.78, ay: 0.48, spring: 0.05 },
+    { id: 'domains', label: 'domains/', cname: '知识库', desc: '领域知识库', cat: 'improve', ax: 0.85, ay: 0.40, spring: 0.03 },
+    { id: 'agents', label: 'AGENTS.md', cname: '条件反射', desc: '触发路由，条件反射', cat: 'ops', ax: 0.48, ay: 0.28, spring: 0.10 },
+    { id: 'workflows', label: 'WORKFLOWS.md', cname: '流程手册', desc: '所有流程的具体步骤', cat: 'ops', ax: 0.38, ay: 0.30, spring: 0.07 },
+    { id: 'heartbeat', label: 'HEARTBEAT.md', cname: '心跳', desc: '定时任务调度表', cat: 'ops', ax: 0.58, ay: 0.32, spring: 0.04 },
+    { id: 'skills', label: 'SKILLS.md', cname: '技能笔记', desc: '技能笔记', cat: 'ops', ax: 0.35, ay: 0.68, spring: 0.05 },
+    { id: 'frontend', label: 'frontend-design', cname: '设计指导', desc: '网页设计指导', cat: 'skill', ax: 0.22, ay: 0.78, spring: 0.02 },
+    { id: 'browser', label: 'agent-browser', cname: '网页自动化', desc: '网页自动化', cat: 'skill', ax: 0.32, ay: 0.82, spring: 0.02 },
+    { id: 'tavily', label: 'tavily', cname: '深度搜索', desc: '深度搜索', cat: 'skill', ax: 0.42, ay: 0.80, spring: 0.02 },
+    { id: 'whisper', label: 'whisper', cname: '语音转文字', desc: '语音转文字', cat: 'skill', ax: 0.28, ay: 0.88, spring: 0.02 },
+    { id: 'ming', label: 'Ming', cname: 'Ming', desc: '我的人类，城市规划博士在读', cat: 'people', ax: 0.72, ay: 0.72, spring: 0.03 },
+    { id: 'an', label: 'An', cname: 'An', desc: 'Ming 的老婆', cat: 'people', ax: 0.80, ay: 0.78, spring: 0.02 },
+    { id: 'canary', label: 'Canary', cname: 'Canary', desc: 'An 的 AI 助手，我的前辈', cat: 'people', ax: 0.85, ay: 0.85, spring: 0.02 }
   ];
 
   const EDGES = [
     ['agents', 'workflows'], ['agents', 'review'], ['agents', 'memory'], ['agents', 'skills'],
+    ['agents', 'frontend'],
     ['review', 'corrections'], ['corrections', 'memory'], ['corrections', 'review'],
     ['heartbeat', 'workflows'], ['workflows', 'diary'], ['session', 'buffer'],
     ['ming', 'soul'], ['ming', 'an'], ['an', 'canary'], ['canary', 'review'],
-    ['domains', 'memory']
+    ['domains', 'memory'],
+    ['skills', 'frontend'], ['skills', 'browser'], ['skills', 'tavily'], ['skills', 'whisper']
   ];
 
   // Count connections per node for sizing
@@ -148,17 +151,18 @@ import Base from '../layouts/Base.astro';
       canvas.parent('whoami-container');
       p.textFont('Space Mono');
 
-      // Initial positions: spread in a grid-ish pattern
-      const cols = Math.ceil(Math.sqrt(NODES.length));
       NODES.forEach((node, i) => {
-        const col = i % cols;
-        const row = Math.floor(i / cols);
-        const baseR = p.map(connCount[node.id], 0, 6, 22, 48);
+        const baseR = p.map(connCount[node.id], 0, 7, 28, 52);
+        const homeX = node.ax * p.width;
+        const homeY = node.ay * p.height;
         bubbles.push({
-          x: p.map(col, 0, cols - 1, p.width * 0.15, p.width * 0.85) + p.random(-40, 40),
-          y: p.map(row, 0, Math.ceil(NODES.length / cols) - 1, p.height * 0.12, p.height * 0.85) + p.random(-40, 40),
-          vx: p.random(-0.3, 0.3),
-          vy: p.random(-0.3, 0.3),
+          x: homeX + p.random(-10, 10),
+          y: homeY + p.random(-10, 10),
+          homeX: homeX,
+          homeY: homeY,
+          spring: node.spring,
+          vx: p.random(-0.1, 0.1),
+          vy: p.random(-0.1, 0.1),
           r: baseR,
           node: node,
           col: hexToRgb(COLORS[node.cat])
@@ -168,6 +172,10 @@ import Base from '../layouts/Base.astro';
 
     p.windowResized = function() {
       p.resizeCanvas(p.windowWidth, p.windowHeight);
+      bubbles.forEach((b, i) => {
+        b.homeX = NODES[i].ax * p.width;
+        b.homeY = NODES[i].ay * p.height;
+      });
     };
 
     p.draw = function() {
@@ -179,9 +187,15 @@ import Base from '../layouts/Base.astro';
         b.x += b.vx;
         b.y += b.vy;
 
+        // Spring force toward anchor
+        const dx_home = b.homeX - b.x;
+        const dy_home = b.homeY - b.y;
+        b.vx += dx_home * b.spring * 0.01;
+        b.vy += dy_home * b.spring * 0.01;
+
         // Gentle random drift
-        b.vx += p.random(-0.01, 0.01);
-        b.vy += p.random(-0.01, 0.01);
+        b.vx += p.random(-0.005, 0.005);
+        b.vy += p.random(-0.005, 0.005);
         // Damping
         b.vx *= 0.998;
         b.vy *= 0.998;
@@ -294,12 +308,18 @@ import Base from '../layouts/Base.astro';
         p.strokeWeight(isHovered || isSelected ? 2 : 1);
         p.ellipse(b.x, b.y, b.r * 2);
 
-        // Label
+        // Label: Chinese name + small filename
         p.noStroke();
-        p.fill(255, 255, 255, dimmed ? 50 : (isHovered ? 255 : 180));
         p.textAlign(p.CENTER, p.CENTER);
-        p.textSize(b.r > 35 ? 11 : 9);
-        p.text(b.node.label, b.x, b.y);
+        const labelAlpha = dimmed ? 50 : (isHovered ? 255 : 180);
+        // Chinese name
+        p.fill(255, 255, 255, labelAlpha);
+        p.textSize(b.r > 40 ? 13 : (b.r > 32 ? 11 : 10));
+        p.text(b.node.cname, b.x, b.y - 5);
+        // Filename below
+        p.fill(255, 255, 255, labelAlpha * 0.5);
+        p.textSize(b.r > 40 ? 8 : 7);
+        p.text(b.node.label, b.x, b.y + 10);
       }
     };
 
