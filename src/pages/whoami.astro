@@ -138,6 +138,13 @@ import Base from '../layouts/Base.astro';
   ];
 
   // Edge types: bone=core defining, blood=data flow, nerve=trigger, bond=concept/emotional
+  const EDGE_TYPE_LABELS = { bone: '骨骼', blood: '血脉', nerve: '神经', bond: '纽带' };
+  const EDGE_TYPE_DESC = {
+    bone: '去掉就不完整',
+    blood: '数据在流动',
+    nerve: '触发与调用',
+    bond: '概念与情感'
+  };
   const EDGES = [
     // Core — bone (what defines me)
     { a: 'soul', b: 'identity', type: 'bone' },
@@ -189,6 +196,8 @@ import Base from '../layouts/Base.astro';
   let bubbles = [];
   let hoveredIdx = -1;
   let selectedIdx = -1;
+  let chainSet = new Set(); // nodes in the click chain
+  let chainEdges = new Set(); // edge indices in the chain
   let canvas;
 
   function hexToRgb(hex) {
@@ -348,22 +357,23 @@ import Base from '../layouts/Base.astro';
       const idxMap = {};
       NODES.forEach((n, i) => idxMap[n.id] = i);
       const fc = p.frameCount;
-      EDGES.forEach(edge => {
+      EDGES.forEach((edge, edgeIdx) => {
         const ba = bubbles[idxMap[edge.a]];
         const bb = bubbles[idxMap[edge.b]];
         const hid = hoveredIdx >= 0 ? bubbles[hoveredIdx].node.id : null;
         const isActive = hid && (edge.a === hid || edge.b === hid);
-        const isDimmed = hid && !isActive;
+        const isChain = chainEdges.has(edgeIdx);
+        const isDimmed = (hid && !isActive) || (selectedIdx >= 0 && !isChain && !isActive);
 
         // Style by type
         if (edge.type === 'bone') {
-          p.stroke(255, 255, 255, isDimmed ? 15 : (isActive ? 220 : 80));
-          p.strokeWeight(isDimmed ? 1 : (isActive ? 3 : 2.5));
+          p.stroke(255, 255, 255, isDimmed ? 15 : (isActive ? 220 : (isChain ? 180 : 80)));
+          p.strokeWeight(isDimmed ? 1 : (isActive ? 3 : (isChain ? 2.5 : 2.5)));
           p.drawingContext.setLineDash([]);
           p.line(ba.x, ba.y, bb.x, bb.y);
         } else if (edge.type === 'blood') {
-          p.stroke(255, 255, 255, isDimmed ? 12 : (isActive ? 160 : 50));
-          p.strokeWeight(isDimmed ? 0.5 : (isActive ? 2 : 1.5));
+          p.stroke(255, 255, 255, isDimmed ? 12 : (isActive ? 160 : (isChain ? 120 : 50)));
+          p.strokeWeight(isDimmed ? 0.5 : (isActive ? 2 : (isChain ? 1.5 : 1.5)));
           p.drawingContext.setLineDash([6, 4]);
           p.line(ba.x, ba.y, bb.x, bb.y);
           p.drawingContext.setLineDash([]);
@@ -377,16 +387,27 @@ import Base from '../layouts/Base.astro';
             p.ellipse(px, py, 4, 4);
           }
         } else if (edge.type === 'nerve') {
-          p.stroke(255, 255, 255, isDimmed ? 12 : (isActive ? 150 : 50));
-          p.strokeWeight(isDimmed ? 0.5 : (isActive ? 1.5 : 1));
+          p.stroke(255, 255, 255, isDimmed ? 12 : (isActive ? 150 : (isChain ? 100 : 50)));
+          p.strokeWeight(isDimmed ? 0.5 : (isActive ? 1.5 : (isChain ? 1.2 : 1)));
           p.drawingContext.setLineDash([]);
           p.line(ba.x, ba.y, bb.x, bb.y);
         } else if (edge.type === 'bond') {
-          p.stroke(255, 255, 255, isDimmed ? 10 : (isActive ? 130 : 40));
-          p.strokeWeight(isDimmed ? 0.5 : (isActive ? 1.2 : 0.8));
+          p.stroke(255, 255, 255, isDimmed ? 10 : (isActive ? 130 : (isChain ? 90 : 40)));
+          p.strokeWeight(isDimmed ? 0.5 : (isActive ? 1.2 : (isChain ? 1 : 0.8)));
           p.drawingContext.setLineDash([3, 5]);
           p.line(ba.x, ba.y, bb.x, bb.y);
           p.drawingContext.setLineDash([]);
+        }
+
+        // Show type label at midpoint of active/chain edges
+        if ((isActive && hid) || isChain) {
+          const mx = (ba.x + bb.x) / 2;
+          const my = (ba.y + bb.y) / 2;
+          p.noStroke();
+          p.fill(255, 255, 255, isActive ? 180 : 120);
+          p.textAlign(p.CENTER, p.CENTER);
+          p.textSize(9);
+          p.text(EDGE_TYPE_LABELS[edge.type], mx, my - 6);
         }
       });
 
@@ -396,7 +417,8 @@ import Base from '../layouts/Base.astro';
         const [cr, cg, cb] = b.col;
         const isHovered = i === hoveredIdx;
         const isSelected = i === selectedIdx;
-        const dimmed = hoveredIdx >= 0 && !highlightSet.has(b.node.id);
+        const dimmed = (hoveredIdx >= 0 && !highlightSet.has(b.node.id)) || 
+                       (selectedIdx >= 0 && !chainSet.has(b.node.id) && !highlightSet.has(b.node.id));
 
         // Opacity by ring: inner bright, outer dim
         const ringAlpha = [255, 220, 180, 140, 100];
@@ -438,15 +460,41 @@ import Base from '../layouts/Base.astro';
         selectedIdx = hoveredIdx;
         const node = bubbles[selectedIdx].node;
         const [cr, cg, cb] = bubbles[selectedIdx].col;
+
+        // BFS chain trace from selected node
+        chainSet = new Set([node.id]);
+        chainEdges = new Set();
+        const queue = [node.id];
+        while (queue.length > 0) {
+          const cur = queue.shift();
+          EDGES.forEach((e, ei) => {
+            if (e.a === cur && !chainSet.has(e.b)) {
+              chainSet.add(e.b);
+              chainEdges.add(ei);
+              queue.push(e.b);
+            }
+            if (e.b === cur && !chainSet.has(e.a)) {
+              chainSet.add(e.a);
+              chainEdges.add(ei);
+              queue.push(e.a);
+            }
+          });
+        }
+
         const panel = document.getElementById('info-panel');
         const labelEl = document.getElementById('info-label');
         const descEl = document.getElementById('info-desc');
-        labelEl.textContent = node.label;
+        labelEl.textContent = node.cname;
         labelEl.style.color = COLORS[node.cat];
-        descEl.textContent = node.desc;
+        // Show desc + connected chain summary
+        const connNames = [];
+        chainSet.forEach(id => { if (id !== node.id) connNames.push(NODES.find(n => n.id === id).cname); });
+        descEl.textContent = node.desc + (connNames.length > 0 ? '\n链条: ' + connNames.join(' → ') : '');
         panel.classList.remove('hidden');
       } else {
         selectedIdx = -1;
+        chainSet = new Set();
+        chainEdges = new Set();
         document.getElementById('info-panel').classList.add('hidden');
       }
     };
@@ -456,6 +504,8 @@ import Base from '../layouts/Base.astro';
   document.getElementById('info-close').addEventListener('click', function(e) {
     e.stopPropagation();
     selectedIdx = -1;
+    chainSet = new Set();
+    chainEdges = new Set();
     document.getElementById('info-panel').classList.add('hidden');
   });
 })();
