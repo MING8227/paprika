@@ -378,12 +378,12 @@ import Base from '../layouts/Base.astro';
         // Style by type
         const [er, eg, eb] = EDGE_COLORS[edge.type];
         if (edge.type === 'bone') {
-          p.stroke(er, eg, eb, isDimmed ? 15 : (isActive ? 220 : (isChain ? 180 : 80)));
+          p.stroke(er, eg, eb, isDimmed ? 15 : (isActive ? 240 : (isChain ? 200 : 100)));
           p.strokeWeight(isDimmed ? 1 : (isActive ? 3 : (isChain ? 2.5 : 2.5)));
           p.drawingContext.setLineDash([]);
           p.line(ba.x, ba.y, bb.x, bb.y);
         } else if (edge.type === 'blood') {
-          p.stroke(er, eg, eb, isDimmed ? 12 : (isActive ? 160 : (isChain ? 120 : 50)));
+          p.stroke(er, eg, eb, isDimmed ? 12 : (isActive ? 180 : (isChain ? 140 : 75)));
           p.strokeWeight(isDimmed ? 0.5 : (isActive ? 2 : (isChain ? 1.5 : 1.5)));
           p.drawingContext.setLineDash([6, 4]);
           p.line(ba.x, ba.y, bb.x, bb.y);
@@ -398,12 +398,12 @@ import Base from '../layouts/Base.astro';
             p.ellipse(px, py, 4, 4);
           }
         } else if (edge.type === 'nerve') {
-          p.stroke(er, eg, eb, isDimmed ? 12 : (isActive ? 150 : (isChain ? 100 : 50)));
+          p.stroke(er, eg, eb, isDimmed ? 12 : (isActive ? 170 : (isChain ? 120 : 70)));
           p.strokeWeight(isDimmed ? 0.5 : (isActive ? 1.5 : (isChain ? 1.2 : 1)));
           p.drawingContext.setLineDash([]);
           p.line(ba.x, ba.y, bb.x, bb.y);
         } else if (edge.type === 'bond') {
-          p.stroke(er, eg, eb, isDimmed ? 10 : (isActive ? 130 : (isChain ? 90 : 40)));
+          p.stroke(er, eg, eb, isDimmed ? 10 : (isActive ? 150 : (isChain ? 100 : 55)));
           p.strokeWeight(isDimmed ? 0.5 : (isActive ? 1.2 : (isChain ? 1 : 0.8)));
           p.drawingContext.setLineDash([3, 5]);
           p.line(ba.x, ba.y, bb.x, bb.y);
