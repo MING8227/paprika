@@ -211,7 +211,7 @@ import Base from '../layouts/Base.astro';
   };
   const CHAINS = [
     { id: 'growth', name: '成长链', desc: '被纠正→反思→形成习惯→沉淀为经验', path: ['review', 'corrections', 'memory'], color: CHAIN_COLORS.growth },
-    { id: 'knowledge', name: '知识链', desc: '获取→消化→验证→掌握', path: ['domains', 'dom-academic', 'dom-genart', 'dom-reading', 'dom-trouble', 'dom-visual'], color: CHAIN_COLORS.knowledge },
+    { id: 'knowledge', name: '知识链', desc: '经验提炼为领域知识', path: ['memory', 'domains'], color: CHAIN_COLORS.knowledge },
     { id: 'signal', name: '信号链', desc: 'Ming说话→WAL扫描→存储+触发', path: ['ming', 'agents', 'memory'], color: CHAIN_COLORS.signal },
     { id: 'task', name: '任务链', desc: '收到任务→查记忆→评估→拆步骤→执行', path: ['agents', 'memory', 'workflows', 'skills'], color: CHAIN_COLORS.task },
     { id: 'clock', name: '生物钟链', desc: '心跳唤醒→条件反射→执行流程', path: ['heartbeat', 'agents', 'workflows'], color: CHAIN_COLORS.clock },
