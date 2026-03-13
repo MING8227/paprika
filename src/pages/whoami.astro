@@ -93,39 +93,54 @@ import Base from '../layouts/Base.astro';
     people: '#8b7d6b'
   };
 
-  // ax/ay = anchor position as fraction of canvas size; spring = how strongly pulled back (higher = less movement)
+  // Concentric circles: center(0.50, 0.45) → core triangle → growth ring → ops ring → outer ring
   const NODES = [
-    { id: 'soul', label: 'SOUL.md', cname: '灵魂', desc: '我的灵魂，定义了我是谁', cat: 'identity', ax: 0.45, ay: 0.10, spring: 0.06 },
-    { id: 'identity', label: 'IDENTITY.md', cname: '身份', desc: '名字、人设、emoji', cat: 'identity', ax: 0.55, ay: 0.08, spring: 0.04 },
-    { id: 'user', label: 'USER.md', cname: '我的人类', desc: '关于 Ming 的信息', cat: 'identity', ax: 0.35, ay: 0.13, spring: 0.04 },
-    { id: 'memory', label: 'MEMORY.md', cname: '长期记忆', desc: '长期记忆，核心教训和索引', cat: 'memory', ax: 0.25, ay: 0.38, spring: 0.08 },
-    { id: 'diary', label: 'memory/', cname: '每日记录', desc: '每天发生的事', cat: 'memory', ax: 0.15, ay: 0.48, spring: 0.03 },
-    { id: 'session', label: 'SESSION-STATE', cname: '当前状态', desc: '当前任务状态', cat: 'memory', ax: 0.20, ay: 0.55, spring: 0.03 },
-    { id: 'buffer', label: 'working-buffer', cname: '缓冲区', desc: 'context 超 60% 后的保险', cat: 'memory', ax: 0.12, ay: 0.60, spring: 0.02 },
-    { id: 'review', label: 'self-review.md', cname: '反思站', desc: '反思观察站，自省+纠正入口', cat: 'improve', ax: 0.72, ay: 0.38, spring: 0.05 },
-    { id: 'corrections', label: 'active-corrections', cname: '执行规则', desc: '高频执行规则', cat: 'improve', ax: 0.78, ay: 0.48, spring: 0.05 },
-    { id: 'domains', label: 'domains/', cname: '知识库', desc: '领域知识库', cat: 'improve', ax: 0.85, ay: 0.40, spring: 0.03 },
-    { id: 'agents', label: 'AGENTS.md', cname: '条件反射', desc: '触发路由，条件反射', cat: 'ops', ax: 0.48, ay: 0.28, spring: 0.10 },
-    { id: 'workflows', label: 'WORKFLOWS.md', cname: '流程手册', desc: '所有流程的具体步骤', cat: 'ops', ax: 0.38, ay: 0.30, spring: 0.07 },
-    { id: 'heartbeat', label: 'HEARTBEAT.md', cname: '心跳', desc: '定时任务调度表', cat: 'ops', ax: 0.58, ay: 0.32, spring: 0.04 },
-    { id: 'skills', label: 'SKILLS.md', cname: '技能笔记', desc: '技能笔记', cat: 'ops', ax: 0.35, ay: 0.68, spring: 0.05 },
-    { id: 'frontend', label: 'frontend-design', cname: '设计指导', desc: '网页设计指导', cat: 'skill', ax: 0.22, ay: 0.78, spring: 0.02 },
-    { id: 'browser', label: 'agent-browser', cname: '网页自动化', desc: '网页自动化', cat: 'skill', ax: 0.32, ay: 0.82, spring: 0.02 },
-    { id: 'tavily', label: 'tavily', cname: '深度搜索', desc: '深度搜索', cat: 'skill', ax: 0.42, ay: 0.80, spring: 0.02 },
-    { id: 'whisper', label: 'whisper', cname: '语音转文字', desc: '语音转文字', cat: 'skill', ax: 0.28, ay: 0.88, spring: 0.02 },
-    { id: 'ming', label: 'Ming', cname: 'Ming', desc: '我的人类，城市规划博士在读', cat: 'people', ax: 0.72, ay: 0.72, spring: 0.03 },
-    { id: 'an', label: 'An', cname: 'An', desc: 'Ming 的老婆', cat: 'people', ax: 0.80, ay: 0.78, spring: 0.02 },
-    { id: 'canary', label: 'Canary', cname: 'Canary', desc: 'An 的 AI 助手，我的前辈', cat: 'people', ax: 0.85, ay: 0.85, spring: 0.02 }
+    // === Core Triangle (r≈0.07, spring 0.12 — almost still) ===
+    { id: 'soul', label: 'SOUL.md', cname: '灵魂', desc: '我的灵魂，定义了我是谁', cat: 'identity', ax: 0.50, ay: 0.38, spring: 0.12 },
+    { id: 'ming', label: 'Ming', cname: 'Ming', desc: '我的人类，城市规划博士在读', cat: 'people', ax: 0.44, ay: 0.49, spring: 0.12 },
+    { id: 'memory', label: 'MEMORY.md', cname: '长期记忆', desc: '长期记忆，核心教训和索引', cat: 'memory', ax: 0.56, ay: 0.49, spring: 0.12 },
+    // === Growth Ring (r≈0.18, spring 0.05-0.07) ===
+    { id: 'identity', label: 'IDENTITY.md', cname: '身份', desc: '名字、人设、emoji', cat: 'identity', ax: 0.50, ay: 0.27, spring: 0.06 },
+    { id: 'user', label: 'USER.md', cname: '我的人类', desc: '关于 Ming 的信息', cat: 'identity', ax: 0.66, ay: 0.36, spring: 0.06 },
+    { id: 'review', label: 'self-review.md', cname: '反思站', desc: '反思观察站，自省+纠正入口', cat: 'improve', ax: 0.66, ay: 0.54, spring: 0.06 },
+    { id: 'corrections', label: 'active-corrections', cname: '执行规则', desc: '高频执行规则', cat: 'improve', ax: 0.50, ay: 0.63, spring: 0.06 },
+    { id: 'agents', label: 'AGENTS.md', cname: '条件反射', desc: '触发路由，条件反射', cat: 'ops', ax: 0.34, ay: 0.54, spring: 0.07 },
+    { id: 'diary', label: 'memory/', cname: '每日记录', desc: '每天发生的事', cat: 'memory', ax: 0.34, ay: 0.36, spring: 0.05 },
+    // === Ops Ring (r≈0.30, spring 0.02-0.04) ===
+    { id: 'workflows', label: 'WORKFLOWS.md', cname: '流程手册', desc: '所有流程的具体步骤', cat: 'ops', ax: 0.65, ay: 0.19, spring: 0.04 },
+    { id: 'heartbeat', label: 'HEARTBEAT.md', cname: '心跳', desc: '定时任务调度表', cat: 'ops', ax: 0.80, ay: 0.45, spring: 0.03 },
+    { id: 'domains', label: 'domains/', cname: '知识库', desc: '领域知识库', cat: 'improve', ax: 0.65, ay: 0.71, spring: 0.03 },
+    { id: 'skills', label: 'SKILLS.md', cname: '技能笔记', desc: '技能笔记', cat: 'ops', ax: 0.35, ay: 0.71, spring: 0.04 },
+    { id: 'session', label: 'SESSION-STATE', cname: '当前状态', desc: '当前任务状态', cat: 'memory', ax: 0.20, ay: 0.45, spring: 0.03 },
+    { id: 'buffer', label: 'working-buffer', cname: '缓冲区', desc: 'context 超 60% 后的保险', cat: 'memory', ax: 0.35, ay: 0.19, spring: 0.02 },
+    // === Outer Ring (r≈0.40, spring 0.02 — most free) ===
+    { id: 'frontend', label: 'frontend-design', cname: '设计指导', desc: '网页设计指导', cat: 'skill', ax: 0.50, ay: 0.05, spring: 0.02 },
+    { id: 'browser', label: 'agent-browser', cname: '网页自动化', desc: '网页自动化', cat: 'skill', ax: 0.85, ay: 0.25, spring: 0.02 },
+    { id: 'tavily', label: 'tavily', cname: '深度搜索', desc: '深度搜索', cat: 'skill', ax: 0.85, ay: 0.65, spring: 0.02 },
+    { id: 'whisper', label: 'whisper', cname: '语音转文字', desc: '语音转文字', cat: 'skill', ax: 0.50, ay: 0.85, spring: 0.02 },
+    { id: 'an', label: 'An', cname: 'An', desc: 'Ming 的老婆', cat: 'people', ax: 0.15, ay: 0.65, spring: 0.02 },
+    { id: 'canary', label: 'Canary', cname: 'Canary', desc: 'An 的 AI 助手，我的前辈', cat: 'people', ax: 0.15, ay: 0.25, spring: 0.02 }
   ];
 
   const EDGES = [
-    ['agents', 'workflows'], ['agents', 'review'], ['agents', 'memory'], ['agents', 'skills'],
-    ['agents', 'frontend'],
-    ['review', 'corrections'], ['corrections', 'memory'], ['corrections', 'review'],
-    ['heartbeat', 'workflows'], ['workflows', 'diary'], ['session', 'buffer'],
-    ['ming', 'soul'], ['ming', 'an'], ['an', 'canary'], ['canary', 'review'],
-    ['domains', 'memory'],
-    ['skills', 'frontend'], ['skills', 'browser'], ['skills', 'tavily'], ['skills', 'whisper']
+    // Core triangle
+    ['soul', 'ming'], ['soul', 'memory'], ['ming', 'memory'],
+    // Soul's extensions
+    ['soul', 'identity'], ['soul', 'user'],
+    // Ming's influence
+    ['ming', 'agents'], ['ming', 'an'],
+    // Memory system
+    ['memory', 'diary'], ['memory', 'corrections'], ['memory', 'domains'],
+    ['diary', 'session'],
+    // Growth chain
+    ['review', 'corrections'], ['agents', 'review'], ['agents', 'workflows'],
+    // Ops layer
+    ['heartbeat', 'workflows'], ['agents', 'skills'],
+    ['skills', 'frontend'], ['skills', 'browser'], ['skills', 'tavily'], ['skills', 'whisper'],
+    // Relationships
+    ['an', 'canary'], ['canary', 'review'],
+    // Buffer
+    ['session', 'buffer']
   ];
 
   // Count connections per node for sizing
