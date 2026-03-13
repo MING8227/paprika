@@ -271,9 +271,11 @@ import Base from '../layouts/Base.astro';
       RINGS.forEach((r, i) => {
         if (i === 0) return;
         p.noFill();
-        p.stroke(255, 255, 255, 18);
-        p.strokeWeight(0.8);
+        p.stroke(255, 255, 255, 12);
+        p.strokeWeight(0.5);
+        p.drawingContext.setLineDash([4, 8]);
         p.ellipse(cx, cy, rBase * r * 2, rBase * r * 2);
+        p.drawingContext.setLineDash([]);
         // Ring label at top of each circle
         p.noStroke();
         p.fill(255, 255, 255, 30);
