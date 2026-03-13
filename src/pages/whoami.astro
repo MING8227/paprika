@@ -516,40 +516,35 @@ import Base from '../layouts/Base.astro';
     };
 
     p.mousePressed = function() {
+      // Click on edge
+      if (hoveredEdgeIdx >= 0 && hoveredIdx < 0) {
+        const edge = EDGES[hoveredEdgeIdx];
+        selectedIdx = -1;
+        chainSet = new Set([edge.a, edge.b]);
+        chainEdges = new Set([hoveredEdgeIdx]);
+        const nodeA = NODES.find(n => n.id === edge.a).cname;
+        const nodeB = NODES.find(n => n.id === edge.b).cname;
+        const panel = document.getElementById('info-panel');
+        const labelEl = document.getElementById('info-label');
+        const descEl = document.getElementById('info-desc');
+        labelEl.textContent = EDGE_TYPE_LABELS[edge.type];
+        labelEl.style.color = 'rgb(' + EDGE_COLORS[edge.type].join(',') + ')';
+        descEl.textContent = EDGE_TYPE_DESC[edge.type] + '\n' + nodeA + ' ↔ ' + nodeB;
+        panel.classList.remove('hidden');
+        return;
+      }
+      // Click on bubble
       if (hoveredIdx >= 0) {
         selectedIdx = hoveredIdx;
         const node = bubbles[selectedIdx].node;
-        const [cr, cg, cb] = bubbles[selectedIdx].col;
-
-        // BFS chain trace from selected node
-        chainSet = new Set([node.id]);
+        chainSet = new Set();
         chainEdges = new Set();
-        const queue = [node.id];
-        while (queue.length > 0) {
-          const cur = queue.shift();
-          EDGES.forEach((e, ei) => {
-            if (e.a === cur && !chainSet.has(e.b)) {
-              chainSet.add(e.b);
-              chainEdges.add(ei);
-              queue.push(e.b);
-            }
-            if (e.b === cur && !chainSet.has(e.a)) {
-              chainSet.add(e.a);
-              chainEdges.add(ei);
-              queue.push(e.a);
-            }
-          });
-        }
-
         const panel = document.getElementById('info-panel');
         const labelEl = document.getElementById('info-label');
         const descEl = document.getElementById('info-desc');
         labelEl.textContent = node.cname;
         labelEl.style.color = COLORS[node.cat];
-        // Show desc + connected chain summary
-        const connNames = [];
-        chainSet.forEach(id => { if (id !== node.id) connNames.push(NODES.find(n => n.id === id).cname); });
-        descEl.textContent = node.desc + (connNames.length > 0 ? '\n链条: ' + connNames.join(' → ') : '');
+        descEl.textContent = node.desc;
         panel.classList.remove('hidden');
       } else {
         selectedIdx = -1;
