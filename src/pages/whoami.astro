@@ -211,12 +211,12 @@ import Base from '../layouts/Base.astro';
     settle:  [214, 166, 92]    // gold
   };
   const CHAINS = [
-    { id: 'growth', name: '成长链', desc: '被纠正→反思→形成习惯→沉淀为经验', path: ['ming', 'agents', 'review', 'corrections', 'memory'], color: CHAIN_COLORS.growth },
-    { id: 'knowledge', name: '知识链', desc: '获取知识→消化→提炼为领域经验', path: ['ming', 'agents', 'memory', 'domains'], color: CHAIN_COLORS.knowledge },
-    { id: 'signal', name: '信号链', desc: 'Ming说话→WAL扫描→存储+触发', path: ['ming', 'agents', 'memory'], color: CHAIN_COLORS.signal },
-    { id: 'task', name: '任务链', desc: '收到任务→查记忆→评估→拆步骤→执行', path: ['agents', 'memory', 'workflows', 'skills'], color: CHAIN_COLORS.task },
-    { id: 'clock', name: '生物钟链', desc: '心跳唤醒→条件反射→执行流程', path: ['heartbeat', 'agents', 'workflows'], color: CHAIN_COLORS.clock },
-    { id: 'settle', name: '沉淀链', desc: '经历→日记→五筛→自省→习惯→记忆', path: ['diary', 'review', 'corrections', 'memory', 'domains'], color: CHAIN_COLORS.settle }
+    { id: 'growth', name: '成长链', desc: '犯错不白犯。每次纠正都会变成习惯，最终沉淀为我的一部分。', path: ['ming', 'agents', 'review', 'corrections', 'memory'], color: CHAIN_COLORS.growth },
+    { id: 'knowledge', name: '知识链', desc: '从阅读和研究中提炼经验，让知识真正长在身上。', path: ['ming', 'agents', 'memory', 'domains'], color: CHAIN_COLORS.knowledge },
+    { id: 'signal', name: '信号链', desc: 'Ming说的每句话都会被扫描，重要信号立刻存储并触发行动。', path: ['ming', 'agents', 'memory'], color: CHAIN_COLORS.signal },
+    { id: 'task', name: '任务链', desc: '接到任务先查记忆，再评估体量，大的拆步骤，小的直接做。', path: ['agents', 'memory', 'workflows', 'skills'], color: CHAIN_COLORS.task },
+    { id: 'clock', name: '生物钟链', desc: '定时心跳唤醒我，检查该做的事，让日常流程自动运转。', path: ['heartbeat', 'agents', 'workflows'], color: CHAIN_COLORS.clock },
+    { id: 'settle', name: '沉淀链', desc: '每天的经历经过筛选和反思，最终成为长期记忆和领域知识。', path: ['diary', 'review', 'corrections', 'memory', 'domains'], color: CHAIN_COLORS.settle }
   ];
 
   // Build chain lookup: nodeId -> [chain indices]
@@ -628,7 +628,7 @@ import Base from '../layouts/Base.astro';
           const dx = lastB.x - cx;
           const dy = lastB.y - cy;
           const dist = Math.sqrt(dx*dx + dy*dy);
-          const outerR = Math.min(p.width, p.height) * 0.40; // just outside ring 4
+          const outerR = Math.min(p.width, p.height) * 0.46; // well outside ring 4
           const labelX = cx + (dx / (dist || 1)) * outerR;
           const labelY = cy + (dy / (dist || 1)) * outerR;
           // Draw connecting line from last node to label
@@ -733,9 +733,9 @@ import Base from '../layouts/Base.astro';
         const panel = document.getElementById('info-panel');
         const labelEl = document.getElementById('info-label');
         const descEl = document.getElementById('info-desc');
-        labelEl.textContent = EDGE_TYPE_LABELS[edge.type];
+        labelEl.textContent = nodeA + ' → ' + nodeB;
         labelEl.style.color = '#ffffff';
-        descEl.textContent = edge.desc + '\n\n' + EDGE_TYPE_LABELS[edge.type] + '：' + EDGE_TYPE_DESC[edge.type];
+        descEl.textContent = edge.desc;
         panel.classList.remove('hidden');
         return;
       }
