@@ -204,6 +204,7 @@ import Base from '../layouts/Base.astro';
   let selectedIdx = -1;
   let chainSet = new Set(); // nodes in the click chain
   let chainEdges = new Set(); // edge indices in the chain
+  let hoveredEdgeIdx = -1;
   let canvas;
 
   function hexToRgb(hex) {
@@ -357,7 +358,7 @@ import Base from '../layouts/Base.astro';
       NODES.forEach((n, i) => idxMap[n.id] = i);
 
       // Check edge hover (only when not hovering a bubble)
-      let hoveredEdgeIdx = -1;
+      hoveredEdgeIdx = -1;
       if (hoveredIdx < 0) {
         let minDist = 12; // pixel threshold
         EDGES.forEach((edge, ei) => {
