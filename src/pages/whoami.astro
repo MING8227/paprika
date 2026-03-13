@@ -311,8 +311,8 @@ import Base from '../layouts/Base.astro';
           p.drawingContext.setLineDash([]);
           p.line(ba.x, ba.y, bb.x, bb.y);
         } else if (edge.type === 'blood') {
-          p.stroke(255, 255, 255, isDimmed ? 10 : (isActive ? 140 : 35));
-          p.strokeWeight(isDimmed ? 0.5 : (isActive ? 1.8 : 1.2));
+          p.stroke(255, 255, 255, isDimmed ? 12 : (isActive ? 160 : 50));
+          p.strokeWeight(isDimmed ? 0.5 : (isActive ? 2 : 1.5));
           p.drawingContext.setLineDash([6, 4]);
           p.line(ba.x, ba.y, bb.x, bb.y);
           p.drawingContext.setLineDash([]);
@@ -326,14 +326,14 @@ import Base from '../layouts/Base.astro';
             p.ellipse(px, py, 4, 4);
           }
         } else if (edge.type === 'nerve') {
-          p.stroke(255, 255, 255, isDimmed ? 8 : (isActive ? 120 : 25));
-          p.strokeWeight(isDimmed ? 0.3 : (isActive ? 1.2 : 0.8));
+          p.stroke(255, 255, 255, isDimmed ? 12 : (isActive ? 150 : 50));
+          p.strokeWeight(isDimmed ? 0.5 : (isActive ? 1.5 : 1));
           p.drawingContext.setLineDash([]);
           p.line(ba.x, ba.y, bb.x, bb.y);
         } else if (edge.type === 'bond') {
-          p.stroke(255, 255, 255, isDimmed ? 6 : (isActive ? 100 : 18));
-          p.strokeWeight(isDimmed ? 0.3 : (isActive ? 1 : 0.5));
-          p.drawingContext.setLineDash([2, 4]);
+          p.stroke(255, 255, 255, isDimmed ? 10 : (isActive ? 130 : 40));
+          p.strokeWeight(isDimmed ? 0.5 : (isActive ? 1.2 : 0.8));
+          p.drawingContext.setLineDash([3, 5]);
           p.line(ba.x, ba.y, bb.x, bb.y);
           p.drawingContext.setLineDash([]);
         }
