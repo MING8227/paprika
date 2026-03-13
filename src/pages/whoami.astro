@@ -30,12 +30,13 @@ import Base from '../layouts/Base.astro';
   }
   #whoami-title {
     position: fixed;
-    bottom: 24px;
-    right: 32px;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%);
     font-family: 'Space Mono', monospace;
-    font-size: 12px;
-    color: rgba(255,255,255,0.15);
-    letter-spacing: 4px;
+    font-size: 14px;
+    color: rgba(255,255,255,0.25);
+    letter-spacing: 6px;
     text-transform: uppercase;
     pointer-events: none;
     user-select: none;
@@ -128,7 +129,7 @@ import Base from '../layouts/Base.astro';
     { id: 'dom-academic', label: 'academic-research', cname: '学术研究', desc: '研究范式与方法论', cat: 'improve', ring: 4, angle: 0, spring: 0.02 },
     { id: 'dom-visual', label: 'visual-design', cname: '视觉设计', desc: '色彩理论与设计方法论', cat: 'improve', ring: 4, angle: 15, spring: 0.02 },
     { id: 'dom-genart', label: 'generative-art', cname: '生成艺术', desc: '创作方法', cat: 'improve', ring: 4, angle: 30, spring: 0.02 },
-    { id: 'dom-reading', label: 'reading', cname: '读书', desc: '读过的书和精华', cat: 'improve', ring: 4, angle: 45, spring: 0.02 },
+    { id: 'dom-reading', label: 'reading', cname: '读书', desc: '读过的书', cat: 'improve', ring: 4, angle: 45, spring: 0.02 },
     { id: 'dom-trouble', label: 'troubleshooting', cname: '踩过的坑', desc: '排错经验', cat: 'improve', ring: 4, angle: 60, spring: 0.02 },
     { id: 'whisper', label: 'whisper', cname: '让我能听', desc: '语音转文字', cat: 'skill', ring: 4, angle: 275, spring: 0.02 },
     { id: 'frontend', label: 'frontend-design', cname: '让我会画', desc: '网页设计指导', cat: 'skill', ring: 4, angle: 295, spring: 0.02 },
@@ -251,10 +252,17 @@ import Base from '../layouts/Base.astro';
       const rBase = Math.min(p.width, p.height);
       p.noFill();
       p.strokeWeight(0.8);
+      const ringLabels = ['', '定义', '内在', '运作', '外部'];
       RINGS.forEach((r, i) => {
-        if (i === 0) return; // skip center dot
+        if (i === 0) return;
         p.stroke(255, 255, 255, 18);
         p.ellipse(cx, cy, rBase * r * 2, rBase * r * 2);
+        // Ring label at top of each circle
+        p.noStroke();
+        p.fill(255, 255, 255, 30);
+        p.textAlign(p.CENTER, p.BOTTOM);
+        p.textSize(10);
+        p.text(ringLabels[i], cx, cy - rBase * r - 4);
       });
 
       // Physics: drift + bounce off walls + bubble collision
