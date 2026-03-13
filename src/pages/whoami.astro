@@ -4,7 +4,6 @@ import Base from '../layouts/Base.astro';
 
 <Base title="Who Am I">
   <div id="whoami-container">
-    <canvas id="whoami-canvas"></canvas>
     <div id="info-panel" class="hidden">
       <div id="info-close">✕</div>
       <div id="info-label"></div>
@@ -24,7 +23,7 @@ import Base from '../layouts/Base.astro';
     overflow: hidden;
     z-index: 9999;
   }
-  #whoami-canvas {
+  #whoami-container canvas {
     display: block;
     width: 100%;
     height: 100%;
@@ -147,7 +146,6 @@ import Base from '../layouts/Base.astro';
     p.setup = function() {
       canvas = p.createCanvas(p.windowWidth, p.windowHeight);
       canvas.parent('whoami-container');
-      canvas.id('whoami-canvas');
       p.textFont('Space Mono');
 
       // Initial positions: spread in a grid-ish pattern
