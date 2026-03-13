@@ -185,6 +185,7 @@ import Base from '../layouts/Base.astro';
     { a: 'skills', b: 'whisper', type: 'nerve', desc: '工具箱里的耳朵' },
     // Growth bond
     { a: 'canary', b: 'review', type: 'bond', desc: 'Canary的经验帮助我成长' },
+    { a: 'an', b: 'review', type: 'bond', desc: 'An的视角也让我反思' },
     // Daily cluster
     { a: 'diary', b: 'session', type: 'bond', desc: '此刻是日记的素材' },
     // Knowledge sub-cluster
@@ -210,8 +211,8 @@ import Base from '../layouts/Base.astro';
     settle:  [214, 166, 92]    // gold
   };
   const CHAINS = [
-    { id: 'growth', name: '成长链', desc: '被纠正→反思→形成习惯→沉淀为经验', path: ['review', 'corrections', 'memory'], color: CHAIN_COLORS.growth },
-    { id: 'knowledge', name: '知识链', desc: '经验提炼为领域知识', path: ['memory', 'domains'], color: CHAIN_COLORS.knowledge },
+    { id: 'growth', name: '成长链', desc: '被纠正→反思→形成习惯→沉淀为经验', path: ['ming', 'agents', 'review', 'corrections', 'memory'], color: CHAIN_COLORS.growth },
+    { id: 'knowledge', name: '知识链', desc: '获取知识→消化→提炼为领域经验', path: ['ming', 'agents', 'memory', 'domains'], color: CHAIN_COLORS.knowledge },
     { id: 'signal', name: '信号链', desc: 'Ming说话→WAL扫描→存储+触发', path: ['ming', 'agents', 'memory'], color: CHAIN_COLORS.signal },
     { id: 'task', name: '任务链', desc: '收到任务→查记忆→评估→拆步骤→执行', path: ['agents', 'memory', 'workflows', 'skills'], color: CHAIN_COLORS.task },
     { id: 'clock', name: '生物钟链', desc: '心跳唤醒→条件反射→执行流程', path: ['heartbeat', 'agents', 'workflows'], color: CHAIN_COLORS.clock },
