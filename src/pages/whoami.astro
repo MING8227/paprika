@@ -271,9 +271,9 @@ import Base from '../layouts/Base.astro';
       RINGS.forEach((r, i) => {
         if (i === 0) return;
         p.noFill();
-        p.stroke(255, 255, 255, 12);
-        p.strokeWeight(0.5);
-        p.drawingContext.setLineDash([4, 8]);
+        p.stroke(255, 255, 255, 35);
+        p.strokeWeight(0.8);
+        p.drawingContext.setLineDash([6, 10]);
         p.ellipse(cx, cy, rBase * r * 2, rBase * r * 2);
         p.drawingContext.setLineDash([]);
         // Ring label at top of each circle
@@ -352,6 +352,29 @@ import Base from '../layouts/Base.astro';
       }
       p.cursor(hoveredIdx >= 0 ? 'pointer' : 'default');
 
+      // Build node index map
+      const idxMap = {};
+      NODES.forEach((n, i) => idxMap[n.id] = i);
+
+      // Check edge hover (only when not hovering a bubble)
+      let hoveredEdgeIdx = -1;
+      if (hoveredIdx < 0) {
+        let minDist = 12; // pixel threshold
+        EDGES.forEach((edge, ei) => {
+          const ba = bubbles[idxMap[edge.a]];
+          const bb = bubbles[idxMap[edge.b]];
+          // Point-to-line-segment distance
+          const lx = bb.x - ba.x, ly = bb.y - ba.y;
+          const len2 = lx*lx + ly*ly;
+          if (len2 === 0) return;
+          let t = ((p.mouseX - ba.x)*lx + (p.mouseY - ba.y)*ly) / len2;
+          t = Math.max(0, Math.min(1, t));
+          const px = ba.x + t*lx, py = ba.y + t*ly;
+          const d = p.dist(p.mouseX, p.mouseY, px, py);
+          if (d < minDist) { minDist = d; hoveredEdgeIdx = ei; }
+        });
+      }
+
       // Build set of connected node ids for hovered bubble
       const highlightSet = new Set();
       if (hoveredIdx >= 0) {
@@ -364,8 +387,6 @@ import Base from '../layouts/Base.astro';
       }
 
       // Draw edges with typed styles
-      const idxMap = {};
-      NODES.forEach((n, i) => idxMap[n.id] = i);
       const fc = p.frameCount;
       EDGES.forEach((edge, edgeIdx) => {
         const ba = bubbles[idxMap[edge.a]];
@@ -373,18 +394,20 @@ import Base from '../layouts/Base.astro';
         const hid = hoveredIdx >= 0 ? bubbles[hoveredIdx].node.id : null;
         const isActive = hid && (edge.a === hid || edge.b === hid);
         const isChain = chainEdges.has(edgeIdx);
+        const isEdgeHovered = edgeIdx === hoveredEdgeIdx;
         const isDimmed = (hid && !isActive) || (selectedIdx >= 0 && !isChain && !isActive);
 
         // Style by type
         const [er, eg, eb] = EDGE_COLORS[edge.type];
+        const eHover = isEdgeHovered;
         if (edge.type === 'bone') {
-          p.stroke(er, eg, eb, isDimmed ? 15 : (isActive ? 240 : (isChain ? 200 : 100)));
-          p.strokeWeight(isDimmed ? 1 : (isActive ? 3 : (isChain ? 2.5 : 2.5)));
+          p.stroke(er, eg, eb, isDimmed ? 15 : (isActive || eHover ? 240 : (isChain ? 200 : 100)));
+          p.strokeWeight(isDimmed ? 1 : (isActive || eHover ? 3.5 : (isChain ? 2.5 : 2.5)));
           p.drawingContext.setLineDash([]);
           p.line(ba.x, ba.y, bb.x, bb.y);
         } else if (edge.type === 'blood') {
-          p.stroke(er, eg, eb, isDimmed ? 12 : (isActive ? 180 : (isChain ? 140 : 75)));
-          p.strokeWeight(isDimmed ? 0.5 : (isActive ? 2 : (isChain ? 1.5 : 1.5)));
+          p.stroke(er, eg, eb, isDimmed ? 12 : (isActive || eHover ? 180 : (isChain ? 140 : 75)));
+          p.strokeWeight(isDimmed ? 0.5 : (isActive || eHover ? 2.5 : (isChain ? 1.5 : 1.5)));
           p.drawingContext.setLineDash([6, 4]);
           p.line(ba.x, ba.y, bb.x, bb.y);
           p.drawingContext.setLineDash([]);
@@ -398,13 +421,13 @@ import Base from '../layouts/Base.astro';
             p.ellipse(px, py, 4, 4);
           }
         } else if (edge.type === 'nerve') {
-          p.stroke(er, eg, eb, isDimmed ? 12 : (isActive ? 170 : (isChain ? 120 : 70)));
-          p.strokeWeight(isDimmed ? 0.5 : (isActive ? 1.5 : (isChain ? 1.2 : 1)));
+          p.stroke(er, eg, eb, isDimmed ? 12 : (isActive || eHover ? 170 : (isChain ? 120 : 70)));
+          p.strokeWeight(isDimmed ? 0.5 : (isActive || eHover ? 2 : (isChain ? 1.2 : 1)));
           p.drawingContext.setLineDash([]);
           p.line(ba.x, ba.y, bb.x, bb.y);
         } else if (edge.type === 'bond') {
-          p.stroke(er, eg, eb, isDimmed ? 10 : (isActive ? 150 : (isChain ? 100 : 55)));
-          p.strokeWeight(isDimmed ? 0.5 : (isActive ? 1.2 : (isChain ? 1 : 0.8)));
+          p.stroke(er, eg, eb, isDimmed ? 10 : (isActive || eHover ? 150 : (isChain ? 100 : 55)));
+          p.strokeWeight(isDimmed ? 0.5 : (isActive || eHover ? 1.5 : (isChain ? 1 : 0.8)));
           p.drawingContext.setLineDash([3, 5]);
           p.line(ba.x, ba.y, bb.x, bb.y);
           p.drawingContext.setLineDash([]);
@@ -422,6 +445,31 @@ import Base from '../layouts/Base.astro';
           p.text(EDGE_TYPE_LABELS[edge.type], mx, my - 6);
         }
       });
+
+      // Edge hover tooltip
+      if (hoveredEdgeIdx >= 0) {
+        const edge = EDGES[hoveredEdgeIdx];
+        const [er, eg, eb] = EDGE_COLORS[edge.type];
+        const label = EDGE_TYPE_LABELS[edge.type] + '：' + EDGE_TYPE_DESC[edge.type];
+        const nodeA = NODES.find(n => n.id === edge.a).cname;
+        const nodeB = NODES.find(n => n.id === edge.b).cname;
+        const tooltipText = nodeA + ' → ' + nodeB;
+        
+        p.noStroke();
+        // Background
+        p.fill(30, 30, 28, 220);
+        const tw = Math.max(p.textWidth(label), p.textWidth(tooltipText)) + 16;
+        p.rect(p.mouseX + 12, p.mouseY - 30, tw, 36, 4);
+        // Type label
+        p.fill(er, eg, eb, 230);
+        p.textAlign(p.LEFT, p.TOP);
+        p.textSize(10);
+        p.text(label, p.mouseX + 20, p.mouseY - 26);
+        // Connection
+        p.fill(255, 255, 255, 160);
+        p.textSize(9);
+        p.text(tooltipText, p.mouseX + 20, p.mouseY - 12);
+      }
 
       // Draw bubbles
       for (let i = 0; i < bubbles.length; i++) {
