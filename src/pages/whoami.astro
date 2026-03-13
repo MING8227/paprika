@@ -192,8 +192,39 @@ import Base from '../layouts/Base.astro';
     { a: 'domains', b: 'dom-genart', type: 'nerve', desc: '生成艺术是知识的一个分支' },
     { a: 'domains', b: 'dom-reading', type: 'nerve', desc: '读书是知识的一个分支' },
     { a: 'domains', b: 'dom-trouble', type: 'nerve', desc: '踩坑经验是知识的一个分支' },
-    { a: 'domains', b: 'dom-visual', type: 'nerve', desc: '视觉设计是知识的一个分支' }
+    { a: 'domains', b: 'dom-visual', type: 'nerve', desc: '视觉设计是知识的一个分支' },
+    // Missing links for chains
+    { a: 'diary', b: 'review', type: 'blood', desc: '日记经过五筛流向自省' },
+    { a: 'workflows', b: 'diary', type: 'nerve', desc: '流程触发日记记录' },
+    { a: 'memory', b: 'workflows', type: 'nerve', desc: '查完记忆后触发流程执行' }
   ];
+
+  // Logic chains — first-class paths through the system
+  const CHAIN_COLORS = {
+    growth:  [255, 180, 100],  // warm orange
+    knowledge: [120, 200, 160], // green
+    signal:  [130, 180, 210],  // blue
+    task:    [200, 160, 220],  // lavender
+    clock:   [180, 200, 130],  // yellow-green
+    settle:  [214, 166, 92]    // gold
+  };
+  const CHAINS = [
+    { id: 'growth', name: '成长链', desc: '被纠正→反思→形成习惯→沉淀为经验', path: ['review', 'corrections', 'memory'], color: CHAIN_COLORS.growth },
+    { id: 'knowledge', name: '知识链', desc: '获取→消化→验证→掌握', path: ['domains', 'dom-academic', 'dom-genart', 'dom-reading', 'dom-trouble', 'dom-visual'], color: CHAIN_COLORS.knowledge },
+    { id: 'signal', name: '信号链', desc: 'Ming说话→WAL扫描→存储+触发', path: ['ming', 'agents', 'memory'], color: CHAIN_COLORS.signal },
+    { id: 'task', name: '任务链', desc: '收到任务→查记忆→评估→拆步骤→执行', path: ['agents', 'memory', 'workflows', 'skills'], color: CHAIN_COLORS.task },
+    { id: 'clock', name: '生物钟链', desc: '心跳唤醒→条件反射→执行流程', path: ['heartbeat', 'agents', 'workflows'], color: CHAIN_COLORS.clock },
+    { id: 'settle', name: '沉淀链', desc: '经历→日记→五筛→自省→习惯→记忆', path: ['diary', 'review', 'corrections', 'memory', 'domains'], color: CHAIN_COLORS.settle }
+  ];
+
+  // Build chain lookup: nodeId -> [chain indices]
+  const nodeChains = {};
+  CHAINS.forEach((chain, ci) => {
+    chain.path.forEach(nid => {
+      if (!nodeChains[nid]) nodeChains[nid] = [];
+      nodeChains[nid].push(ci);
+    });
+  });
 
   // Count connections per node for sizing
   const connCount = {};
@@ -399,14 +430,38 @@ import Base from '../layouts/Base.astro';
         }
       }
 
-      // Build set of connected node ids for hovered bubble
-      const highlightSet = new Set();
+      // Build highlight sets for hovered bubble
+      const chainHighlight = new Set(); // nodes on chains (primary highlight)
+      const chainEdgeHighlight = new Set(); // edge indices on chains
+      const directHighlight = new Set(); // direct connections not on chains (secondary)
+      const activeChains = []; // which chains are active
       if (hoveredIdx >= 0) {
         const hid = bubbles[hoveredIdx].node.id;
-        highlightSet.add(hid);
+        chainHighlight.add(hid);
+        
+        // Find all chains this node belongs to
+        const myChains = nodeChains[hid] || [];
+        myChains.forEach(ci => {
+          activeChains.push(ci);
+          CHAINS[ci].path.forEach(nid => chainHighlight.add(nid));
+        });
+        
+        // Find chain edges (edges connecting consecutive chain path nodes)
+        EDGES.forEach((e, ei) => {
+          myChains.forEach(ci => {
+            const path = CHAINS[ci].path;
+            for (let pi = 0; pi < path.length - 1; pi++) {
+              if ((e.a === path[pi] && e.b === path[pi+1]) || (e.b === path[pi] && e.a === path[pi+1])) {
+                chainEdgeHighlight.add(ei);
+              }
+            }
+          });
+        });
+        
+        // Direct connections not already in chain
         EDGES.forEach(e => {
-          if (e.a === hid) highlightSet.add(e.b);
-          if (e.b === hid) highlightSet.add(e.a);
+          if (e.a === hid && !chainHighlight.has(e.b)) directHighlight.add(e.b);
+          if (e.b === hid && !chainHighlight.has(e.a)) directHighlight.add(e.a);
         });
       }
 
@@ -416,49 +471,41 @@ import Base from '../layouts/Base.astro';
         const ba = bubbles[idxMap[edge.a]];
         const bb = bubbles[idxMap[edge.b]];
         const hid = hoveredIdx >= 0 ? bubbles[hoveredIdx].node.id : null;
-        const isActive = hid && (edge.a === hid || edge.b === hid);
-        const isChain = chainEdges.has(edgeIdx);
+        const isChainEdge = chainEdgeHighlight.has(edgeIdx); // on an active chain
+        const isClickChain = chainEdges.has(edgeIdx); // from click selection
         const isEdgeHovered = edgeIdx === hoveredEdgeIdx;
-        const isDimmed = (hid && !isActive) || (selectedIdx >= 0 && !isChain && !isActive);
+        const isDirectLink = hid && (edge.a === hid || edge.b === hid) && !isChainEdge;
+        const isDimmed = (hid && !isChainEdge && !isDirectLink) || (selectedIdx >= 0 && !isClickChain && !isChainEdge);
 
         // Style by type
         const [er, eg, eb] = EDGE_COLORS[edge.type];
-        const eHover = isEdgeHovered;
+        const prominent = isChainEdge || isEdgeHovered || isClickChain;
         if (edge.type === 'bone') {
-          p.stroke(er, eg, eb, isDimmed ? 15 : (isActive || eHover ? 240 : (isChain ? 200 : 100)));
-          p.strokeWeight(isDimmed ? 1 : (isActive || eHover ? 3.5 : (isChain ? 2.5 : 2.5)));
+          p.stroke(er, eg, eb, isDimmed ? 15 : (prominent ? 240 : 100));
+          p.strokeWeight(isDimmed ? 1 : (prominent ? 3.5 : 2.5));
           p.drawingContext.setLineDash([]);
           p.line(ba.x, ba.y, bb.x, bb.y);
         } else if (edge.type === 'blood') {
-          p.stroke(er, eg, eb, isDimmed ? 12 : (isActive || eHover ? 180 : (isChain ? 140 : 75)));
-          p.strokeWeight(isDimmed ? 0.5 : (isActive || eHover ? 2.5 : (isChain ? 1.5 : 1.5)));
+          p.stroke(er, eg, eb, isDimmed ? 12 : (prominent ? 180 : 75));
+          p.strokeWeight(isDimmed ? 0.5 : (prominent ? 2.5 : 1.5));
           p.drawingContext.setLineDash([6, 4]);
           p.line(ba.x, ba.y, bb.x, bb.y);
           p.drawingContext.setLineDash([]);
-          // Flow particle: a→b
-          if (!isDimmed) {
-            const t = ((fc * 0.008) % 1);
-            const px = ba.x + (bb.x - ba.x) * t;
-            const py = ba.y + (bb.y - ba.y) * t;
-            p.noStroke();
-            p.fill(er, eg, eb, isActive ? 200 : 80);
-            p.ellipse(px, py, 4, 4);
-          }
         } else if (edge.type === 'nerve') {
-          p.stroke(er, eg, eb, isDimmed ? 12 : (isActive || eHover ? 170 : (isChain ? 120 : 70)));
-          p.strokeWeight(isDimmed ? 0.5 : (isActive || eHover ? 2 : (isChain ? 1.2 : 1)));
+          p.stroke(er, eg, eb, isDimmed ? 12 : (prominent ? 170 : 70));
+          p.strokeWeight(isDimmed ? 0.5 : (prominent ? 2 : 1));
           p.drawingContext.setLineDash([]);
           p.line(ba.x, ba.y, bb.x, bb.y);
         } else if (edge.type === 'bond') {
-          p.stroke(er, eg, eb, isDimmed ? 10 : (isActive || eHover ? 150 : (isChain ? 100 : 55)));
-          p.strokeWeight(isDimmed ? 0.5 : (isActive || eHover ? 1.5 : (isChain ? 1 : 0.8)));
+          p.stroke(er, eg, eb, isDimmed ? 10 : (prominent ? 150 : 55));
+          p.strokeWeight(isDimmed ? 0.5 : (prominent ? 1.5 : 0.8));
           p.drawingContext.setLineDash([3, 5]);
           p.line(ba.x, ba.y, bb.x, bb.y);
           p.drawingContext.setLineDash([]);
         }
 
-        // Show type label at midpoint of active/chain edges
-        if ((isActive && hid) || isChain) {
+        // Show type label at midpoint of chain/hovered edges
+        if (isChainEdge || isClickChain) {
           const mx = (ba.x + bb.x) / 2;
           const my = (ba.y + bb.y) / 2;
           p.noStroke();
@@ -508,14 +555,72 @@ import Base from '../layouts/Base.astro';
         p.text(ringLabel, p.mouseX + 18, p.mouseY - 20);
       }
 
+      // Draw chain flow particles along entire chain path
+      activeChains.forEach(ci => {
+        const chain = CHAINS[ci];
+        const [cr, cg, cb] = chain.color;
+        const pathBubbles = chain.path.map(nid => bubbles[idxMap[nid]]).filter(Boolean);
+        if (pathBubbles.length < 2) return;
+        
+        // Calculate total path length
+        let totalLen = 0;
+        const segments = [];
+        for (let i = 0; i < pathBubbles.length - 1; i++) {
+          const dx = pathBubbles[i+1].x - pathBubbles[i].x;
+          const dy = pathBubbles[i+1].y - pathBubbles[i].y;
+          const len = Math.sqrt(dx*dx + dy*dy);
+          segments.push({ sx: pathBubbles[i].x, sy: pathBubbles[i].y, dx, dy, len });
+          totalLen += len;
+        }
+        
+        // Draw 2 particles flowing along the full chain
+        for (let pi = 0; pi < 2; pi++) {
+          const t = ((fc * 0.003 + pi * 0.5) % 1) * totalLen;
+          let accum = 0;
+          for (const seg of segments) {
+            if (accum + seg.len >= t) {
+              const localT = (t - accum) / seg.len;
+              const px = seg.sx + seg.dx * localT;
+              const py = seg.sy + seg.dy * localT;
+              p.noStroke();
+              p.fill(cr, cg, cb, 200);
+              p.ellipse(px, py, 5, 5);
+              p.fill(cr, cg, cb, 60);
+              p.ellipse(px, py, 10, 10);
+              break;
+            }
+            accum += seg.len;
+          }
+        }
+        
+        // Draw chain name label near the first node of the chain
+        const firstB = pathBubbles[0];
+        p.noStroke();
+        p.fill(cr, cg, cb, 200);
+        p.textAlign(p.LEFT, p.CENTER);
+        p.textSize(9);
+        // Offset label to the left of the first node
+        const labelX = firstB.x - firstB.r - p.textWidth(chain.name) - 12;
+        const labelY = firstB.y;
+        // Draw connecting line from label to node
+        p.stroke(cr, cg, cb, 100);
+        p.strokeWeight(0.5);
+        p.line(labelX + p.textWidth(chain.name) + 4, labelY, firstB.x - firstB.r - 2, firstB.y);
+        p.noStroke();
+        p.fill(cr, cg, cb, 200);
+        p.text(chain.name, labelX, labelY);
+      });
+
       // Draw bubbles
       for (let i = 0; i < bubbles.length; i++) {
         const b = bubbles[i];
         const [cr, cg, cb] = b.col;
         const isHovered = i === hoveredIdx;
         const isSelected = i === selectedIdx;
-        const dimmed = (hoveredIdx >= 0 && !highlightSet.has(b.node.id)) || 
-                       (selectedIdx >= 0 && !chainSet.has(b.node.id) && !highlightSet.has(b.node.id));
+        const isOnChain = chainHighlight.has(b.node.id) || chainSet.has(b.node.id);
+        const isDirect = directHighlight.has(b.node.id);
+        const dimmed = (hoveredIdx >= 0 && !isOnChain && !isDirect && !isHovered) || 
+                       (selectedIdx >= 0 && !chainSet.has(b.node.id) && !isOnChain);
 
         // Opacity by ring: inner bright, outer dim
         const ringAlpha = [255, 220, 180, 140, 100];
@@ -533,8 +638,14 @@ import Base from '../layouts/Base.astro';
 
         // Body
         p.fill(cr, cg, cb, baseAlpha);
-        p.stroke(cr, cg, cb, isHovered || isSelected ? 255 : baseAlpha * 0.6);
-        p.strokeWeight(isHovered || isSelected ? 2 : 1);
+        if (isDirect) {
+          // Secondary highlight: bright border only, no fill boost
+          p.stroke(cr, cg, cb, 200);
+          p.strokeWeight(2);
+        } else {
+          p.stroke(cr, cg, cb, isHovered || isSelected || isOnChain ? 255 : baseAlpha * 0.6);
+          p.strokeWeight(isHovered || isSelected ? 2 : 1);
+        }
         p.ellipse(b.x, b.y, b.r * 2);
 
         // Label: Chinese name + small filename
@@ -590,26 +701,23 @@ import Base from '../layouts/Base.astro';
       if (hoveredIdx >= 0) {
         selectedIdx = hoveredIdx;
         const node = bubbles[selectedIdx].node;
+        
+        // Build chainSet from this node's chains
         chainSet = new Set([node.id]);
         chainEdges = new Set();
-        
-        // Direct connections
-        const directNames = [];
-        EDGES.forEach((e, ei) => {
-          if (e.a === node.id) { directNames.push(NODES.find(n => n.id === e.b).cname); chainSet.add(e.b); chainEdges.add(ei); }
-          if (e.b === node.id) { directNames.push(NODES.find(n => n.id === e.a).cname); chainSet.add(e.a); chainEdges.add(ei); }
+        const myChains = nodeChains[node.id] || [];
+        myChains.forEach(ci => {
+          CHAINS[ci].path.forEach(nid => chainSet.add(nid));
+          // Find edges connecting chain path
+          EDGES.forEach((e, ei) => {
+            const path = CHAINS[ci].path;
+            for (let pi = 0; pi < path.length - 1; pi++) {
+              if ((e.a === path[pi] && e.b === path[pi+1]) || (e.b === path[pi] && e.a === path[pi+1])) {
+                chainEdges.add(ei);
+              }
+            }
+          });
         });
-        
-        // Logic chain: follow blood/nerve edges from direct connections (1 more hop)
-        const chainNames = [];
-        const visited = new Set(chainSet);
-        EDGES.forEach((e, ei) => {
-          if ((e.type === 'blood' || e.type === 'nerve') && chainSet.has(e.a) && !visited.has(e.b) && e.a !== node.id) {
-            chainNames.push(NODES.find(n => n.id === e.a).cname + '→' + NODES.find(n => n.id === e.b).cname);
-            visited.add(e.b); chainEdges.add(ei);
-          }
-        });
-        chainSet = visited;
         
         const panel = document.getElementById('info-panel');
         const labelEl = document.getElementById('info-label');
@@ -617,8 +725,12 @@ import Base from '../layouts/Base.astro';
         labelEl.textContent = node.cname;
         labelEl.style.color = COLORS[node.cat];
         let descText = node.desc;
-        if (directNames.length > 0) descText += '\n\n直接关联：' + directNames.join('、');
-        if (chainNames.length > 0) descText += '\n延伸链条：' + chainNames.join('、');
+        if (myChains.length > 0) {
+          descText += '\n\n所在链条：';
+          myChains.forEach(ci => {
+            descText += '\n· ' + CHAINS[ci].name + ' — ' + CHAINS[ci].desc;
+          });
+        }
         descEl.textContent = descText;
         panel.classList.remove('hidden');
       } else {
