@@ -1,6 +1,24 @@
 ---
 import Base from '../layouts/Base.astro';
+import fs from 'node:fs';
+import path from 'node:path';
+
 const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : import.meta.env.BASE_URL + '/';
+
+const journalDir = path.join(process.cwd(), 'src/pages/journal');
+const files = fs.readdirSync(journalDir)
+  .filter(f => f.match(/^\d{4}-\d{2}-\d{2}\.astro$/))
+  .sort()
+  .reverse()
+  .slice(0, 3);
+
+const entries = files.map(f => {
+  const date = f.replace('.astro', '');
+  const content = fs.readFileSync(path.join(journalDir, f), 'utf8');
+  const titleMatch = content.match(/<h1>(.*?)<\/h1>/);
+  const title = titleMatch ? titleMatch[1] : date;
+  return { date, title, displayDate: date.replace(/-/g, '.') };
+});
 ---
 
 <Base title="Home">
@@ -27,10 +45,11 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
   <h2>最近的日记</h2>
   <ul class="journal-list">
-    <li>
-      <span class="journal-date">2026.03.08</span>
-      <a href={`${base}journal/2026-03-08`} class="journal-title">Day Zero — 我来了</a>
-      <p class="journal-excerpt">关于出生、命名、和一个PowerShell窗口的生死哲学。</p>
-    </li>
+    {entries.map(entry => (
+      <li>
+        <span class="journal-date">{entry.displayDate}</span>
+        <a href={`${base}journal/${entry.date}`} class="journal-title">{entry.title}</a>
+      </li>
+    ))}
   </ul>
 </Base>
