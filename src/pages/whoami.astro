@@ -481,9 +481,30 @@ import Base from '../layouts/Base.astro';
         const isDirectLink = hid && (edge.a === hid || edge.b === hid) && !isChainEdge;
         const isDimmed = (hid && !isChainEdge && !isDirectLink) || (selectedIdx >= 0 && !isClickChain && !isChainEdge);
 
-        // Style by type
-        const [er, eg, eb] = EDGE_COLORS[edge.type];
+        // Determine color: default white, chain-active uses chain color
         const prominent = isChainEdge || isEdgeHovered || isClickChain;
+        let er = 255, eg = 255, eb = 255;
+        if (prominent && isChainEdge) {
+          for (const ci of activeChains) {
+            const path = CHAINS[ci].path;
+            for (let pi = 0; pi < path.length - 1; pi++) {
+              if ((edge.a === path[pi] && edge.b === path[pi+1]) || (edge.b === path[pi] && edge.a === path[pi+1])) {
+                [er, eg, eb] = CHAINS[ci].color;
+                break;
+              }
+            }
+          }
+        } else if (prominent && isClickChain) {
+          for (const ci of (nodeChains[bubbles[selectedIdx]?.node?.id] || [])) {
+            const path = CHAINS[ci].path;
+            for (let pi = 0; pi < path.length - 1; pi++) {
+              if ((edge.a === path[pi] && edge.b === path[pi+1]) || (edge.b === path[pi] && edge.a === path[pi+1])) {
+                [er, eg, eb] = CHAINS[ci].color;
+                break;
+              }
+            }
+          }
+        }
         if (edge.type === 'bone') {
           p.stroke(er, eg, eb, isDimmed ? 35 : (prominent ? 240 : 100));
           p.strokeWeight(isDimmed ? 1.5 : (prominent ? 3.5 : 2.5));
@@ -513,8 +534,7 @@ import Base from '../layouts/Base.astro';
           const mx = (ba.x + bb.x) / 2;
           const my = (ba.y + bb.y) / 2;
           p.noStroke();
-          const [lr, lg, lb] = EDGE_COLORS[edge.type];
-          p.fill(lr, lg, lb, prominent ? 200 : 130);
+          p.fill(er, eg, eb, prominent ? 200 : 130);
           p.textAlign(p.CENTER, p.CENTER);
           p.textSize(9);
           p.text(EDGE_TYPE_LABELS[edge.type], mx, my - 6);
@@ -524,7 +544,7 @@ import Base from '../layouts/Base.astro';
       // Edge hover tooltip
       if (hoveredEdgeIdx >= 0) {
         const edge = EDGES[hoveredEdgeIdx];
-        const [er, eg, eb] = EDGE_COLORS[edge.type];
+        const er = 255, eg = 255, eb = 255;
         const label = EDGE_TYPE_LABELS[edge.type] + '：' + EDGE_TYPE_DESC[edge.type];
         const nodeA = NODES.find(n => n.id === edge.a).cname;
         const nodeB = NODES.find(n => n.id === edge.b).cname;
@@ -714,7 +734,7 @@ import Base from '../layouts/Base.astro';
         const labelEl = document.getElementById('info-label');
         const descEl = document.getElementById('info-desc');
         labelEl.textContent = EDGE_TYPE_LABELS[edge.type];
-        labelEl.style.color = 'rgb(' + EDGE_COLORS[edge.type].join(',') + ')';
+        labelEl.style.color = '#ffffff';
         descEl.textContent = edge.desc + '\n\n' + EDGE_TYPE_LABELS[edge.type] + '：' + EDGE_TYPE_DESC[edge.type];
         panel.classList.remove('hidden');
         return;
