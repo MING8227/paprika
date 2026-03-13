@@ -360,7 +360,7 @@ import Base from '../layouts/Base.astro';
       // Check edge hover (only when not hovering a bubble)
       hoveredEdgeIdx = -1;
       if (hoveredIdx < 0) {
-        let minDist = 12; // pixel threshold
+        let minDist = 16; // pixel threshold for edge hover
         EDGES.forEach((edge, ei) => {
           const ba = bubbles[idxMap[edge.a]];
           const bb = bubbles[idxMap[edge.b]];
@@ -456,20 +456,20 @@ import Base from '../layouts/Base.astro';
         const nodeB = NODES.find(n => n.id === edge.b).cname;
         const tooltipText = nodeA + ' → ' + nodeB;
         
+        p.textSize(10);
         p.noStroke();
         // Background
-        p.fill(30, 30, 28, 220);
-        const tw = Math.max(p.textWidth(label), p.textWidth(tooltipText)) + 16;
-        p.rect(p.mouseX + 12, p.mouseY - 30, tw, 36, 4);
+        p.fill(30, 30, 28, 230);
+        const tw = Math.max(p.textWidth(label), p.textWidth(tooltipText)) + 20;
+        p.rect(p.mouseX + 10, p.mouseY - 34, tw, 40, 6);
         // Type label
-        p.fill(er, eg, eb, 230);
+        p.fill(er, eg, eb, 240);
         p.textAlign(p.LEFT, p.TOP);
-        p.textSize(10);
-        p.text(label, p.mouseX + 20, p.mouseY - 26);
+        p.text(label, p.mouseX + 18, p.mouseY - 30);
         // Connection
-        p.fill(255, 255, 255, 160);
+        p.fill(255, 255, 255, 180);
         p.textSize(9);
-        p.text(tooltipText, p.mouseX + 20, p.mouseY - 12);
+        p.text(tooltipText, p.mouseX + 18, p.mouseY - 14);
       }
 
       // Draw bubbles
