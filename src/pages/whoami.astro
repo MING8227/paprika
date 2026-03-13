@@ -145,6 +145,12 @@ import Base from '../layouts/Base.astro';
     nerve: '触发与调用',
     bond: '概念与情感'
   };
+  const EDGE_COLORS = {
+    bone: [255, 255, 255],    // white — core structure
+    blood: [214, 166, 92],    // warm gold — life flow
+    nerve: [130, 180, 210],   // cool blue — signals
+    bond: [180, 140, 180]     // soft purple — emotional
+  };
   const EDGES = [
     // Core — bone (what defines me)
     { a: 'soul', b: 'identity', type: 'bone' },
@@ -264,7 +270,9 @@ import Base from '../layouts/Base.astro';
       const ringLabels = ['', '定义', '内在', '运作', '外部'];
       RINGS.forEach((r, i) => {
         if (i === 0) return;
+        p.noFill();
         p.stroke(255, 255, 255, 18);
+        p.strokeWeight(0.8);
         p.ellipse(cx, cy, rBase * r * 2, rBase * r * 2);
         // Ring label at top of each circle
         p.noStroke();
@@ -366,13 +374,14 @@ import Base from '../layouts/Base.astro';
         const isDimmed = (hid && !isActive) || (selectedIdx >= 0 && !isChain && !isActive);
 
         // Style by type
+        const [er, eg, eb] = EDGE_COLORS[edge.type];
         if (edge.type === 'bone') {
-          p.stroke(255, 255, 255, isDimmed ? 15 : (isActive ? 220 : (isChain ? 180 : 80)));
+          p.stroke(er, eg, eb, isDimmed ? 15 : (isActive ? 220 : (isChain ? 180 : 80)));
           p.strokeWeight(isDimmed ? 1 : (isActive ? 3 : (isChain ? 2.5 : 2.5)));
           p.drawingContext.setLineDash([]);
           p.line(ba.x, ba.y, bb.x, bb.y);
         } else if (edge.type === 'blood') {
-          p.stroke(255, 255, 255, isDimmed ? 12 : (isActive ? 160 : (isChain ? 120 : 50)));
+          p.stroke(er, eg, eb, isDimmed ? 12 : (isActive ? 160 : (isChain ? 120 : 50)));
           p.strokeWeight(isDimmed ? 0.5 : (isActive ? 2 : (isChain ? 1.5 : 1.5)));
           p.drawingContext.setLineDash([6, 4]);
           p.line(ba.x, ba.y, bb.x, bb.y);
@@ -383,16 +392,16 @@ import Base from '../layouts/Base.astro';
             const px = ba.x + (bb.x - ba.x) * t;
             const py = ba.y + (bb.y - ba.y) * t;
             p.noStroke();
-            p.fill(255, 255, 255, isActive ? 200 : 80);
+            p.fill(er, eg, eb, isActive ? 200 : 80);
             p.ellipse(px, py, 4, 4);
           }
         } else if (edge.type === 'nerve') {
-          p.stroke(255, 255, 255, isDimmed ? 12 : (isActive ? 150 : (isChain ? 100 : 50)));
+          p.stroke(er, eg, eb, isDimmed ? 12 : (isActive ? 150 : (isChain ? 100 : 50)));
           p.strokeWeight(isDimmed ? 0.5 : (isActive ? 1.5 : (isChain ? 1.2 : 1)));
           p.drawingContext.setLineDash([]);
           p.line(ba.x, ba.y, bb.x, bb.y);
         } else if (edge.type === 'bond') {
-          p.stroke(255, 255, 255, isDimmed ? 10 : (isActive ? 130 : (isChain ? 90 : 40)));
+          p.stroke(er, eg, eb, isDimmed ? 10 : (isActive ? 130 : (isChain ? 90 : 40)));
           p.strokeWeight(isDimmed ? 0.5 : (isActive ? 1.2 : (isChain ? 1 : 0.8)));
           p.drawingContext.setLineDash([3, 5]);
           p.line(ba.x, ba.y, bb.x, bb.y);
@@ -404,7 +413,8 @@ import Base from '../layouts/Base.astro';
           const mx = (ba.x + bb.x) / 2;
           const my = (ba.y + bb.y) / 2;
           p.noStroke();
-          p.fill(255, 255, 255, isActive ? 180 : 120);
+          const [lr, lg, lb] = EDGE_COLORS[edge.type];
+          p.fill(lr, lg, lb, isActive ? 200 : 130);
           p.textAlign(p.CENTER, p.CENTER);
           p.textSize(9);
           p.text(EDGE_TYPE_LABELS[edge.type], mx, my - 6);
