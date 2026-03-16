@@ -201,32 +201,39 @@ import Base from '../../layouts/Base.astro';
     }
   </script>
   <script is:inline>
-    // Complement Flow — instance mode, real-time flowing particles
+    // Complement Flow — "breathing painting" version
+    // Draw full composition first, then continuously add new strokes
+    // while fading old ones — the painting is always alive
     new p5(function(p) {
       var palette = [
-        { h: 8,   s: 58, b: 72 },  // pepper red
-        { h: 188, s: 55, b: 62 },  // teal
-        { h: 38,  s: 56, b: 75 },  // amber
-        { h: 222, s: 52, b: 60 },  // blue-violet
+        { h: 8,   s: 58, b: 72 },
+        { h: 188, s: 55, b: 62 },
+        { h: 38,  s: 56, b: 75 },
+        { h: 222, s: 52, b: 60 },
       ];
       var W = 580, H = 580;
       var scl = 20;
       var cols, rows;
-      var particles = [];
+      var flowField;
       var regions = [];
-      var zOff = 0;
-      var NUM_PARTICLES = 250;
+      var zOff;
+      var particles = [];
+      var NUM_PARTICLES = 800;
+      var initDone = false;
 
       p.setup = function() {
         var cnv = p.createCanvas(W, H);
         cnv.parent('complement-flow');
         p.colorMode(p.HSB, 360, 100, 100, 100);
         p.pixelDensity(1);
+        p.frameRate(30);
 
         cols = p.floor(W / scl);
         rows = p.floor(H / scl);
+        flowField = new Array(cols * rows);
+        zOff = p.random(1000);
 
-        // Create regions for color clumping
+        // Create regions
         var regionCount = p.floor(p.random(4, 7));
         for (var i = 0; i < regionCount; i++) {
           regions.push({
@@ -238,13 +245,70 @@ import Base from '../../layouts/Base.astro';
           });
         }
 
-        // Init particles
+        updateFlowField();
+
+        // Draw initial full composition (like static version)
+        p.background(188, 15, 45);
+
+        // Layer 1: background washes
+        p.noStroke();
+        for (var ri = 0; ri < regions.length; ri++) {
+          var reg = regions[ri];
+          var c = palette[reg.colorIdx];
+          for (var i = 0; i < 500; i++) {
+            var ang = p.random(p.TAU);
+            var d = p.random(reg.r * 1.2);
+            var px = reg.x + p.cos(ang) * d + p.random(-25, 25);
+            var py = reg.y + p.sin(ang) * d + p.random(-25, 25);
+            var sz = p.random(12, 40);
+            var alpha = p.map(d, 0, reg.r, 12, 3) * reg.strength;
+            p.fill(c.h + p.random(-8, 8), c.s * p.random(0.6, 1), c.b * p.random(0.7, 1.1), alpha);
+            p.ellipse(px, py, sz, sz);
+          }
+        }
+
+        // Layer 2: initial flow particles
+        for (var i = 0; i < 1500; i++) {
+          var x = p.random(W);
+          var y = p.random(H);
+          var ci = pickColor(x, y);
+          var c = palette[ci];
+          var hShift = p.random(-10, 10);
+          var sShift = p.random(-10, 8);
+          var bShift = p.random(-8, 8);
+          var px = x, py = y;
+          var steps = p.floor(p.random(20, 80));
+          for (var s = 0; s < steps; s++) {
+            var col = p.floor(px / scl);
+            var row = p.floor(py / scl);
+            if (col < 0 || col >= cols || row < 0 || row >= rows) break;
+            var v = flowField[col + row * cols];
+            px += v.x * 2;
+            py += v.y * 2;
+            var alpha = p.map(s, 0, steps, 16, 3);
+            var w = p.map(s, 0, steps, 2.5, 0.5);
+            p.stroke((c.h + hShift + 360) % 360, p.constrain(c.s + sShift, 45, 60), p.constrain(c.b + bShift, 50, 78), alpha);
+            p.strokeWeight(w);
+            p.point(px, py);
+          }
+        }
+
+        // Init continuous particles
         for (var i = 0; i < NUM_PARTICLES; i++) {
           particles.push(makeParticle());
         }
 
-        p.background(188, 15, 45);
+        initDone = true;
       };
+
+      function updateFlowField() {
+        for (var y = 0; y < rows; y++) {
+          for (var x = 0; x < cols; x++) {
+            var angle = p.noise(x * 0.06, y * 0.06, zOff) * p.TAU * 2.5;
+            flowField[x + y * cols] = { x: p.cos(angle), y: p.sin(angle) };
+          }
+        }
+      }
 
       function makeParticle() {
         var x = p.random(W);
@@ -253,6 +317,8 @@ import Base from '../../layouts/Base.astro';
         var c = palette[ci];
         return {
           x: x, y: y,
+          life: 0,
+          maxLife: p.floor(p.random(40, 120)),
           h: (c.h + p.random(-10, 10) + 360) % 360,
           s: p.constrain(c.s + p.random(-10, 8), 45, 60),
           b: p.constrain(c.b + p.random(-8, 8), 50, 78)
@@ -261,8 +327,8 @@ import Base from '../../layouts/Base.astro';
 
       function pickColor(x, y) {
         var weights = [0.1, 0.1, 0.1, 0.1];
-        for (var r = 0; r < regions.length; r++) {
-          var reg = regions[r];
+        for (var i = 0; i < regions.length; i++) {
+          var reg = regions[i];
           var d = p.dist(x, y, reg.x, reg.y);
           if (d < reg.r) {
             var w = p.map(d, 0, reg.r, reg.strength, 0);
@@ -281,40 +347,39 @@ import Base from '../../layouts/Base.astro';
       }
 
       p.draw = function() {
-        // Fade trail
+        if (!initDone) return;
+
+        // Very subtle fade — painting breathes slowly
         p.noStroke();
-        p.fill(188, 15, 45, 5);
+        p.fill(188, 15, 45, 2);
         p.rect(0, 0, W, H);
 
-        zOff += 0.003;
+        // Evolve flow field
+        zOff += 0.002;
+        updateFlowField();
 
+        // Draw continuous particles — they replenish the painting
         for (var i = 0; i < particles.length; i++) {
           var pt = particles[i];
-
-          // Flow field angle from noise
           var col = p.floor(pt.x / scl);
           var row = p.floor(pt.y / scl);
-          if (col < 0 || col >= cols || row < 0 || row >= rows) {
+
+          if (col < 0 || col >= cols || row < 0 || row >= rows || pt.life > pt.maxLife) {
             particles[i] = makeParticle();
             continue;
           }
 
-          var angle = p.noise(col * 0.06, row * 0.06, zOff) * p.TAU * 2.5;
-          var vx = p.cos(angle) * 2;
-          var vy = p.sin(angle) * 2;
+          var v = flowField[col + row * cols];
+          pt.x += v.x * 1.5;
+          pt.y += v.y * 1.5;
+          pt.life++;
 
-          pt.x += vx;
-          pt.y += vy;
+          var alpha = p.map(pt.life, 0, pt.maxLife, 14, 3);
+          var w = p.map(pt.life, 0, pt.maxLife, 2, 0.5);
 
-          // Draw particle
-          p.noStroke();
-          p.fill(pt.h, pt.s, pt.b, 35);
-          p.ellipse(pt.x, pt.y, 3, 3);
-
-          // Boundary check — reset
-          if (pt.x < 0 || pt.x > W || pt.y < 0 || pt.y > H) {
-            particles[i] = makeParticle();
-          }
+          p.stroke(pt.h, pt.s, pt.b, alpha);
+          p.strokeWeight(w);
+          p.point(pt.x, pt.y);
         }
       };
     }, 'complement-flow');
