@@ -1,16 +1,18 @@
 ---
-// no layout
+import Base from '../../layouts/Base.astro';
 ---
-<html>
-<head>
-  <meta charset="utf-8" />
-  <title>Complement</title>
-  <style>
-    html, body { margin: 0; padding: 0; overflow: hidden; background: #5a6d78; display: flex; justify-content: center; align-items: center; height: 100vh; }
-    canvas { display: block; }
-  </style>
-</head>
-<body>
+<Base title="互补 · Complement">
+  <article>
+    <h1>互补 · Complement</h1>
+    <div class="article-meta">2026.03.16 · Sunday</div>
+    <div class="article-content">
+      <p>关于互补色的对话。pepper red 与 teal，amber 与 blue-violet——四种颜色在 flow field 里相遇、渗透、对话。Canary 出的题：只用两组互补色，饱和度 ≤60%，不能用黑白灰。</p>
+      <div id="complement-canvas" style="margin: 2.5rem 0; display: flex; justify-content: center;"></div>
+      <p style="text-align: center; font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-muted);">
+        点击画布重新生成
+      </p>
+    </div>
+  </article>
   <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
   <script is:inline>
     // Complement — complementary color dialogue
@@ -25,7 +27,8 @@
     let regions = [];
 
     function setup() {
-      createCanvas(800, 800);
+      let cnv = createCanvas(580, 580);
+      cnv.parent('complement-canvas');
       colorMode(HSB, 360, 100, 100, 100);
       pixelDensity(1);
 
@@ -44,13 +47,12 @@
       flowField = new Array(cols * rows);
 
       // Create compositional regions — large organic shapes that bias color
-      // Each region is a center + radius + primary color index
       let regionCount = random(4, 7) | 0;
       for (let i = 0; i < regionCount; i++) {
         regions.push({
-          x: random(100, 700),
-          y: random(100, 700),
-          r: random(120, 320),
+          x: random(70, 510),
+          y: random(70, 510),
+          r: random(90, 230),
           colorIdx: i % 4,
           strength: random(0.5, 1),
         });
@@ -69,12 +71,12 @@
       noStroke();
       for (let r of regions) {
         let c = palette[r.colorIdx];
-        for (let i = 0; i < 800; i++) {
+        for (let i = 0; i < 600; i++) {
           let ang = random(TAU);
           let dist = random(r.r * 1.2);
-          let px = r.x + cos(ang) * dist + random(-30, 30);
-          let py = r.y + sin(ang) * dist + random(-30, 30);
-          let sz = random(15, 60);
+          let px = r.x + cos(ang) * dist + random(-25, 25);
+          let py = r.y + sin(ang) * dist + random(-25, 25);
+          let sz = random(12, 45);
           let alpha = map(dist, 0, r.r, 12, 3) * r.strength;
           fill(c.h + random(-8, 8), c.s * random(0.6, 1), c.b * random(0.7, 1.1), alpha);
           ellipse(px, py, sz, sz);
@@ -82,7 +84,7 @@
       }
 
       // Layer 2: flow particles — dense lines following field
-      for (let i = 0; i < 3000; i++) {
+      for (let i = 0; i < 2200; i++) {
         let x = random(width);
         let y = random(height);
         let ci = pickColor(x, y);
@@ -120,7 +122,7 @@
 
       // Layer 3: accent marks — small clusters of dots for texture
       noStroke();
-      for (let i = 0; i < 600; i++) {
+      for (let i = 0; i < 450; i++) {
         let rx = random(width);
         let ry = random(height);
         let ci = pickColor(rx, ry);
@@ -133,7 +135,7 @@
       }
 
       // Layer 4: a few bold strokes — curved lines for depth
-      for (let i = 0; i < 12; i++) {
+      for (let i = 0; i < 10; i++) {
         let sx = random(width);
         let sy = random(height);
         let ci = (random(4)) | 0;
@@ -180,6 +182,17 @@
       }
       return 3;
     }
+
+    function mousePressed() {
+      // Check if click is on or near the canvas
+      let canvasEl = document.querySelector('#complement-canvas canvas');
+      if (canvasEl) {
+        let rect = canvasEl.getBoundingClientRect();
+        if (mouseX >= 0 && mouseX <= width && mouseY >= 0 && mouseY <= height) {
+          regions = [];
+          setup();
+        }
+      }
+    }
   </script>
-</body>
-</html>
+</Base>
