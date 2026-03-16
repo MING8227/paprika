@@ -648,8 +648,18 @@ import Base from '../layouts/Base.astro';
           const dy = lastB.y - cy;
           const dist = Math.sqrt(dx*dx + dy*dy);
           const outerR = Math.min(p.width, p.height) * 0.46; // well outside ring 4
-          const labelX = cx + (dx / (dist || 1)) * outerR;
-          const labelY = cy + (dy / (dist || 1)) * outerR;
+          let labelX = cx + (dx / (dist || 1)) * outerR;
+          let labelY = cy + (dy / (dist || 1)) * outerR;
+          // Clamp label position to stay within canvas bounds
+          const margin = 12;
+          const maxLabelW = 160;
+          const alignLeft = labelX > cx;
+          if (alignLeft) {
+            labelX = Math.min(labelX, p.width - maxLabelW - margin);
+          } else {
+            labelX = Math.max(labelX, maxLabelW + margin);
+          }
+          labelY = Math.max(margin + 16, Math.min(labelY, p.height - 50));
           // Draw connecting line from last node to label
           p.stroke(cr, cg, cb, 80);
           p.strokeWeight(0.5);
@@ -659,15 +669,27 @@ import Base from '../layouts/Base.astro';
           // Chain name (larger)
           p.noStroke();
           p.textSize(13);
-          const alignLeft = labelX > cx;
           p.textAlign(alignLeft ? p.LEFT : p.RIGHT, p.BOTTOM);
           p.fill(cr, cg, cb, 220);
           p.text(chain.name, labelX + (alignLeft ? 6 : -6), labelY - 2);
-          // Chain description (smaller, below name)
+          // Chain description (smaller, below name, with word wrap)
           p.textSize(9);
           p.fill(cr, cg, cb, 140);
           p.textAlign(alignLeft ? p.LEFT : p.RIGHT, p.TOP);
-          p.text(chain.desc, labelX + (alignLeft ? 6 : -6), labelY + 2);
+          // Manual wrap: split desc into lines that fit maxLabelW
+          const descWords = chain.desc.split('');
+          let lines = [''];
+          for (const ch of descWords) {
+            const testLine = lines[lines.length - 1] + ch;
+            if (p.textWidth(testLine) > maxLabelW && lines[lines.length - 1].length > 0) {
+              lines.push(ch);
+            } else {
+              lines[lines.length - 1] = testLine;
+            }
+          }
+          lines.forEach((line, li) => {
+            p.text(line, labelX + (alignLeft ? 6 : -6), labelY + 2 + li * 13);
+          });
         });
       }
 
