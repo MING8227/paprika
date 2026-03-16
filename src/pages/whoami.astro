@@ -652,7 +652,7 @@ import Base from '../layouts/Base.astro';
           let labelX = cx + (dx / (dist || 1)) * outerR;
           let labelY = cy + (dy / (dist || 1)) * outerR;
           // Per-chain manual offsets to avoid overlap
-          const chainOffsets = { growth: { x: -40, y: 0 }, settle: { x: 0, y: 40 } };
+          const chainOffsets = { growth: { x: 30, y: 50 }, settle: { x: 0, y: 80 } };
           const off = chainOffsets[chain.id];
           if (off) { labelX += off.x; labelY += off.y; }
           // Clamp label position to stay within canvas bounds
