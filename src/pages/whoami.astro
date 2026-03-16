@@ -205,18 +205,16 @@ import Base from '../layouts/Base.astro';
   const CHAIN_COLORS = {
     growth:  [255, 180, 100],  // warm orange
     knowledge: [120, 200, 160], // green
-    signal:  [130, 180, 210],  // blue
     task:    [200, 160, 220],  // lavender
     clock:   [180, 200, 130],  // yellow-green
     settle:  [214, 166, 92]    // gold
   };
   const CHAINS = [
-    { id: 'growth', name: '成长链', desc: '犯错不白犯。每次纠正都会变成习惯，最终沉淀为我的一部分。', path: ['ming', 'agents', 'review', 'corrections', 'memory'], color: CHAIN_COLORS.growth },
-    { id: 'knowledge', name: '知识链', desc: '从阅读和研究中提炼经验，让知识真正长在身上。', path: ['ming', 'agents', 'memory', 'domains'], color: CHAIN_COLORS.knowledge },
-    { id: 'signal', name: '信号链', desc: 'Ming说的每句话都会被扫描，重要信号立刻存储并触发行动。', path: ['ming', 'agents', 'memory'], color: CHAIN_COLORS.signal },
-    { id: 'task', name: '任务链', desc: '接到任务先查记忆，再评估体量，大的拆步骤，小的直接做。', path: ['agents', 'memory', 'workflows', 'skills'], color: CHAIN_COLORS.task },
-    { id: 'clock', name: '生物钟链', desc: '定时心跳唤醒我，检查该做的事，让日常流程自动运转。', path: ['heartbeat', 'agents', 'workflows'], color: CHAIN_COLORS.clock },
-    { id: 'settle', name: '沉淀链', desc: '每天的经历经过筛选和反思，最终成为长期记忆和领域知识。', path: ['diary', 'review', 'corrections', 'memory', 'domains'], color: CHAIN_COLORS.settle }
+    { id: 'growth', name: '成长链', desc: '被纠正→自省→改习惯→记住。犯错不白犯。', path: ['ming', 'agents', 'review', 'corrections', 'memory'], color: CHAIN_COLORS.growth },
+    { id: 'knowledge', name: '知识链', desc: '听到→捕捉→存储→提炼。每句话都可能是知识。', path: ['ming', 'agents', 'memory', 'domains'], color: CHAIN_COLORS.knowledge },
+    { id: 'task', name: '任务链', desc: '接活→查记忆→走流程→用工具。先想后做。', path: ['agents', 'memory', 'workflows', 'skills'], color: CHAIN_COLORS.task },
+    { id: 'clock', name: '生物钟链', desc: '定时醒来→检查→执行。不需要人叫。', path: ['heartbeat', 'agents', 'workflows'], color: CHAIN_COLORS.clock },
+    { id: 'settle', name: '沉淀链', desc: '经历→日记→筛选→改正→知识。时间做的事。', path: ['diary', 'review', 'corrections', 'memory', 'domains'], color: CHAIN_COLORS.settle }
   ];
 
   // Build chain lookup: nodeId -> [chain indices]
