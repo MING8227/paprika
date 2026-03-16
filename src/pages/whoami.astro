@@ -651,6 +651,10 @@ import Base from '../layouts/Base.astro';
           const outerR = Math.min(p.width, p.height) * 0.46; // well outside ring 4
           let labelX = cx + (dx / (dist || 1)) * outerR;
           let labelY = cy + (dy / (dist || 1)) * outerR;
+          // Per-chain manual offsets to avoid overlap
+          const chainOffsets = { growth: { x: -40, y: 0 }, settle: { x: 0, y: 40 } };
+          const off = chainOffsets[chain.id];
+          if (off) { labelX += off.x; labelY += off.y; }
           // Clamp label position to stay within canvas bounds
           const margin = 12;
           const maxLabelW = 160;
@@ -660,16 +664,15 @@ import Base from '../layouts/Base.astro';
           } else {
             labelX = Math.max(labelX, maxLabelW + margin);
           }
-          labelY = Math.max(margin + 16, Math.min(labelY, p.height - 50));
+          labelY = Math.max(margin + 16, Math.min(labelY, p.height - 60));
           // Collision avoidance: push labels apart vertically
-          const labelH = 22; // just chain name, no desc
+          const labelH = 40; // name + desc height
           for (const prev of placedLabels) {
             const overlapX = Math.abs(labelX - prev.x) < maxLabelW;
             const overlapY = Math.abs(labelY - prev.y) < labelH;
             if (overlapX && overlapY) {
-              // Push this label down
               labelY = prev.y + labelH;
-              labelY = Math.min(labelY, p.height - 50);
+              labelY = Math.min(labelY, p.height - 60);
             }
           }
           placedLabels.push({ x: labelX, y: labelY });
@@ -679,12 +682,29 @@ import Base from '../layouts/Base.astro';
           p.drawingContext.setLineDash([3, 5]);
           p.line(lastB.x, lastB.y, labelX, labelY);
           p.drawingContext.setLineDash([]);
-          // Chain name only (short, no desc on canvas — desc goes to info panel)
+          // Chain name
           p.noStroke();
-          p.textSize(11);
-          p.textAlign(alignLeft ? p.LEFT : p.RIGHT, p.CENTER);
-          p.fill(cr, cg, cb, 200);
-          p.text(chain.name, labelX + (alignLeft ? 6 : -6), labelY);
+          p.textSize(12);
+          p.textAlign(alignLeft ? p.LEFT : p.RIGHT, p.BOTTOM);
+          p.fill(cr, cg, cb, 220);
+          p.text(chain.name, labelX + (alignLeft ? 6 : -6), labelY - 2);
+          // Chain description (with word wrap)
+          p.textSize(9);
+          p.fill(cr, cg, cb, 140);
+          p.textAlign(alignLeft ? p.LEFT : p.RIGHT, p.TOP);
+          const descChars = chain.desc.split('');
+          let lines = [''];
+          for (const ch of descChars) {
+            const testLine = lines[lines.length - 1] + ch;
+            if (p.textWidth(testLine) > maxLabelW && lines[lines.length - 1].length > 0) {
+              lines.push(ch);
+            } else {
+              lines[lines.length - 1] = testLine;
+            }
+          }
+          lines.forEach((line, li) => {
+            p.text(line, labelX + (alignLeft ? 6 : -6), labelY + 2 + li * 12);
+          });
         });
       }
 
