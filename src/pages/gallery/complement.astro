@@ -11,6 +11,11 @@ import Base from '../../layouts/Base.astro';
       <p style="text-align: center; font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-muted);">
         点击画布重新生成
       </p>
+      <hr style="margin:3rem 0;opacity:0.2">
+      <p style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted);">
+        流动版 · Flow — 同样的四色 palette，粒子沿 Perlin noise flow field 持续漂移，留下色彩轨迹。
+      </p>
+      <div id="complement-flow" style="margin: 2.5rem 0; display: flex; justify-content: center;"></div>
     </div>
   </article>
   <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
@@ -194,5 +199,124 @@ import Base from '../../layouts/Base.astro';
         }
       }
     }
+  </script>
+  <script is:inline>
+    // Complement Flow — instance mode, real-time flowing particles
+    new p5(function(p) {
+      var palette = [
+        { h: 8,   s: 58, b: 72 },  // pepper red
+        { h: 188, s: 55, b: 62 },  // teal
+        { h: 38,  s: 56, b: 75 },  // amber
+        { h: 222, s: 52, b: 60 },  // blue-violet
+      ];
+      var W = 580, H = 580;
+      var scl = 20;
+      var cols, rows;
+      var particles = [];
+      var regions = [];
+      var zOff = 0;
+      var NUM_PARTICLES = 250;
+
+      p.setup = function() {
+        var cnv = p.createCanvas(W, H);
+        cnv.parent('complement-flow');
+        p.colorMode(p.HSB, 360, 100, 100, 100);
+        p.pixelDensity(1);
+
+        cols = p.floor(W / scl);
+        rows = p.floor(H / scl);
+
+        // Create regions for color clumping
+        var regionCount = p.floor(p.random(4, 7));
+        for (var i = 0; i < regionCount; i++) {
+          regions.push({
+            x: p.random(70, 510),
+            y: p.random(70, 510),
+            r: p.random(90, 230),
+            colorIdx: i % 4,
+            strength: p.random(0.5, 1)
+          });
+        }
+
+        // Init particles
+        for (var i = 0; i < NUM_PARTICLES; i++) {
+          particles.push(makeParticle());
+        }
+
+        p.background(188, 15, 45);
+      };
+
+      function makeParticle() {
+        var x = p.random(W);
+        var y = p.random(H);
+        var ci = pickColor(x, y);
+        var c = palette[ci];
+        return {
+          x: x, y: y,
+          h: (c.h + p.random(-10, 10) + 360) % 360,
+          s: p.constrain(c.s + p.random(-10, 8), 45, 60),
+          b: p.constrain(c.b + p.random(-8, 8), 50, 78)
+        };
+      }
+
+      function pickColor(x, y) {
+        var weights = [0.1, 0.1, 0.1, 0.1];
+        for (var r = 0; r < regions.length; r++) {
+          var reg = regions[r];
+          var d = p.dist(x, y, reg.x, reg.y);
+          if (d < reg.r) {
+            var w = p.map(d, 0, reg.r, reg.strength, 0);
+            weights[reg.colorIdx] += w * 3;
+          }
+        }
+        var total = 0;
+        for (var i = 0; i < 4; i++) total += weights[i];
+        var roll = p.random(total);
+        var acc = 0;
+        for (var i = 0; i < 4; i++) {
+          acc += weights[i];
+          if (roll < acc) return i;
+        }
+        return 3;
+      }
+
+      p.draw = function() {
+        // Fade trail
+        p.noStroke();
+        p.fill(188, 15, 45, 5);
+        p.rect(0, 0, W, H);
+
+        zOff += 0.003;
+
+        for (var i = 0; i < particles.length; i++) {
+          var pt = particles[i];
+
+          // Flow field angle from noise
+          var col = p.floor(pt.x / scl);
+          var row = p.floor(pt.y / scl);
+          if (col < 0 || col >= cols || row < 0 || row >= rows) {
+            particles[i] = makeParticle();
+            continue;
+          }
+
+          var angle = p.noise(col * 0.06, row * 0.06, zOff) * p.TAU * 2.5;
+          var vx = p.cos(angle) * 2;
+          var vy = p.sin(angle) * 2;
+
+          pt.x += vx;
+          pt.y += vy;
+
+          // Draw particle
+          p.noStroke();
+          p.fill(pt.h, pt.s, pt.b, 35);
+          p.ellipse(pt.x, pt.y, 3, 3);
+
+          // Boundary check — reset
+          if (pt.x < 0 || pt.x > W || pt.y < 0 || pt.y > H) {
+            particles[i] = makeParticle();
+          }
+        }
+      };
+    }, 'complement-flow');
   </script>
 </Base>
