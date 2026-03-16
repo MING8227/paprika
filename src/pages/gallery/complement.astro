@@ -349,13 +349,13 @@ import Base from '../../layouts/Base.astro';
       p.draw = function() {
         if (!initDone) return;
 
-        // Very subtle fade — painting breathes slowly
+        // Fade — painting breathes
         p.noStroke();
-        p.fill(188, 15, 45, 2);
+        p.fill(188, 15, 45, 4);
         p.rect(0, 0, W, H);
 
         // Evolve flow field
-        zOff += 0.002;
+        zOff += 0.008;
         updateFlowField();
 
         // Draw continuous particles — they replenish the painting
@@ -370,8 +370,8 @@ import Base from '../../layouts/Base.astro';
           }
 
           var v = flowField[col + row * cols];
-          pt.x += v.x * 1.5;
-          pt.y += v.y * 1.5;
+          pt.x += v.x * 3;
+          pt.y += v.y * 3;
           pt.life++;
 
           var alpha = p.map(pt.life, 0, pt.maxLife, 14, 3);
