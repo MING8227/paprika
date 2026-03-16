@@ -31,10 +31,10 @@
 
       // 4 colors: pepper red, teal, amber, blue-violet
       palette = [
-        { h: 8,   s: 55, b: 65 },  // pepper red
-        { h: 188, s: 45, b: 55 },  // teal
-        { h: 38,  s: 50, b: 68 },  // amber
-        { h: 222, s: 42, b: 52 },  // blue-violet
+        { h: 8,   s: 58, b: 72 },  // pepper red
+        { h: 188, s: 55, b: 62 },  // teal
+        { h: 38,  s: 56, b: 75 },  // amber
+        { h: 222, s: 52, b: 60 },  // blue-violet
       ];
 
       background(palette[1].h, 15, 45);
@@ -109,8 +109,8 @@
 
           stroke(
             (c.h + hShift + 360) % 360,
-            constrain(c.s + sShift, 30, 60),
-            constrain(c.b + bShift, 40, 70),
+            constrain(c.s + sShift, 45, 60),
+            constrain(c.b + bShift, 50, 78),
             alpha
           );
           strokeWeight(w);
