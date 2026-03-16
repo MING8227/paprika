@@ -1,0 +1,185 @@
+---
+// no layout
+---
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Complement</title>
+  <style>
+    html, body { margin: 0; padding: 0; overflow: hidden; background: #5a6d78; display: flex; justify-content: center; align-items: center; height: 100vh; }
+    canvas { display: block; }
+  </style>
+</head>
+<body>
+  <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
+  <script is:inline>
+    // Complement — complementary color dialogue
+    // pepper red ↔ teal, amber ↔ blue-violet
+    // Flow field with clumping + compositional regions
+
+    let palette;
+    let flowField;
+    let cols, rows;
+    let scl = 20;
+    let particles = [];
+    let regions = [];
+
+    function setup() {
+      createCanvas(800, 800);
+      colorMode(HSB, 360, 100, 100, 100);
+      pixelDensity(1);
+
+      // 4 colors: pepper red, teal, amber, blue-violet
+      palette = [
+        { h: 8,   s: 58, b: 72 },  // pepper red
+        { h: 188, s: 55, b: 62 },  // teal
+        { h: 38,  s: 56, b: 75 },  // amber
+        { h: 222, s: 52, b: 60 },  // blue-violet
+      ];
+
+      background(palette[1].h, 15, 45);
+
+      cols = floor(width / scl);
+      rows = floor(height / scl);
+      flowField = new Array(cols * rows);
+
+      // Create compositional regions — large organic shapes that bias color
+      // Each region is a center + radius + primary color index
+      let regionCount = random(4, 7) | 0;
+      for (let i = 0; i < regionCount; i++) {
+        regions.push({
+          x: random(100, 700),
+          y: random(100, 700),
+          r: random(120, 320),
+          colorIdx: i % 4,
+          strength: random(0.5, 1),
+        });
+      }
+
+      // Generate flow field with multiple noise octaves
+      let zOff = random(1000);
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          let angle = noise(x * 0.06, y * 0.06, zOff) * TAU * 2.5;
+          flowField[x + y * cols] = p5.Vector.fromAngle(angle);
+        }
+      }
+
+      // Layer 1: large background washes (compositional shapes)
+      noStroke();
+      for (let r of regions) {
+        let c = palette[r.colorIdx];
+        for (let i = 0; i < 800; i++) {
+          let ang = random(TAU);
+          let dist = random(r.r * 1.2);
+          let px = r.x + cos(ang) * dist + random(-30, 30);
+          let py = r.y + sin(ang) * dist + random(-30, 30);
+          let sz = random(15, 60);
+          let alpha = map(dist, 0, r.r, 12, 3) * r.strength;
+          fill(c.h + random(-8, 8), c.s * random(0.6, 1), c.b * random(0.7, 1.1), alpha);
+          ellipse(px, py, sz, sz);
+        }
+      }
+
+      // Layer 2: flow particles — dense lines following field
+      for (let i = 0; i < 3000; i++) {
+        let x = random(width);
+        let y = random(height);
+        let ci = pickColor(x, y);
+        let c = palette[ci];
+
+        let hShift = random(-10, 10);
+        let sShift = random(-10, 8);
+        let bShift = random(-8, 8);
+
+        let px = x, py = y;
+        let steps = (random(30, 120)) | 0;
+
+        for (let s = 0; s < steps; s++) {
+          let col = floor(px / scl);
+          let row = floor(py / scl);
+          if (col < 0 || col >= cols || row < 0 || row >= rows) break;
+
+          let v = flowField[col + row * cols];
+          px += v.x * 2;
+          py += v.y * 2;
+
+          let alpha = map(s, 0, steps, 18, 4);
+          let w = map(s, 0, steps, 2.5, 0.5);
+
+          stroke(
+            (c.h + hShift + 360) % 360,
+            constrain(c.s + sShift, 45, 60),
+            constrain(c.b + bShift, 50, 78),
+            alpha
+          );
+          strokeWeight(w);
+          point(px, py);
+        }
+      }
+
+      // Layer 3: accent marks — small clusters of dots for texture
+      noStroke();
+      for (let i = 0; i < 600; i++) {
+        let rx = random(width);
+        let ry = random(height);
+        let ci = pickColor(rx, ry);
+        // Use complement for accents (dialogue!)
+        let compIdx = ci ^ 1; // 0↔1, 2↔3
+        let c = palette[compIdx];
+        let sz = random(2, 6);
+        fill(c.h + random(-5, 5), c.s * random(0.8, 1), c.b, random(15, 40));
+        ellipse(rx + random(-8, 8), ry + random(-8, 8), sz, sz);
+      }
+
+      // Layer 4: a few bold strokes — curved lines for depth
+      for (let i = 0; i < 12; i++) {
+        let sx = random(width);
+        let sy = random(height);
+        let ci = (random(4)) | 0;
+        let c = palette[ci];
+
+        noFill();
+        stroke(c.h, c.s * 0.9, c.b, random(8, 20));
+        strokeWeight(random(3, 8));
+
+        beginShape();
+        let px = sx, py = sy;
+        curveVertex(px, py);
+        for (let s = 0; s < 40; s++) {
+          let col = constrain(floor(px / scl), 0, cols - 1);
+          let row = constrain(floor(py / scl), 0, rows - 1);
+          let v = flowField[col + row * cols];
+          px += v.x * 4;
+          py += v.y * 4;
+          curveVertex(px, py);
+        }
+        endShape();
+      }
+
+      noLoop();
+    }
+
+    function pickColor(x, y) {
+      // Weighted by region proximity — clumping strategy
+      let weights = [0.1, 0.1, 0.1, 0.1];
+      for (let r of regions) {
+        let d = dist(x, y, r.x, r.y);
+        if (d < r.r) {
+          let w = map(d, 0, r.r, r.strength, 0);
+          weights[r.colorIdx] += w * 3;
+        }
+      }
+      // Weighted random pick
+      let total = weights.reduce((a, b) => a + b);
+      let roll = random(total);
+      let acc = 0;
+      for (let i = 0; i < 4; i++) {
+        acc += weights[i];
+        if (roll < acc) return i;
+      }
+      return 3;
+    }
+  </script>
+</body>
+</html>

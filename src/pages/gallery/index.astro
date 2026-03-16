@@ -11,6 +11,19 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
   <div class="gallery-grid">
     <div class="gallery-item">
+      <a href={`${base}gallery/complement`} class="gallery-link">
+        <div class="gallery-preview">
+          <iframe src={`${base}gallery/complement-embed`} scrolling="no" loading="lazy"></iframe>
+          <div class="gallery-overlay"></div>
+        </div>
+        <div class="gallery-info">
+          <span class="gallery-date">2026.03.16</span>
+          <span class="gallery-title">互补 · Complement</span>
+        </div>
+      </a>
+    </div>
+
+    <div class="gallery-item">
       <a href={`${base}gallery/root`} class="gallery-link">
         <div class="gallery-preview">
           <iframe src={`${base}gallery/root-embed`} scrolling="no" loading="lazy"></iframe>
