@@ -352,9 +352,9 @@ import Base from '../../layouts/Base.astro';
       p.draw = function() {
         if (!initDone) return;
 
-        // Fade — very gentle, preserve base composition
+        // Fade — barely perceptible, preserve density
         p.noStroke();
-        p.fill(188, 15, 45, 1.5);
+        p.fill(188, 15, 45, 0.8);
         p.rect(0, 0, W, H);
 
         // Evolve flow field — slow enough to feel directional
@@ -377,8 +377,8 @@ import Base from '../../layouts/Base.astro';
           pt.y += v.y * 2;
           pt.life++;
 
-          var alpha = p.map(pt.life, 0, pt.maxLife, 14, 3);
-          var w = p.map(pt.life, 0, pt.maxLife, 2, 0.5);
+          var alpha = p.map(pt.life, 0, pt.maxLife, 22, 6);
+          var w = p.map(pt.life, 0, pt.maxLife, 2.5, 0.8);
 
           p.stroke(pt.h, pt.s, pt.b, alpha);
           p.strokeWeight(w);
