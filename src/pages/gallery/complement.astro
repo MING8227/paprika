@@ -201,9 +201,7 @@ import Base from '../../layouts/Base.astro';
     }
   </script>
   <script is:inline>
-    // Complement Flow — drifting gravity version
-    // Same full composition, but region centers drift along noise paths
-    // Redraws every N frames with shifted regions — like tides
+    // Complement Flow — crossfade between drifting compositions
     new p5(function(p) {
       var palette = [
         { h: 8,   s: 58, b: 72 },
@@ -216,27 +214,33 @@ import Base from '../../layouts/Base.astro';
       var cols, rows;
       var regions = [];
       var t = 0;
-      var lastDraw = null;
-      var REDRAW_INTERVAL = 8; // frames between redraws
+      var bufA, bufB;
+      var fadeProgress = 1; // 1 = showing A fully
+      var CYCLE_FRAMES = 180; // frames per composition (~6s at 30fps)
+      var FADE_FRAMES = 60;  // crossfade duration (~2s)
+      var showingA = true;
 
       p.setup = function() {
         var cnv = p.createCanvas(W, H);
         cnv.parent('complement-flow');
         p.colorMode(p.HSB, 360, 100, 100, 100);
         p.pixelDensity(1);
-        p.frameRate(12); // slow, painterly
+        p.frameRate(30);
 
         cols = p.floor(W / scl);
         rows = p.floor(H / scl);
 
-        // Create regions with base positions
+        bufA = p.createGraphics(W, H);
+        bufB = p.createGraphics(W, H);
+        bufA.colorMode(bufA.HSB, 360, 100, 100, 100);
+        bufB.colorMode(bufB.HSB, 360, 100, 100, 100);
+
         var regionCount = p.floor(p.random(4, 7));
         for (var i = 0; i < regionCount; i++) {
           var bx = p.random(120, 460);
           var by = p.random(120, 460);
           regions.push({
             baseX: bx, baseY: by,
-            x: bx, y: by,
             r: p.random(90, 200),
             colorIdx: i % 4,
             strength: p.random(0.5, 1),
@@ -245,25 +249,36 @@ import Base from '../../layouts/Base.astro';
           });
         }
 
-        drawComposition();
+        drawComposition(bufA, 0);
+        drawComposition(bufB, 0.5);
+        p.image(bufA, 0, 0);
       };
 
-      function drawComposition() {
-        p.background(188, 15, 45);
-
-        // Update region positions — drift along noise
+      function getRegionPositions(time) {
+        var positions = [];
         for (var i = 0; i < regions.length; i++) {
           var reg = regions[i];
-          var drift = 60; // max pixels of drift
-          reg.x = reg.baseX + (p.noise(reg.noiseOffX + t * 0.008) - 0.5) * drift * 2;
-          reg.y = reg.baseY + (p.noise(reg.noiseOffY + t * 0.008) - 0.5) * drift * 2;
-          reg.x = p.constrain(reg.x, 40, W - 40);
-          reg.y = p.constrain(reg.y, 40, H - 40);
+          var drift = 70;
+          var rx = reg.baseX + (p.noise(reg.noiseOffX + time * 0.003) - 0.5) * drift * 2;
+          var ry = reg.baseY + (p.noise(reg.noiseOffY + time * 0.003) - 0.5) * drift * 2;
+          positions.push({
+            x: p.constrain(rx, 50, W - 50),
+            y: p.constrain(ry, 50, H - 50),
+            r: reg.r,
+            colorIdx: reg.colorIdx,
+            strength: reg.strength
+          });
         }
+        return positions;
+      }
 
-        // Flow field for this frame
+      function drawComposition(buf, timeOffset) {
+        var time = t + timeOffset * CYCLE_FRAMES;
+        var regs = getRegionPositions(time);
+
+        // Flow field
         var flowField = [];
-        var zOff = t * 0.005;
+        var zOff = time * 0.002;
         for (var y = 0; y < rows; y++) {
           for (var x = 0; x < cols; x++) {
             var angle = p.noise(x * 0.06, y * 0.06, zOff) * p.TAU * 2.5;
@@ -271,10 +286,12 @@ import Base from '../../layouts/Base.astro';
           }
         }
 
-        // Layer 1: background washes
-        p.noStroke();
-        for (var ri = 0; ri < regions.length; ri++) {
-          var reg = regions[ri];
+        buf.background(188, 15, 45);
+        buf.noStroke();
+
+        // Layer 1: washes
+        for (var ri = 0; ri < regs.length; ri++) {
+          var reg = regs[ri];
           var c = palette[reg.colorIdx];
           for (var i = 0; i < 500; i++) {
             var ang = p.random(p.TAU);
@@ -283,16 +300,16 @@ import Base from '../../layouts/Base.astro';
             var py = reg.y + p.sin(ang) * d + p.random(-25, 25);
             var sz = p.random(12, 40);
             var alpha = p.map(d, 0, reg.r, 12, 3) * reg.strength;
-            p.fill(c.h + p.random(-8, 8), c.s * p.random(0.6, 1), c.b * p.random(0.7, 1.1), alpha);
-            p.ellipse(px, py, sz, sz);
+            buf.fill(c.h + p.random(-8, 8), c.s * p.random(0.6, 1), c.b * p.random(0.7, 1.1), alpha);
+            buf.ellipse(px, py, sz, sz);
           }
         }
 
-        // Layer 2: flow particles
+        // Layer 2: flow lines
         for (var i = 0; i < 1800; i++) {
           var x = p.random(W);
           var y = p.random(H);
-          var ci = pickColor(x, y);
+          var ci = pickColorFrom(x, y, regs);
           var c = palette[ci];
           var hShift = p.random(-10, 10);
           var sShift = p.random(-10, 8);
@@ -308,30 +325,29 @@ import Base from '../../layouts/Base.astro';
             py += v.y * 2;
             var alpha = p.map(s, 0, steps, 16, 3);
             var w = p.map(s, 0, steps, 2.5, 0.5);
-            p.stroke((c.h + hShift + 360) % 360, p.constrain(c.s + sShift, 45, 60), p.constrain(c.b + bShift, 50, 78), alpha);
-            p.strokeWeight(w);
-            p.point(px, py);
+            buf.stroke((c.h + hShift + 360) % 360, p.constrain(c.s + sShift, 45, 60), p.constrain(c.b + bShift, 50, 78), alpha);
+            buf.strokeWeight(w);
+            buf.point(px, py);
           }
         }
 
-        // Layer 3: accent dots
-        p.noStroke();
+        // Layer 3: accents
+        buf.noStroke();
         for (var i = 0; i < 350; i++) {
           var rx = p.random(W);
           var ry = p.random(H);
-          var ci = pickColor(rx, ry);
+          var ci = pickColorFrom(rx, ry, regs);
           var compIdx = ci ^ 1;
           var c = palette[compIdx];
-          var sz = p.random(2, 6);
-          p.fill(c.h + p.random(-5, 5), c.s * p.random(0.8, 1), c.b, p.random(15, 40));
-          p.ellipse(rx + p.random(-8, 8), ry + p.random(-8, 8), sz, sz);
+          buf.fill(c.h + p.random(-5, 5), c.s * p.random(0.8, 1), c.b, p.random(15, 40));
+          buf.ellipse(rx + p.random(-8, 8), ry + p.random(-8, 8), p.random(2, 6), p.random(2, 6));
         }
       }
 
-      function pickColor(x, y) {
+      function pickColorFrom(x, y, regs) {
         var weights = [0.1, 0.1, 0.1, 0.1];
-        for (var i = 0; i < regions.length; i++) {
-          var reg = regions[i];
+        for (var i = 0; i < regs.length; i++) {
+          var reg = regs[i];
           var d = p.dist(x, y, reg.x, reg.y);
           if (d < reg.r) {
             var w = p.map(d, 0, reg.r, reg.strength, 0);
@@ -351,8 +367,30 @@ import Base from '../../layouts/Base.astro';
 
       p.draw = function() {
         t++;
-        if (t % REDRAW_INTERVAL === 0) {
-          drawComposition();
+        var phase = t % CYCLE_FRAMES;
+
+        if (phase === 0) {
+          // Start new cycle: prepare next buffer
+          var target = showingA ? bufB : bufA;
+          drawComposition(target, 0);
+        }
+
+        if (phase < FADE_FRAMES) {
+          // Crossfading
+          var alpha = phase / FADE_FRAMES;
+          var from = showingA ? bufA : bufB;
+          var to = showingA ? bufB : bufA;
+          p.image(from, 0, 0);
+          p.tint(360, 0, 100, alpha * 100);
+          p.image(to, 0, 0);
+          p.noTint();
+
+          if (phase === FADE_FRAMES - 1) {
+            showingA = !showingA;
+          }
+        } else {
+          // Static display
+          p.image(showingA ? bufA : bufB, 0, 0);
         }
       };
     }, 'complement-flow');
