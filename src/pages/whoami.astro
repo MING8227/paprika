@@ -662,7 +662,7 @@ import Base from '../layouts/Base.astro';
           }
           labelY = Math.max(margin + 16, Math.min(labelY, p.height - 50));
           // Collision avoidance: push labels apart vertically
-          const labelH = 36; // approximate height of name + desc
+          const labelH = 22; // just chain name, no desc
           for (const prev of placedLabels) {
             const overlapX = Math.abs(labelX - prev.x) < maxLabelW;
             const overlapY = Math.abs(labelY - prev.y) < labelH;
@@ -679,30 +679,12 @@ import Base from '../layouts/Base.astro';
           p.drawingContext.setLineDash([3, 5]);
           p.line(lastB.x, lastB.y, labelX, labelY);
           p.drawingContext.setLineDash([]);
-          // Chain name (larger)
+          // Chain name only (short, no desc on canvas — desc goes to info panel)
           p.noStroke();
-          p.textSize(13);
-          p.textAlign(alignLeft ? p.LEFT : p.RIGHT, p.BOTTOM);
-          p.fill(cr, cg, cb, 220);
-          p.text(chain.name, labelX + (alignLeft ? 6 : -6), labelY - 2);
-          // Chain description (smaller, below name, with word wrap)
-          p.textSize(9);
-          p.fill(cr, cg, cb, 140);
-          p.textAlign(alignLeft ? p.LEFT : p.RIGHT, p.TOP);
-          // Manual wrap: split desc into lines that fit maxLabelW
-          const descWords = chain.desc.split('');
-          let lines = [''];
-          for (const ch of descWords) {
-            const testLine = lines[lines.length - 1] + ch;
-            if (p.textWidth(testLine) > maxLabelW && lines[lines.length - 1].length > 0) {
-              lines.push(ch);
-            } else {
-              lines[lines.length - 1] = testLine;
-            }
-          }
-          lines.forEach((line, li) => {
-            p.text(line, labelX + (alignLeft ? 6 : -6), labelY + 2 + li * 13);
-          });
+          p.textSize(11);
+          p.textAlign(alignLeft ? p.LEFT : p.RIGHT, p.CENTER);
+          p.fill(cr, cg, cb, 200);
+          p.text(chain.name, labelX + (alignLeft ? 6 : -6), labelY);
         });
       }
 
