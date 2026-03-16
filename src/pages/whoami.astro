@@ -10,6 +10,7 @@ import Base from '../layouts/Base.astro';
       <div id="info-desc"></div>
     </div>
     <div id="whoami-title">who am i</div>
+    <a id="whoami-back" href="/paprika/">← back</a>
   </div>
 </Base>
 
@@ -40,6 +41,21 @@ import Base from '../layouts/Base.astro';
     text-transform: uppercase;
     pointer-events: none;
     user-select: none;
+  }
+  #whoami-back {
+    position: fixed;
+    top: 24px;
+    left: 24px;
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    color: rgba(255,255,255,0.35);
+    text-decoration: none;
+    letter-spacing: 1px;
+    z-index: 10001;
+    transition: color 0.2s ease;
+  }
+  #whoami-back:hover {
+    color: rgba(255,255,255,0.8);
   }
   #info-panel {
     position: fixed;
@@ -210,11 +226,16 @@ import Base from '../layouts/Base.astro';
     settle:  [214, 166, 92]    // gold
   };
   const CHAINS = [
-    { id: 'growth', name: '成长链', desc: '被纠正→自省→改习惯→记住。犯错不白犯。', path: ['ming', 'agents', 'review', 'corrections', 'memory'], color: CHAIN_COLORS.growth },
-    { id: 'knowledge', name: '知识链', desc: '听到→捕捉→存储→提炼。每句话都可能是知识。', path: ['ming', 'agents', 'memory', 'domains'], color: CHAIN_COLORS.knowledge },
-    { id: 'task', name: '任务链', desc: '接活→查记忆→走流程→用工具。先想后做。', path: ['agents', 'memory', 'workflows', 'skills'], color: CHAIN_COLORS.task },
-    { id: 'clock', name: '生物钟链', desc: '定时醒来→检查→执行。不需要人叫。', path: ['heartbeat', 'agents', 'workflows'], color: CHAIN_COLORS.clock },
-    { id: 'settle', name: '沉淀链', desc: '经历→日记→筛选→改正→知识。时间做的事。', path: ['diary', 'review', 'corrections', 'memory', 'domains'], color: CHAIN_COLORS.settle }
+    { id: 'growth', name: '成长链', desc: '被纠正→自省→改习惯→记住。犯错不白犯。', path: ['ming', 'agents', 'review', 'corrections', 'memory'], color: CHAIN_COLORS.growth,
+      roles: { ming: '纠正的来源', agents: '接收纠正信号', review: '审视哪里错了', corrections: '形成新习惯', memory: '教训变成经验的终点' } },
+    { id: 'knowledge', name: '知识链', desc: '听到→捕捉→存储→提炼。每句话都可能是知识。', path: ['ming', 'agents', 'memory', 'domains'], color: CHAIN_COLORS.knowledge,
+      roles: { ming: '知识的源头', agents: '捕捉重要信号', memory: '原始信息的仓库', domains: '提炼后的领域知识' } },
+    { id: 'task', name: '任务链', desc: '接活→查记忆→走流程→用工具。先想后做。', path: ['agents', 'memory', 'workflows', 'skills'], color: CHAIN_COLORS.task,
+      roles: { agents: '接收任务', memory: '查有没有做过类似的', workflows: '按流程执行', skills: '调用具体工具' } },
+    { id: 'clock', name: '生物钟链', desc: '定时醒来→检查→执行。不需要人叫。', path: ['heartbeat', 'agents', 'workflows'], color: CHAIN_COLORS.clock,
+      roles: { heartbeat: '定时触发', agents: '检查该做什么', workflows: '执行对应流程' } },
+    { id: 'settle', name: '沉淀链', desc: '经历→日记→筛选→改正→知识。时间做的事。', path: ['diary', 'review', 'corrections', 'memory', 'domains'], color: CHAIN_COLORS.settle,
+      roles: { diary: '每天的原始记录', review: '回读时发现规律', corrections: '规律变成行为规则', memory: '规则沉淀为长期经验', domains: '经验提炼为专业知识' } }
   ];
 
   // Build chain lookup: nodeId -> [chain indices]
@@ -766,9 +787,10 @@ import Base from '../layouts/Base.astro';
         labelEl.style.color = COLORS[node.cat];
         let descText = node.desc;
         if (myChains.length > 0) {
-          descText += '\n\n所在链条：';
+          descText += '\n';
           myChains.forEach(ci => {
-            descText += '\n· ' + CHAINS[ci].name + ' — ' + CHAINS[ci].desc;
+            const role = CHAINS[ci].roles && CHAINS[ci].roles[node.id];
+            descText += '\n· ' + CHAINS[ci].name + ' — ' + (role || CHAINS[ci].desc);
           });
         }
         descEl.textContent = descText;
