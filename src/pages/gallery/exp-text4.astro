@@ -1,0 +1,147 @@
+---
+import Base from '../../layouts/Base.astro';
+---
+<Base title="实验4: 连线网络">
+  <article>
+    <h1>实验4: 连线 · Constellation</h1>
+    <div class="article-content">
+      <div id="exp-canvas" style="margin: 2rem 0; display: flex; justify-content: center;"></div>
+      <p style="text-align: center; font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-muted);">
+        字由连线构成。鼠标靠近时连线断裂。
+      </p>
+    </div>
+  </article>
+  <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
+  <script is:inline>
+  (function() {
+    var W = 580, H = 580;
+    var particles = [];
+    var CONNECT_DIST = 12;
+
+    new p5(function(p) {
+      p.setup = function() {
+        var canvas = p.createCanvas(W, H);
+        canvas.parent('exp-canvas');
+        p.pixelDensity(1);
+
+        var g = p.createGraphics(W, H);
+        g.pixelDensity(1);
+        g.background(0);
+        g.fill(255);
+        g.noStroke();
+        g.textFont('Georgia');
+        g.textSize(100);
+        g.textAlign(p.CENTER, p.CENTER);
+        g.text('Letter', W/2, H/2 - 40);
+        g.textSize(36);
+        g.text('from yesterday', W/2, H/2 + 60);
+
+        g.loadPixels();
+        particles = [];
+        var step = 5; // sparser for performance with lines
+        for (var y = 0; y < H; y += step) {
+          for (var x = 0; x < W; x += step) {
+            var idx = (y * W + x) * 4;
+            if (g.pixels[idx] > 128) {
+              particles.push({
+                hx: x, hy: y,
+                x: x, y: y,
+                n: Math.random() * 1000,
+                size: 1.5,
+              });
+            }
+          }
+        }
+        g.remove();
+      };
+
+      p.draw = function() {
+        p.background(240, 237, 230); // warm paper
+
+        var mx = p.mouseX;
+        var my = p.mouseY;
+        var mouseIn = mx > 0 && mx < W && my > 0 && my < H;
+        var time = p.frameCount * 0.005;
+
+        // Update positions with gentle noise
+        for (var i = 0; i < particles.length; i++) {
+          var pt = particles[i];
+          var nx = p.noise(pt.n, time) * 2 - 1;
+          var ny = p.noise(pt.n + 400, time) * 2 - 1;
+          pt.x = pt.hx + nx * 3;
+          pt.y = pt.hy + ny * 3;
+
+          // Mouse repulsion
+          if (mouseIn) {
+            var dx = pt.x - mx;
+            var dy = pt.y - my;
+            var dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < 100 && dist > 0) {
+              var force = (100 - dist) / 100;
+              pt.x += (dx / dist) * force * 25;
+              pt.y += (dy / dist) * force * 25;
+            }
+          }
+        }
+
+        // Draw connections (only nearby particles)
+        // Use grid-based spatial hash for performance
+        var grid = {};
+        var cellSize = CONNECT_DIST + 2;
+        for (var i2 = 0; i2 < particles.length; i2++) {
+          var cx = Math.floor(particles[i2].x / cellSize);
+          var cy = Math.floor(particles[i2].y / cellSize);
+          var key = cx + ',' + cy;
+          if (!grid[key]) grid[key] = [];
+          grid[key].push(i2);
+        }
+
+        p.strokeWeight(0.5);
+        for (var i3 = 0; i3 < particles.length; i3++) {
+          var a = particles[i3];
+          var cx2 = Math.floor(a.x / cellSize);
+          var cy2 = Math.floor(a.y / cellSize);
+
+          for (var gx = cx2 - 1; gx <= cx2 + 1; gx++) {
+            for (var gy = cy2 - 1; gy <= cy2 + 1; gy++) {
+              var neighbors = grid[gx + ',' + gy];
+              if (!neighbors) continue;
+              for (var k = 0; k < neighbors.length; k++) {
+                var j = neighbors[k];
+                if (j <= i3) continue;
+                var b = particles[j];
+                var dx2 = a.x - b.x;
+                var dy2 = a.y - b.y;
+                var d = Math.sqrt(dx2 * dx2 + dy2 * dy2);
+                if (d < CONNECT_DIST) {
+                  var alpha = (1 - d / CONNECT_DIST) * 120;
+                  p.stroke(60, 55, 50, alpha);
+                  p.line(a.x, a.y, b.x, b.y);
+                }
+              }
+            }
+          }
+        }
+
+        // Draw points
+        p.noStroke();
+        for (var i4 = 0; i4 < particles.length; i4++) {
+          var pt2 = particles[i4];
+          // Check displacement from home
+          var disp = Math.sqrt(
+            (pt2.x - pt2.hx) * (pt2.x - pt2.hx) +
+            (pt2.y - pt2.hy) * (pt2.y - pt2.hy)
+          );
+          var t = Math.min(disp / 30, 1);
+          // Dark ink → warm red when displaced
+          var r = p.lerp(55, 180, t);
+          var g = p.lerp(50, 80, t);
+          var b = p.lerp(45, 70, t);
+          p.fill(r, g, b, 200);
+          p.ellipse(pt2.x, pt2.y, pt2.size, pt2.size);
+        }
+      };
+    });
+  })();
+  </script>
+</Base>
