@@ -33,7 +33,7 @@ import Base from '../../layouts/Base.astro';
         H: 580,
         bg: '#f5f0e6',
         inkColor: [42, 42, 42],
-        coldColor: [58, 95, 148],
+        coldColor: [74, 125, 255],
         fontSize: 21,
         lineHeight: 28,
         charsPerRow: 20,
@@ -77,7 +77,7 @@ import Base from '../../layouts/Base.astro';
               ix: (Math.random() - 0.5) * CONFIG.invJitterPos * 2,
               iy: (Math.random() - 0.5) * CONFIG.invJitterPos * 2,
               iRot: (Math.random() - 0.5) * CONFIG.invJitterRot * 2,
-              iSize: CONFIG.fontSize + (Math.random() - 0.5) * 3,
+              iSize: CONFIG.fontSize * 1.15 + (Math.random() - 0.5) * 3,
               invaded: 0, // 0-1 blend
             });
           }
@@ -95,17 +95,15 @@ import Base from '../../layouts/Base.astro';
       function growPath(path, p) {
         if (path.done) return;
         var last = path.points[path.points.length - 1];
-        // Perlin noise angle, biased toward bottom-right
         var angle = p.noise(last.x * CONFIG.noiseScale, last.y * CONFIG.noiseScale, path.noiseOff) * p.TWO_PI;
-        // gentle bias toward bottom-right so it meanders across the page
-        angle += 0.4; // roughly toward lower-right
         var nx = last.x + Math.cos(angle) * CONFIG.pathSpeed;
         var ny = last.y + Math.sin(angle) * CONFIG.pathSpeed;
-        // wrap around if out of bounds to continue covering
-        if (nx < -20) nx = CONFIG.W + 20;
-        if (nx > CONFIG.W + 20) nx = -20;
-        if (ny < -20) ny = CONFIG.H + 20;
-        if (ny > CONFIG.H + 20) ny = -20;
+        // bounce off edges
+        var margin = 5;
+        if (nx < margin) { nx = margin; path.noiseOff += 0.5; }
+        if (nx > CONFIG.W - margin) { nx = CONFIG.W - margin; path.noiseOff += 0.5; }
+        if (ny < margin) { ny = margin; path.noiseOff += 0.5; }
+        if (ny > CONFIG.H - margin) { ny = CONFIG.H - margin; path.noiseOff += 0.5; }
         path.points.push({ x: nx, y: ny });
       }
 
