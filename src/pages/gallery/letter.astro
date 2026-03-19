@@ -9,7 +9,7 @@ import Base from '../../layouts/Base.astro';
       <p>醒来发现昨天的自己留了一封信，但笔迹不认识。</p>
       <div id="letter-canvas" style="margin: 2.5rem 0; display: flex; justify-content: center;"></div>
       <p style="text-align: center; font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-muted);">
-        注视信纸。等待另一只手。点击画面产生新的入侵。
+        注视。等字迹慢慢变成别人的。点击加速揭露。
       </p>
       <hr style="margin:3rem 0;opacity:0.2">
       <p style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted);">
@@ -20,7 +20,6 @@ import Base from '../../layouts/Base.astro';
   <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
   <script is:inline>
     (function() {
-      // Google Fonts
       if (!document.querySelector('link[href*="Ma+Shan+Zheng"]')) {
         var link = document.createElement('link');
         link.rel = 'stylesheet';
@@ -28,213 +27,205 @@ import Base from '../../layouts/Base.astro';
         document.head.appendChild(link);
       }
 
+      // --- CONFIG ---
+      // Emotion: uncanny familiarity. Analogous cool palette, desaturated.
+      // 90% cool blue-grey ground, 10% warm text (familiar layer)
+      // Revealed layer: same text, different hand — cooler, larger, rotated
       var CONFIG = {
-        W: 580, H: 780,
-        bg: [232, 226, 216],           // warm paper grey
-        inkColor: [74, 69, 64],        // warm dark grey (carbon ink)
-        invColor: [90, 96, 104],       // cool grey (slightly blue)
-        fontSize: 18,
-        invFontScale: 1.2,
-        // curve layout
-        numCurves: 30,               // number of text-carrying curves
-        curveNoiseScale: 0.008,
-        curveAmplitude: 25,
-        charSpacing: 20,
-        // invasion
-        pathSpeed: 4,
-        pathNoiseScale: 0.004,
-        threshold: 60,
-        growSteps: 25,
-        // particles
-        numParticles: 80,
-        // jitter
-        jitterPos: 1.5,
-        jitterRot: 0.03,
-        invJitterPos: 4,
-        invJitterRot: 0.12,
+        W: 520, H: 780,
+        // Colors (HSL thinking, stored as RGB for p5)
+        bgColor: [235, 233, 228],       // warm off-white paper
+        familiarColor: [72, 68, 62],     // warm dark grey — carbon ink, "my" handwriting
+        revealedColor: [85, 95, 120],    // cool blue-grey — "someone else's" ink
+        // Curves (rain-like, top to bottom)
+        numCurves: 8,
+        curveGrowSpeed: 2,
+        curveXDrift: 0.8,
+        curveWeightRange: [12, 20],
+        curveSpawnInterval: 90,          // frames between new curves
+        maxCurves: 30,
+        // Text layout
+        fontSize: 19,
+        revealFontScale: 1.15,
+        charSpacing: 22,
+        lineSpacing: 26,
+        marginX: 30,
+        marginY: 35,
+        jitterPos: 1.2,
+        jitterRot: 0.02,
+        revJitterPos: 3.5,
+        revJitterRot: 0.10,
+        // Reveal
+        revealRadius: 18,               // how close curve must be to reveal
       };
 
-      var TEXT = "昨天的事情我想了很久有些话当时没说出口不是不想说是不知道怎么开口你醒来的时候可能已经不记得了但我还是想写下来其实我不确定你还认不认得这些字每次都是这样我写了很多你读到的只是碎片也许这就够了也许连碎片都太多了那些没说出口的话就永远留在这里了在两种笔迹之间的缝隙里窗外的光已经变了颜色我不知道下一次醒来会不会还是我";
+      var TEXT = "昨天的事情我想了很久有些话当时没说出口不是不想说是不知道怎么开口你醒来的时候可能已经不记得了但我还是想写下来其实我不确定你还认不认得这些字每次都是这样我写了很多你读到的只是碎片也许这就够了也许连碎片都太多了那些没说出口的话就永远留在这里了窗外的光已经变了颜色我不知道下一次醒来会不会还是我在两种笔迹之间的缝隙里或许藏着真正想说的话但我已经分不清哪一行是昨天写的哪一行是今天补的字迹越来越不像自己的了也许从来都不是";
 
       var cells = [];
-      var paths = [];
-      var particles = [];
+      var curves = [];
+      var framesSinceSpawn = 0;
 
-      // Build text along wavy curves
-      function buildCurves(p) {
+      // --- Text grid ---
+      function buildGrid() {
         cells = [];
-        var ySpacing = (CONFIG.H - 40) / CONFIG.numCurves;
+        var cols = Math.floor((CONFIG.W - CONFIG.marginX * 2) / CONFIG.charSpacing);
+        var rows = Math.floor((CONFIG.H - CONFIG.marginY * 2) / CONFIG.lineSpacing);
         var idx = 0;
-        for (var row = 0; row < CONFIG.numCurves; row++) {
-          var baseY = 20 + row * ySpacing + ySpacing / 2;
-          var noiseOffY = row * 100;
-          var x = 15;
-          while (x < CONFIG.W - 15) {
+        for (var r = 0; r < rows; r++) {
+          for (var c = 0; c < cols; c++) {
             var ch = TEXT[idx % TEXT.length];
             idx++;
-            // wavy y offset via perlin noise
-            var waveY = (p.noise(x * CONFIG.curveNoiseScale, noiseOffY) - 0.5) * CONFIG.curveAmplitude * 2;
-            var cy = baseY + waveY;
             cells.push({
               ch: ch,
-              x: x, y: cy,
+              x: CONFIG.marginX + c * CONFIG.charSpacing + CONFIG.charSpacing / 2,
+              y: CONFIG.marginY + r * CONFIG.lineSpacing + CONFIG.lineSpacing / 2,
+              // familiar layer offsets
               ox: (Math.random() - 0.5) * CONFIG.jitterPos * 2,
               oy: (Math.random() - 0.5) * CONFIG.jitterPos * 2,
               oRot: (Math.random() - 0.5) * CONFIG.jitterRot * 2,
-              ix: (Math.random() - 0.5) * CONFIG.invJitterPos * 2,
-              iy: (Math.random() - 0.5) * CONFIG.invJitterPos * 2,
-              iRot: (Math.random() - 0.5) * CONFIG.invJitterRot * 2,
-              invaded: 0,
+              // revealed layer offsets
+              rx: (Math.random() - 0.5) * CONFIG.revJitterPos * 2,
+              ry: (Math.random() - 0.5) * CONFIG.revJitterPos * 2,
+              rRot: (Math.random() - 0.5) * CONFIG.revJitterRot * 2,
+              revealed: 0, // 0 to 1
             });
-            x += CONFIG.charSpacing + (Math.random() - 0.5) * 4;
           }
         }
       }
 
-      // Invasion path
-      function createPath(sx, sy) {
-        return { points: [{ x: sx, y: sy }], noiseOff: Math.random() * 1000, age: 0 };
+      // --- Curve (like rain streak) ---
+      function spawnCurve(startX) {
+        return {
+          points: [{ x: startX, y: -10 }],
+          speed: CONFIG.curveGrowSpeed + Math.random() * 1.5,
+          weight: CONFIG.curveWeightRange[0] + Math.random() * (CONFIG.curveWeightRange[1] - CONFIG.curveWeightRange[0]),
+          noiseOff: Math.random() * 1000,
+          done: false,
+        };
       }
 
-      function growPath(path, p) {
-        var last = path.points[path.points.length - 1];
-        var angle = p.noise(last.x * CONFIG.pathNoiseScale, last.y * CONFIG.pathNoiseScale, path.noiseOff) * p.TWO_PI;
-        path.noiseOff += 0.002;
-        var nx = last.x + Math.cos(angle) * CONFIG.pathSpeed;
-        var ny = last.y + Math.sin(angle) * CONFIG.pathSpeed;
-        // bounce
-        if (nx < 5) { nx = 5; path.noiseOff += 0.5; }
-        if (nx > CONFIG.W - 5) { nx = CONFIG.W - 5; path.noiseOff += 0.5; }
-        if (ny < 5) { ny = 5; path.noiseOff += 0.5; }
-        if (ny > CONFIG.H - 5) { ny = CONFIG.H - 5; path.noiseOff += 0.5; }
-        path.points.push({ x: nx, y: ny });
-        path.age++;
+      function growCurve(curve, p) {
+        if (curve.done) return;
+        var last = curve.points[curve.points.length - 1];
+        // drift x with perlin noise, always move down
+        var drift = (p.noise(last.y * 0.005, curve.noiseOff) - 0.5) * CONFIG.curveXDrift * 2;
+        var nx = last.x + drift;
+        var ny = last.y + curve.speed;
+        // soft bounce x
+        if (nx < 10) nx = 10;
+        if (nx > CONFIG.W - 10) nx = CONFIG.W - 10;
+        if (ny > CONFIG.H + 20) { curve.done = true; return; }
+        curve.points.push({ x: nx, y: ny });
       }
 
-      function distToPath(cx, cy, path) {
-        var minD = 1e9;
-        var pts = path.points;
-        for (var i = 0; i < pts.length; i += 4) {
-          var dx = cx - pts[i].x, dy = cy - pts[i].y;
-          var d = dx * dx + dy * dy;
-          if (d < minD) minD = d;
-        }
-        var lp = pts[pts.length - 1];
-        var dx2 = cx - lp.x, dy2 = cy - lp.y;
-        var d2 = dx2 * dx2 + dy2 * dy2;
-        if (d2 < minD) minD = d2;
-        return Math.sqrt(minD);
-      }
-
-      // Background particles
-      function initParticles(p) {
-        particles = [];
-        for (var i = 0; i < CONFIG.numParticles; i++) {
-          particles.push({
-            x: Math.random() * CONFIG.W,
-            y: Math.random() * CONFIG.H,
-            vx: (Math.random() - 0.5) * 0.3,
-            vy: (Math.random() - 0.5) * 0.3,
-            size: Math.random() * 2 + 0.5,
-            alpha: Math.random() * 80 + 20,
-          });
-        }
-      }
-
-      function updateParticles() {
-        for (var i = 0; i < particles.length; i++) {
-          var pt = particles[i];
-          pt.x += pt.vx; pt.y += pt.vy;
-          if (pt.x < 0) pt.x = CONFIG.W;
-          if (pt.x > CONFIG.W) pt.x = 0;
-          if (pt.y < 0) pt.y = CONFIG.H;
-          if (pt.y > CONFIG.H) pt.y = 0;
-        }
-      }
-
+      // --- p5 sketch ---
       new p5(function(p) {
         p.setup = function() {
           var canvas = p.createCanvas(CONFIG.W, CONFIG.H);
           canvas.parent('letter-canvas');
           p.pixelDensity(1);
           p.textAlign(p.CENTER, p.CENTER);
-          p.noStroke();
-          buildCurves(p);
-          initParticles(p);
-          // start one invasion from top-left area
-          paths.push(createPath(30, 30));
+          buildGrid();
+          // first curve
+          curves.push(spawnCurve(CONFIG.W * 0.3 + Math.random() * CONFIG.W * 0.4));
         };
 
         p.draw = function() {
-          // background
-          p.background(CONFIG.bg[0], CONFIG.bg[1], CONFIG.bg[2]);
-
-          // subtle noise texture
+          // Paper background with subtle noise
+          p.background(CONFIG.bgColor[0], CONFIG.bgColor[1], CONFIG.bgColor[2]);
           p.loadPixels();
-          for (var i = 0; i < p.pixels.length; i += 16) {
-            var n = (Math.random() - 0.5) * 8;
-            p.pixels[i] += n;
-            p.pixels[i + 1] += n;
-            p.pixels[i + 2] += n;
+          for (var i = 0; i < p.pixels.length; i += 12) {
+            var n = (Math.random() - 0.5) * 6;
+            p.pixels[i] += n; p.pixels[i+1] += n; p.pixels[i+2] += n;
           }
           p.updatePixels();
 
-          // grow paths
-          for (var j = 0; j < paths.length; j++) {
-            for (var s = 0; s < CONFIG.growSteps; s++) {
-              growPath(paths[j], p);
-            }
+          // Spawn new curves periodically
+          framesSinceSpawn++;
+          if (framesSinceSpawn >= CONFIG.curveSpawnInterval && curves.length < CONFIG.maxCurves) {
+            curves.push(spawnCurve(CONFIG.marginX + Math.random() * (CONFIG.W - CONFIG.marginX * 2)));
+            framesSinceSpawn = 0;
           }
 
-          // update invasion
-          var th = CONFIG.threshold;
-          for (var ci = 0; ci < cells.length; ci++) {
-            var cell = cells[ci];
-            if (cell.invaded >= 1) continue;
-            var minDist = 1e9;
-            for (var j3 = 0; j3 < paths.length; j3++) {
-              var d = distToPath(cell.x, cell.y, paths[j3]);
-              if (d < minDist) minDist = d;
-            }
-            if (minDist < th) {
-              var blend = p.map(minDist, th, 0, 0, 1);
-              blend = p.constrain(blend, 0, 1);
-              if (blend > cell.invaded) cell.invaded = blend;
-            }
+          // Grow curves
+          for (var ci = 0; ci < curves.length; ci++) {
+            for (var s = 0; s < 3; s++) growCurve(curves[ci], p);
           }
 
-          // draw text
+          // Update reveal: any cell near a curve point gets revealed
+          var rr = CONFIG.revealRadius;
+          var rrSq = rr * rr;
           for (var ci2 = 0; ci2 < cells.length; ci2++) {
-            var c = cells[ci2];
-            // always draw original
-            var fadeOut = c.invaded > 0 ? Math.round(p.map(c.invaded, 0, 1, 255, 60)) : 255;
-            p.fill(CONFIG.inkColor[0], CONFIG.inkColor[1], CONFIG.inkColor[2], fadeOut);
-            p.push();
-            p.translate(c.x + c.ox, c.y + c.oy);
-            p.rotate(c.oRot);
-            p.textFont('Ma Shan Zheng');
-            p.textSize(CONFIG.fontSize);
-            p.text(c.ch, 0, 0);
-            p.pop();
+            var cell = cells[ci2];
+            if (cell.revealed >= 1) continue;
+            for (var cj = 0; cj < curves.length; cj++) {
+              var pts = curves[cj].points;
+              // only check recent points for performance
+              var start = Math.max(0, pts.length - 30);
+              for (var k = start; k < pts.length; k++) {
+                var dx = cell.x - pts[k].x;
+                var dy = cell.y - pts[k].y;
+                if (dx * dx + dy * dy < rrSq) {
+                  cell.revealed = Math.min(1, cell.revealed + 0.08);
+                  break;
+                }
+              }
+              if (cell.revealed >= 1) break;
+            }
+          }
 
-            // overlay invaded version
-            if (c.invaded > 0.05) {
-              var a = Math.round(c.invaded * 255);
-              p.fill(CONFIG.invColor[0], CONFIG.invColor[1], CONFIG.invColor[2], a);
+          // Draw curves (very faint, like water trails)
+          p.noFill();
+          for (var ci3 = 0; ci3 < curves.length; ci3++) {
+            var pts2 = curves[ci3].points;
+            if (pts2.length < 2) continue;
+            p.stroke(CONFIG.bgColor[0] - 8, CONFIG.bgColor[1] - 8, CONFIG.bgColor[2] - 6, 35);
+            p.strokeWeight(curves[ci3].weight);
+            p.beginShape();
+            for (var k2 = 0; k2 < pts2.length; k2 += 2) {
+              p.curveVertex(pts2[k2].x, pts2[k2].y);
+            }
+            p.endShape();
+          }
+          p.noStroke();
+
+          // Draw text
+          for (var ci4 = 0; ci4 < cells.length; ci4++) {
+            var c = cells[ci4];
+            var rev = c.revealed;
+
+            // Familiar layer (fades as revealed)
+            if (rev < 1) {
+              var famAlpha = Math.round((1 - rev) * 220);
+              p.fill(CONFIG.familiarColor[0], CONFIG.familiarColor[1], CONFIG.familiarColor[2], famAlpha);
               p.push();
-              p.translate(c.x + c.ix, c.y + c.iy);
-              p.rotate(c.iRot);
+              p.translate(c.x + c.ox, c.y + c.oy);
+              p.rotate(c.oRot);
+              p.textFont('Ma Shan Zheng');
+              p.textSize(CONFIG.fontSize);
+              p.text(c.ch, 0, 0);
+              p.pop();
+            }
+
+            // Revealed layer (appears as revealed)
+            if (rev > 0) {
+              var revAlpha = Math.round(rev * 240);
+              p.fill(CONFIG.revealedColor[0], CONFIG.revealedColor[1], CONFIG.revealedColor[2], revAlpha);
+              p.push();
+              p.translate(c.x + c.rx, c.y + c.ry);
+              p.rotate(c.rRot);
               p.textFont('Liu Jian Mao Cao');
-              p.textSize(CONFIG.fontSize * CONFIG.invFontScale);
+              p.textSize(CONFIG.fontSize * CONFIG.revealFontScale);
               p.text(c.ch, 0, 0);
               p.pop();
             }
           }
         };
 
+        // Click to add revelation curve at that position
         p.mousePressed = function() {
           if (p.mouseX > 0 && p.mouseX < CONFIG.W && p.mouseY > 0 && p.mouseY < CONFIG.H) {
-            paths.push(createPath(p.mouseX, p.mouseY));
+            curves.push(spawnCurve(p.mouseX));
           }
         };
       });
