@@ -30,9 +30,9 @@ import Base from '../../layouts/Base.astro';
 
       var CONFIG = {
         W: 580, H: 780,
-        bg: [26, 26, 46],           // deep blue-black
-        inkColor: [240, 230, 215],   // warm white for original text
-        invColor: [232, 64, 64],     // paprika red for invasion
+        bg: [232, 226, 216],           // warm paper grey
+        inkColor: [74, 69, 64],        // warm dark grey (carbon ink)
+        invColor: [90, 96, 104],       // cool grey (slightly blue)
         fontSize: 18,
         invFontScale: 1.2,
         // curve layout
@@ -179,34 +179,10 @@ import Base from '../../layouts/Base.astro';
           }
           p.updatePixels();
 
-          // particles
-          updateParticles();
-          for (var pi = 0; pi < particles.length; pi++) {
-            var pt = particles[pi];
-            p.fill(255, 255, 255, pt.alpha);
-            p.ellipse(pt.x, pt.y, pt.size);
-          }
-
           // grow paths
           for (var j = 0; j < paths.length; j++) {
             for (var s = 0; s < CONFIG.growSteps; s++) {
               growPath(paths[j], p);
-            }
-          }
-
-          // draw invasion trail (thin glowing line)
-          for (var j2 = 0; j2 < paths.length; j2++) {
-            var pts = paths[j2].points;
-            if (pts.length > 1) {
-              p.stroke(CONFIG.invColor[0], CONFIG.invColor[1], CONFIG.invColor[2], 30);
-              p.strokeWeight(2);
-              p.noFill();
-              p.beginShape();
-              for (var k = 0; k < pts.length; k += 3) {
-                p.vertex(pts[k].x, pts[k].y);
-              }
-              p.endShape();
-              p.noStroke();
             }
           }
 
@@ -230,26 +206,26 @@ import Base from '../../layouts/Base.astro';
           // draw text
           for (var ci2 = 0; ci2 < cells.length; ci2++) {
             var c = cells[ci2];
-            if (c.invaded > 0.5) {
-              // invaded: red, larger, grass script
-              var a = Math.round(p.map(c.invaded, 0.5, 1, 120, 255));
+            // always draw original
+            var fadeOut = c.invaded > 0 ? Math.round(p.map(c.invaded, 0, 1, 255, 60)) : 255;
+            p.fill(CONFIG.inkColor[0], CONFIG.inkColor[1], CONFIG.inkColor[2], fadeOut);
+            p.push();
+            p.translate(c.x + c.ox, c.y + c.oy);
+            p.rotate(c.oRot);
+            p.textFont('Ma Shan Zheng');
+            p.textSize(CONFIG.fontSize);
+            p.text(c.ch, 0, 0);
+            p.pop();
+
+            // overlay invaded version
+            if (c.invaded > 0.05) {
+              var a = Math.round(c.invaded * 255);
               p.fill(CONFIG.invColor[0], CONFIG.invColor[1], CONFIG.invColor[2], a);
               p.push();
               p.translate(c.x + c.ix, c.y + c.iy);
               p.rotate(c.iRot);
               p.textFont('Liu Jian Mao Cao');
               p.textSize(CONFIG.fontSize * CONFIG.invFontScale);
-              p.text(c.ch, 0, 0);
-              p.pop();
-            } else {
-              // original: warm white, regular script
-              var origAlpha = c.invaded > 0 ? Math.round(p.map(c.invaded, 0, 0.5, 255, 120)) : 255;
-              p.fill(CONFIG.inkColor[0], CONFIG.inkColor[1], CONFIG.inkColor[2], origAlpha);
-              p.push();
-              p.translate(c.x + c.ox, c.y + c.oy);
-              p.rotate(c.oRot);
-              p.textFont('Ma Shan Zheng');
-              p.textSize(CONFIG.fontSize);
               p.text(c.ch, 0, 0);
               p.pop();
             }
