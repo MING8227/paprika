@@ -67,42 +67,48 @@ import Base from '../../layouts/Base.astro';
         // Rich dark teal background
         p.background(195, 70, 10);
 
-        var time = p.frameCount * 0.002;
+        var time = p.frameCount * 0.004; // faster time
+        var revealProgress = Math.min(p.frameCount / 180, 1); // reveal over 3sec
 
         for (var si = 0; si < strokes.length; si++) {
           var s = strokes[si];
-          // Stroke-level drift (whole stroke moves together slightly)
-          var strokeDriftX = (p.noise(si * 0.1, time * 0.5) - 0.5) * 6;
-          var strokeDriftY = (p.noise(si * 0.1 + 100, time * 0.5) - 0.5) * 6;
 
-          // Per-point noise (individual character)
+          // Staggered reveal: strokes appear top-to-bottom
+          var strokeReveal = (revealProgress - (s[0].hy / H) * 0.8) / 0.2;
+          if (strokeReveal <= 0) continue;
+          strokeReveal = Math.min(strokeReveal, 1);
+          var visiblePts = Math.ceil(s.length * strokeReveal);
+
+          // Stroke-level drift — MUCH bigger, wave-like
+          var strokeDriftX = Math.sin(si * 0.05 + time * 2) * 15;
+          var strokeDriftY = Math.cos(si * 0.07 + time * 1.5) * 10;
+
+          // Per-point noise — bigger, more alive
           for (var pi = 0; pi < s.length; pi++) {
             var pt = s[pi];
-            var nx = (p.noise(pt.n, time) - 0.5) * 4;
-            var ny = (p.noise(pt.n + 300, time) - 0.5) * 4;
+            var nx = (p.noise(pt.n, time * 1.5) - 0.5) * 15;
+            var ny = (p.noise(pt.n + 300, time * 1.5) - 0.5) * 15;
             pt.x = pt.hx + strokeDriftX + nx;
             pt.y = pt.hy + strokeDriftY + ny;
           }
 
-          // Draw as curveVertex (smooth curve through points)
           // Color: warm coral-amber, high saturation
-          var hue = 25 + (si % 20) * 0.5; // slight hue drift per stroke
+          var hue = 25 + (si % 20) * 0.5;
           var sat = 75 + Math.sin(si * 0.3) * 15;
           var bri = 80 + Math.sin(si * 0.7 + time) * 10;
 
           // Stroke weight: Gaussian-ish, most thin, some thick
-          var weight = 1 + Math.pow(Math.abs(Math.sin(si * 1.7)), 4) * 4;
+          var weight = 1.5 + Math.pow(Math.abs(Math.sin(si * 1.7)), 3) * 5;
 
-          p.stroke(hue, sat, bri, 50);
+          p.stroke(hue, sat, bri, 55);
           p.strokeWeight(weight);
           p.noFill();
           p.beginShape();
-          // Double first/last for curveVertex
           p.curveVertex(s[0].x, s[0].y);
-          for (var ci = 0; ci < s.length; ci++) {
+          for (var ci = 0; ci < visiblePts; ci++) {
             p.curveVertex(s[ci].x, s[ci].y);
           }
-          p.curveVertex(s[s.length-1].x, s[s.length-1].y);
+          p.curveVertex(s[Math.min(visiblePts-1, s.length-1)].x, s[Math.min(visiblePts-1, s.length-1)].y);
           p.endShape();
         }
       };
