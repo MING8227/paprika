@@ -1,0 +1,136 @@
+---
+import Base from '../../layouts/Base.astro';
+---
+<Base title="实验5: 高饱和">
+  <article>
+    <h1>实验5: 一种颜色 · Saturated</h1>
+    <div class="article-content">
+      <div id="exp-canvas" style="margin: 2rem 0; display: flex; justify-content: center;"></div>
+      <p style="text-align: center; font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-muted);">
+        强迫自己用高饱和。不舒服就对了。
+      </p>
+    </div>
+  </article>
+  <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
+  <script is:inline>
+  (function() {
+    var W = 580, H = 700;
+    var particles = [];
+    var lines = ['letter', 'from', 'yesterday'];
+
+    new p5(function(p) {
+      p.setup = function() {
+        var canvas = p.createCanvas(W, H);
+        canvas.parent('exp-canvas');
+        p.pixelDensity(1);
+        p.colorMode(p.HSB, 360, 100, 100, 100);
+
+        var g = p.createGraphics(W, H);
+        g.pixelDensity(1);
+        g.background(0);
+        g.fill(255);
+        g.noStroke();
+        g.textFont('Georgia');
+        g.textSize(90);
+        g.textAlign(p.CENTER, p.TOP);
+
+        var startY = 100;
+        var lineH = 160;
+        for (var li = 0; li < lines.length; li++) {
+          g.text(lines[li], W/2, startY + li * lineH);
+        }
+
+        g.loadPixels();
+        particles = [];
+        var step = 3;
+        for (var y = 0; y < H; y += step) {
+          for (var x = 0; x < W; x += step) {
+            var idx = (y * W + x) * 4;
+            if (g.pixels[idx] > 128) {
+              // Gaussian-ish size distribution (Box-Muller lite)
+              var u1 = Math.random();
+              var u2 = Math.random();
+              var gauss = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+              var size = Math.max(1, 2.5 + gauss * 1.8); // mean 2.5, some big outliers
+
+              particles.push({
+                hx: x, hy: y,
+                x: x, y: y,
+                n: Math.random() * 1000,
+                size: size,
+                hueOff: (Math.random() - 0.5) * 15, // ±7.5° hue variation
+              });
+            }
+          }
+        }
+        g.remove();
+      };
+
+      p.draw = function() {
+        // Deep, saturated background — not grey, not black
+        p.background(220, 85, 12); // very dark saturated blue
+
+        var time = p.frameCount * 0.003;
+        var mx = p.mouseX;
+        var my = p.mouseY;
+        var mouseIn = mx > 0 && mx < W && my > 0 && my < H;
+
+        // THE ONE COLOR: cadmium red-orange, high saturation
+        var baseHue = 10; // red-orange
+        var baseSat = 90;
+        var baseBri = 85;
+
+        for (var i = 0; i < particles.length; i++) {
+          var pt = particles[i];
+
+          // Gaussian noise displacement (not uniform!)
+          var nx = p.noise(pt.n, time) * 2 - 1;
+          var ny = p.noise(pt.n + 300, time) * 2 - 1;
+          // Most particles barely move, few move a lot
+          var strength = Math.pow(Math.abs(p.noise(pt.n + 600, time * 0.5) * 2 - 1), 3) * 20;
+          pt.x = pt.hx + nx * strength;
+          pt.y = pt.hy + ny * strength;
+
+          // Mouse influence
+          if (mouseIn) {
+            var dx = pt.x - mx;
+            var dy = pt.y - my;
+            var dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < 120 && dist > 0) {
+              var force = Math.pow((120 - dist) / 120, 2) * 15;
+              pt.x += (dx / dist) * force;
+              pt.y += (dy / dist) * force;
+            }
+          }
+
+          // Displacement affects brightness, not hue
+          var disp = Math.sqrt(
+            (pt.x - pt.hx) * (pt.x - pt.hx) +
+            (pt.y - pt.hy) * (pt.y - pt.hy)
+          );
+          var dt = Math.min(disp / 15, 1);
+
+          var h = baseHue + pt.hueOff;
+          var s = baseSat - dt * 20; // slightly desaturate when displaced
+          var b = baseBri + dt * 15; // brighter when displaced (like heat)
+
+          p.noStroke();
+          p.fill(h, s, b, 85);
+          p.ellipse(pt.x, pt.y, pt.size, pt.size);
+        }
+
+        // A few "hot" particles — large, bright, rare
+        // Drawn on top for visual weight (Fidenza lesson: big shapes matter)
+        if (p.frameCount % 3 === 0) {
+          for (var j = 0; j < 5; j++) {
+            var ri = Math.floor(Math.random() * particles.length);
+            var rp = particles[ri];
+            p.fill(baseHue + (Math.random() - 0.5) * 10, 95, 95, 30);
+            p.ellipse(rp.x, rp.y, rp.size * 4, rp.size * 4);
+          }
+        }
+      };
+    });
+  })();
+  </script>
+</Base>
