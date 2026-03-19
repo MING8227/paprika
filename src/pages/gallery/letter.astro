@@ -20,10 +20,10 @@ import Base from '../../layouts/Base.astro';
   <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
   <script is:inline>
     (function() {
-      if (!document.querySelector('link[href*="ZCOOL"]')) {
+      if (!document.querySelector('link[href*="Noto+Sans"]')) {
         var link = document.createElement('link');
         link.rel = 'stylesheet';
-        link.href = 'https://fonts.googleapis.com/css2?family=ZCOOL+QingKe+HuangYou&family=ZCOOL+XiaoWei&display=swap';
+        link.href = 'https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400&display=swap';
         document.head.appendChild(link);
       }
 
@@ -45,12 +45,12 @@ import Base from '../../layouts/Base.astro';
         curveSpawnInterval: 90,          // frames between new curves
         maxCurves: 30,
         // Text layout
-        fontSize: 19,
-        revealFontScale: 1.15,
-        charSpacing: 22,
-        lineSpacing: 26,
-        marginX: 30,
-        marginY: 35,
+        fontSize: 14,
+        revealFontScale: 1.1,
+        charSpacing: 17,
+        lineSpacing: 20,
+        marginX: 20,
+        marginY: 25,
         jitterPos: 1.2,
         jitterRot: 0.02,
         revJitterPos: 3.5,
@@ -201,7 +201,8 @@ import Base from '../../layouts/Base.astro';
               p.push();
               p.translate(c.x + c.ox, c.y + c.oy);
               p.rotate(c.oRot);
-              p.textFont('ZCOOL QingKe HuangYou');
+              p.textFont('Noto Sans SC');
+              p.textStyle(p.NORMAL);
               p.textSize(CONFIG.fontSize);
               p.text(c.ch, 0, 0);
               p.pop();
@@ -214,7 +215,8 @@ import Base from '../../layouts/Base.astro';
               p.push();
               p.translate(c.x + c.rx, c.y + c.ry);
               p.rotate(c.rRot);
-              p.textFont('ZCOOL XiaoWei');
+              p.textFont('Noto Sans SC');
+              p.textStyle(p.BOLD);
               p.textSize(CONFIG.fontSize * CONFIG.revealFontScale);
               p.text(c.ch, 0, 0);
               p.pop();
