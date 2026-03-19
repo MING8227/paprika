@@ -1,0 +1,159 @@
+---
+import Base from '../../layouts/Base.astro';
+---
+<Base title="信 · Letter">
+  <article>
+    <h1>信 · Letter</h1>
+    <div class="article-meta">2026.03.19 · Wednesday</div>
+    <div class="article-content">
+      <p>醒来发现昨天的自己留了一封信，但笔迹不认识。行与行之间，暖色的笔触渐渐变冷、变碎、变成陌生人的字迹。你知道那是你写的，但你已经不是那个你了。</p>
+      <div id="letter-canvas" style="margin: 2.5rem 0; display: flex; justify-content: center;"></div>
+      <p style="text-align: center; font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-muted);">
+        点击画布重新生成
+      </p>
+    </div>
+  </article>
+
+  <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
+  <script is:inline>
+    new p5(function(p) {
+      var W = 580, H = 580;
+      var lines = [];
+      var LINES = 14;
+
+      p.setup = function() {
+        var cnv = p.createCanvas(W, H);
+        cnv.parent('letter-canvas');
+        p.colorMode(p.HSB, 360, 100, 100, 100);
+        p.pixelDensity(1);
+        p.noLoop();
+        generateLetter();
+      };
+
+      function generateLetter() {
+        p.background(40, 8, 95); // warm paper
+
+        // Subtle paper texture
+        p.noStroke();
+        for (var i = 0; i < 3000; i++) {
+          p.fill(35, p.random(3, 12), p.random(88, 96), p.random(5, 15));
+          p.ellipse(p.random(W), p.random(H), p.random(2, 8));
+        }
+
+        // Margins
+        var marginL = 70;
+        var marginR = W - 60;
+        var lineSpacing = 34;
+        var startY = 65;
+
+        // Each line of "writing"
+        for (var row = 0; row < LINES; row++) {
+          var progress = row / (LINES - 1); // 0 = top (warm, coherent), 1 = bottom (cold, fragmented)
+          var y = startY + row * lineSpacing;
+
+          // Color transition: warm amber → cold blue-grey
+          var hue = p.lerp(30, 215, progress * progress); // accelerating shift
+          var sat = p.lerp(45, 20, progress);
+          var bri = p.lerp(35, 55, progress);
+
+          // Stroke properties degrade
+          var coherence = 1 - progress; // 1 = coherent, 0 = fragmented
+          var weight = p.lerp(1.8, 0.8, progress);
+
+          drawWritingLine(marginL, y, marginR, hue, sat, bri, weight, coherence, row);
+        }
+
+        // A faint fold line across the middle
+        p.stroke(35, 5, 80, 8);
+        p.strokeWeight(0.5);
+        p.line(0, H * 0.48, W, H * 0.52);
+      }
+
+      function drawWritingLine(x1, y, x2, hue, sat, bri, weight, coherence, row) {
+        var lineWidth = x2 - x1;
+        // Vary line length slightly
+        var actualEnd = x1 + lineWidth * p.random(0.7, 1.0);
+        if (row === LINES - 1) actualEnd = x1 + lineWidth * p.random(0.2, 0.4); // last line short
+
+        var x = x1 + p.random(-3, 3);
+        var segments = p.floor(p.random(12, 22));
+        var segWidth = (actualEnd - x1) / segments;
+
+        for (var s = 0; s < segments; s++) {
+          var sx = x + s * segWidth;
+          var ex = sx + segWidth * p.random(0.5, 0.95);
+
+          // Gap probability increases with degradation
+          if (p.random() > coherence * 0.7 + 0.3) {
+            // Skip this segment (gap in writing)
+            if (p.random() < 0.3 * (1 - coherence)) {
+              // Drop a fragment/dot instead
+              p.noStroke();
+              p.fill(hue + p.random(-15, 15), sat * p.random(0.5, 1.2), bri, p.random(20, 50));
+              var dotSize = p.random(1, 3);
+              p.ellipse(sx + p.random(segWidth), y + p.random(-4, 4), dotSize);
+            }
+            continue;
+          }
+
+          // Draw a cursive-like bezier stroke
+          p.noFill();
+          var alpha = p.lerp(70, 25, (1 - coherence) * (1 - coherence));
+          p.stroke(
+            (hue + p.random(-8, 8) + 360) % 360,
+            p.constrain(sat + p.random(-10, 10), 10, 60),
+            p.constrain(bri + p.random(-8, 8), 20, 65),
+            alpha
+          );
+          p.strokeWeight(weight * p.random(0.7, 1.3));
+
+          // Vertical wobble increases with degradation
+          var wobble = p.lerp(3, 12, 1 - coherence);
+          var cy1 = y + p.random(-wobble, wobble);
+          var cy2 = y + p.random(-wobble, wobble);
+
+          // Horizontal jitter for fragmented lines
+          var jitterX = (1 - coherence) * p.random(-5, 5);
+
+          p.beginShape();
+          p.vertex(sx + jitterX, y + p.random(-1, 1) * (1 - coherence) * 3);
+          p.bezierVertex(
+            sx + segWidth * 0.33 + jitterX, cy1,
+            sx + segWidth * 0.66 + jitterX, cy2,
+            ex + jitterX, y + p.random(-1, 1) * (1 - coherence) * 5
+          );
+          p.endShape();
+
+          // Occasional descender/ascender strokes (letter-like)
+          if (p.random() < 0.15 * coherence) {
+            var lx = sx + p.random(segWidth);
+            p.beginShape();
+            p.vertex(lx, y);
+            p.vertex(lx + p.random(-2, 2), y + p.random(8, 16) * (p.random() > 0.5 ? 1 : -1));
+            p.endShape();
+          }
+        }
+
+        // Scattered ink spots for degraded lines
+        if (coherence < 0.5) {
+          var spots = p.floor(p.random(2, 6) * (1 - coherence));
+          for (var sp = 0; sp < spots; sp++) {
+            p.noStroke();
+            p.fill(hue + p.random(-20, 20), sat * 0.6, bri, p.random(8, 25));
+            p.ellipse(
+              p.random(x1, actualEnd),
+              y + p.random(-10, 10),
+              p.random(1, 4)
+            );
+          }
+        }
+      }
+
+      p.mousePressed = function() {
+        if (p.mouseX >= 0 && p.mouseX <= W && p.mouseY >= 0 && p.mouseY <= H) {
+          generateLetter();
+        }
+      };
+    }, 'letter-canvas');
+  </script>
+</Base>
