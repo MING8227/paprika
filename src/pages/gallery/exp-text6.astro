@@ -1,0 +1,112 @@
+---
+import Base from '../../layouts/Base.astro';
+---
+<Base title="实验6: 笔画曲线">
+  <article>
+    <h1>实验6: 笔画 · Strokes</h1>
+    <div class="article-content">
+      <div id="exp-canvas" style="margin: 2rem 0; display: flex; justify-content: center;"></div>
+      <p style="text-align: center; font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-muted);">
+        文字由笔画构成，笔画自己会走。
+      </p>
+    </div>
+  </article>
+  <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
+  <script is:inline>
+  (function() {
+    var W = 580, H = 700;
+    var strokes = []; // groups of connected points → curves
+
+    new p5(function(p) {
+      p.setup = function() {
+        var canvas = p.createCanvas(W, H);
+        canvas.parent('exp-canvas');
+        p.pixelDensity(1);
+        p.colorMode(p.HSB, 360, 100, 100, 100);
+
+        var g = p.createGraphics(W, H);
+        g.pixelDensity(1);
+        g.background(0);
+        g.fill(255);
+        g.noStroke();
+        g.textFont('Georgia');
+        g.textSize(80);
+        g.textAlign(p.CENTER, p.TOP);
+
+        var textLines = ['letter', 'from', 'yesterday'];
+        var startY = 120;
+        var lineH = 150;
+        for (var li = 0; li < textLines.length; li++) {
+          g.text(textLines[li], W/2, startY + li * lineH);
+        }
+
+        g.loadPixels();
+
+        // Sample points along horizontal scanlines, group into runs
+        strokes = [];
+        var step = 3;
+        for (var y = 0; y < H; y += step) {
+          var run = [];
+          for (var x = 0; x < W; x += step) {
+            var idx = (y * W + x) * 4;
+            if (g.pixels[idx] > 128) {
+              run.push({ hx: x, hy: y, x: x, y: y, n: Math.random() * 1000 });
+            } else {
+              if (run.length >= 3) {
+                strokes.push(run.slice());
+              }
+              run = [];
+            }
+          }
+          if (run.length >= 3) strokes.push(run);
+        }
+        g.remove();
+      };
+
+      p.draw = function() {
+        // Rich dark teal background
+        p.background(195, 70, 10);
+
+        var time = p.frameCount * 0.002;
+
+        for (var si = 0; si < strokes.length; si++) {
+          var s = strokes[si];
+          // Stroke-level drift (whole stroke moves together slightly)
+          var strokeDriftX = (p.noise(si * 0.1, time * 0.5) - 0.5) * 6;
+          var strokeDriftY = (p.noise(si * 0.1 + 100, time * 0.5) - 0.5) * 6;
+
+          // Per-point noise (individual character)
+          for (var pi = 0; pi < s.length; pi++) {
+            var pt = s[pi];
+            var nx = (p.noise(pt.n, time) - 0.5) * 4;
+            var ny = (p.noise(pt.n + 300, time) - 0.5) * 4;
+            pt.x = pt.hx + strokeDriftX + nx;
+            pt.y = pt.hy + strokeDriftY + ny;
+          }
+
+          // Draw as curveVertex (smooth curve through points)
+          // Color: warm coral-amber, high saturation
+          var hue = 25 + (si % 20) * 0.5; // slight hue drift per stroke
+          var sat = 75 + Math.sin(si * 0.3) * 15;
+          var bri = 80 + Math.sin(si * 0.7 + time) * 10;
+
+          // Stroke weight: Gaussian-ish, most thin, some thick
+          var weight = 1 + Math.pow(Math.abs(Math.sin(si * 1.7)), 4) * 4;
+
+          p.stroke(hue, sat, bri, 50);
+          p.strokeWeight(weight);
+          p.noFill();
+          p.beginShape();
+          // Double first/last for curveVertex
+          p.curveVertex(s[0].x, s[0].y);
+          for (var ci = 0; ci < s.length; ci++) {
+            p.curveVertex(s[ci].x, s[ci].y);
+          }
+          p.curveVertex(s[s.length-1].x, s[s.length-1].y);
+          p.endShape();
+        }
+      };
+    });
+  })();
+  </script>
+</Base>
