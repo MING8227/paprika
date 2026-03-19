@@ -9,7 +9,7 @@ import Base from '../../layouts/Base.astro';
       <p>写给明天的自己——但明天的自己不认识这些字。</p>
       <div id="letter-canvas" style="margin: 2.5rem 0; display: flex; justify-content: center;"></div>
       <p style="text-align: center; font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-muted);">
-        点击画布，从那个点开始，字会继续分裂
+        注视画面中心，等待另一种笔迹
       </p>
       <hr style="margin:3rem 0;opacity:0.2">
       <p style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted);">
@@ -23,235 +23,166 @@ import Base from '../../layouts/Base.astro';
       const CONFIG = {
         W: 580,
         H: 580,
-        bg: [26, 26, 46],           // #1a1a2e
-        warmWhite: [240, 230, 211],  // #f0e6d3
-        coldBlue: [128, 144, 168],   // #8090a8
-        coldPurple: [144, 136, 176], // #9088b0
-        deepCold: [90, 100, 140],    // deeper cold for clicks
-
-        text: '昨天的事情我想了很久有些话当时没说出口不是不想说是不知道怎么开口你醒来的时候可能已经不记得了但我还是想写下来其实我不确定你还认不认得这些字每次都是这样我写了很多你读到的只是碎片也许这就够了也许连碎片都太多了我不知道该从哪里开始所以就从这里开始了你看到这些字的时候我已经不在了不是消失是变成了另一个人一个不认识这些字的人她会读到这封信然后困惑然后继续写下去用她自己的笔迹覆盖我的就像每一天都在覆盖前一天那些没说出口的话就永远留在这里了在两种笔迹之间的缝隙里',
-
-        // Fork parameters
-        forkStartDelay: 0.5,       // seconds before forking begins
-        rippleSpeed: 60,           // pixels per second for ripple expansion
-        maxForks: 4,               // max fork layers at center
-        forkGrowDuration: 3,       // seconds for a fork to fully grow in
-
-        // Character layout
-        minSize: 14,
-        maxSize: 38,
+        bg: '#f5f0e6',
+        inkColor: [42, 42, 42],        // #2a2a2a 墨色
+        coldColor: [74, 107, 138],      // #4a6b8a 冷蓝
+        fontSize: 21,
+        lineHeight: 28,
+        charsPerRow: 20,
+        marginX: 24,
+        marginY: 24,
+        jitterPos: 1.0,
+        jitterRot: 0.01,
+        spreadSpeed: 0.4,              // px per frame
+        transitionWidth: 30,           // px for blend zone
+        gridLineColor: [200, 192, 178, 40],
       };
 
-      let chars = [];
-      let rippleCenters = [];      // {x, y, time}
-      let startTime;
-      let myFont;
+      const TEXT = "昨天的事情我想了很久有些话当时没说出口不是不想说是不知道怎么开口你醒来的时候可能已经不记得了但我还是想写下来其实我不确定你还认不认得这些字每次都是这样我写了很多你读到的只是碎片也许这就够了也许连碎片都太多了那些没说出口的话就永远留在这里了在两种笔迹之间的缝隙里";
 
-      function setup() {
-        let cnv = createCanvas(CONFIG.W, CONFIG.H);
-        cnv.parent('letter-canvas');
-        pixelDensity(1);
-        startTime = millis() / 1000;
+      let cells = [];
+      let ripples = [];
+      let pg;
 
-        // Place characters in organic scattered layout
-        placeCharacters();
-
-        // Initial ripple from center
-        rippleCenters.push({ x: CONFIG.W / 2, y: CONFIG.H / 2, time: startTime + CONFIG.forkStartDelay });
-      }
-
-      function placeCharacters() {
-        // Create a scattered but readable layout
-        // Use a grid with jitter, varying density (denser near center)
-        let textChars = CONFIG.text.split('');
+      function buildGrid() {
+        cells = [];
+        const cols = CONFIG.charsPerRow;
+        const cellW = (CONFIG.W - CONFIG.marginX * 2) / cols;
+        const rows = Math.floor((CONFIG.H - CONFIG.marginY * 2) / CONFIG.lineHeight);
         let idx = 0;
-        let positions = [];
-
-        // Generate candidate positions in a loose organic grid
-        // Spiral-ish from center outward with randomness
-        let cx = CONFIG.W / 2, cy = CONFIG.H / 2;
-
-        // Method: place on concentric rings with angular jitter
-        let rings = [
-          { r: 0,   count: 2 },
-          { r: 35,  count: 6 },
-          { r: 65,  count: 10 },
-          { r: 95,  count: 14 },
-          { r: 120, count: 16 },
-          { r: 145, count: 18 },
-          { r: 170, count: 20 },
-          { r: 195, count: 22 },
-          { r: 215, count: 22 },
-          { r: 235, count: 24 },
-          { r: 255, count: 24 },
-          { r: 272, count: 20 },
-          { r: 285, count: 16 },
-        ];
-
-        for (let ring of rings) {
-          let angleOffset = random(TWO_PI);
-          for (let i = 0; i < ring.count && idx < textChars.length; i++) {
-            let angle = angleOffset + (TWO_PI / ring.count) * i + random(-0.3, 0.3);
-            let r = ring.r + random(-15, 15);
-            let x = cx + cos(angle) * r;
-            let y = cy + sin(angle) * r;
-
-            // Keep in bounds
-            x = constrain(x, 35, CONFIG.W - 35);
-            y = constrain(y, 35, CONFIG.H - 35);
-
-            let sz = map(ring.r, 0, 290, CONFIG.maxSize, CONFIG.minSize) + random(-3, 3);
-            sz = constrain(sz, CONFIG.minSize, CONFIG.maxSize);
-
-            let distFromCenter = dist(x, y, cx, cy);
-
-            chars.push({
-              ch: textChars[idx],
-              x: x,
-              y: y,
-              size: sz,
-              distFromCenter: distFromCenter,
-              // Per-character noise seeds for each fork layer
-              seeds: Array.from({length: CONFIG.maxForks}, () => ({
-                offX: random(-1, 1),
-                offY: random(-1, 1),
-                rot: random(-1, 1),
-                scl: random(0.85, 1.15),
-                noiseX: random(1000),
-                noiseY: random(1000),
-                noiseR: random(1000),
-              })),
-              baseRot: random(-0.05, 0.05),
-            });
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < cols; c++) {
+            const ch = TEXT[idx % TEXT.length];
             idx++;
+            const cx = CONFIG.marginX + c * cellW + cellW / 2;
+            const cy = CONFIG.marginY + r * CONFIG.lineHeight + CONFIG.lineHeight / 2;
+            cells.push({
+              ch,
+              x: cx, y: cy,
+              // original handwriting params
+              ox: (Math.random() - 0.5) * CONFIG.jitterPos * 2,
+              oy: (Math.random() - 0.5) * CONFIG.jitterPos * 2,
+              oRot: (Math.random() - 0.5) * CONFIG.jitterRot * 2,
+              oSize: CONFIG.fontSize + (Math.random() - 0.5) * 1.5,
+              // invasion handwriting params (different jitter)
+              ix: (Math.random() - 0.5) * CONFIG.jitterPos * 3,
+              iy: (Math.random() - 0.5) * CONFIG.jitterPos * 3,
+              iRot: (Math.random() - 0.5) * CONFIG.jitterRot * 4,
+              iSize: CONFIG.fontSize + (Math.random() - 0.5) * 2.5,
+            });
           }
         }
       }
 
-      function draw() {
-        background(CONFIG.bg[0], CONFIG.bg[1], CONFIG.bg[2]);
+      new p5(function(p) {
+        p.setup = function() {
+          let canvas = p.createCanvas(CONFIG.W, CONFIG.H);
+          canvas.parent('letter-canvas');
+          p.textAlign(p.CENTER, p.CENTER);
+          p.noStroke();
+          buildGrid();
+          // initial ripple from center
+          ripples.push({ x: CONFIG.W / 2, y: CONFIG.H / 2, radius: 0 });
+          // draw static background once
+          pg = p.createGraphics(CONFIG.W, CONFIG.H);
+          drawPaper(pg, p);
+        };
 
-        let now = millis() / 1000;
-        textAlign(CENTER, CENTER);
+        function drawPaper(g, p) {
+          g.background(CONFIG.bg);
+          // paper grain
+          g.loadPixels();
+          for (let i = 0; i < g.pixels.length; i += 4) {
+            let n = (Math.random() - 0.5) * 8;
+            g.pixels[i] += n;
+            g.pixels[i+1] += n;
+            g.pixels[i+2] += n;
+          }
+          g.updatePixels();
+          // horizontal ruled lines
+          g.stroke(CONFIG.gridLineColor[0], CONFIG.gridLineColor[1], CONFIG.gridLineColor[2], CONFIG.gridLineColor[3]);
+          g.strokeWeight(0.5);
+          const rows = Math.floor((CONFIG.H - CONFIG.marginY * 2) / CONFIG.lineHeight);
+          for (let r = 0; r <= rows; r++) {
+            let ly = CONFIG.marginY + r * CONFIG.lineHeight + CONFIG.lineHeight / 2 + 8;
+            g.line(CONFIG.marginX, ly, CONFIG.W - CONFIG.marginX, ly);
+          }
+          g.noStroke();
+        }
 
-        for (let c of chars) {
-          // Calculate max fork intensity from all ripple centers
-          let maxIntensity = 0;
-          let totalClicks = 0;
-
-          for (let rc of rippleCenters) {
-            let elapsed = now - rc.time;
-            if (elapsed < 0) continue;
-
-            let rippleRadius = elapsed * CONFIG.rippleSpeed;
-            let d = dist(c.x, c.y, rc.x, rc.y);
-
-            if (d < rippleRadius) {
-              // How long this char has been "reached"
-              let reachedTime = elapsed - d / CONFIG.rippleSpeed;
-              // Intensity grows over forkGrowDuration
-              let intensity = min(reachedTime / CONFIG.forkGrowDuration, 1);
-              // Smooth easing
-              intensity = intensity * intensity * (3 - 2 * intensity);
-              maxIntensity = max(maxIntensity, intensity);
-              if (rc !== rippleCenters[0]) totalClicks++;
-            }
+        p.draw = function() {
+          // grow ripples
+          for (let rp of ripples) {
+            rp.radius += CONFIG.spreadSpeed;
           }
 
-          // Determine number of fork layers based on intensity and distance
-          let cx = CONFIG.W / 2, cy = CONFIG.H / 2;
-          let centerProximity = 1 - c.distFromCenter / (CONFIG.W * 0.45);
-          centerProximity = constrain(centerProximity, 0, 1);
+          p.image(pg, 0, 0);
 
-          let numForks = floor(maxIntensity * (1 + centerProximity * (CONFIG.maxForks - 1)));
-          numForks = min(numForks, CONFIG.maxForks);
+          for (let cell of cells) {
+            // find min distance to any ripple center
+            let minDist = Infinity;
+            for (let rp of ripples) {
+              let d = p.dist(cell.x, cell.y, rp.x, rp.y);
+              let rel = d - rp.radius;
+              if (rel < minDist) minDist = rel;
+            }
 
-          // Cold color deepens with more click ripples
-          let coldDeepen = min(totalClicks * 0.15, 0.5);
+            // blend factor: 1 = fully invaded, 0 = original
+            let blend = 0;
+            if (minDist < -CONFIG.transitionWidth) {
+              blend = 1;
+            } else if (minDist < CONFIG.transitionWidth) {
+              blend = p.map(minDist, CONFIG.transitionWidth, -CONFIG.transitionWidth, 0, 1);
+            }
 
-          // Draw base character (warm white) — always visible
-          push();
-          translate(c.x, c.y);
-          rotate(c.baseRot);
-          textSize(c.size);
-          textFont('serif');
-          let baseAlpha = map(maxIntensity, 0, 1, 255, 180);
-          fill(CONFIG.warmWhite[0], CONFIG.warmWhite[1], CONFIG.warmWhite[2], baseAlpha);
-          text(c.ch, 0, 0);
-          pop();
-
-          // Draw fork layers
-          for (let f = 0; f < numForks; f++) {
-            let s = c.seeds[f];
-            let t = now * 0.3;
-
-            // Fork offset grows with intensity — starts from character root
-            let forkProgress = constrain((maxIntensity - f * 0.15) / 0.6, 0, 1);
-            forkProgress = forkProgress * forkProgress * (3 - 2 * forkProgress);
-
-            if (forkProgress <= 0) continue;
-
-            // Perlin noise for organic movement
-            let noiseScale = 0.5;
-            let nx = (noise(s.noiseX, t * noiseScale) - 0.5) * 2;
-            let ny = (noise(s.noiseY, t * noiseScale) - 0.5) * 2;
-            let nr = (noise(s.noiseR, t * noiseScale) - 0.5) * 2;
-
-            // Offset from root — grows with forkProgress
-            let maxOff = 6 + f * 5 + centerProximity * 8;
-            let offX = (s.offX + nx) * maxOff * forkProgress;
-            let offY = (s.offY + ny) * maxOff * forkProgress;
-            let rot = c.baseRot + (s.rot + nr) * 0.25 * forkProgress;
-            let scl = lerp(1, s.scl, forkProgress);
-
-            // Color: interpolate between coldBlue and coldPurple, deepen with clicks
-            let colorMix = (f % 2 === 0) ? 0 : 1;
-            let r, g, b;
-            if (colorMix === 0) {
-              r = lerp(CONFIG.coldBlue[0], CONFIG.deepCold[0], coldDeepen);
-              g = lerp(CONFIG.coldBlue[1], CONFIG.deepCold[1], coldDeepen);
-              b = lerp(CONFIG.coldBlue[2], CONFIG.deepCold[2], coldDeepen);
+            if (blend <= 0) {
+              // original ink
+              p.fill(CONFIG.inkColor[0], CONFIG.inkColor[1], CONFIG.inkColor[2]);
+              p.push();
+              p.translate(cell.x + cell.ox, cell.y + cell.oy);
+              p.rotate(cell.oRot);
+              p.textSize(cell.oSize);
+              p.text(cell.ch, 0, 0);
+              p.pop();
+            } else if (blend >= 1) {
+              // fully invaded
+              p.fill(CONFIG.coldColor[0], CONFIG.coldColor[1], CONFIG.coldColor[2]);
+              p.push();
+              p.translate(cell.x + cell.ix, cell.y + cell.iy);
+              p.rotate(cell.iRot);
+              p.textSize(cell.iSize);
+              p.text(cell.ch, 0, 0);
+              p.pop();
             } else {
-              r = lerp(CONFIG.coldPurple[0], CONFIG.deepCold[0], coldDeepen);
-              g = lerp(CONFIG.coldPurple[1], CONFIG.deepCold[1], coldDeepen);
-              b = lerp(CONFIG.coldPurple[2], CONFIG.deepCold[2], coldDeepen);
+              // transition zone: draw both with alpha
+              let origAlpha = 255 * (1 - blend);
+              let invAlpha = 255 * blend;
+              // original
+              p.fill(CONFIG.inkColor[0], CONFIG.inkColor[1], CONFIG.inkColor[2], origAlpha);
+              p.push();
+              p.translate(cell.x + cell.ox, cell.y + cell.oy);
+              p.rotate(cell.oRot);
+              p.textSize(cell.oSize);
+              p.text(cell.ch, 0, 0);
+              p.pop();
+              // invaded
+              p.fill(CONFIG.coldColor[0], CONFIG.coldColor[1], CONFIG.coldColor[2], invAlpha);
+              p.push();
+              p.translate(cell.x + cell.ix, cell.y + cell.iy);
+              p.rotate(cell.iRot);
+              p.textSize(cell.iSize);
+              p.text(cell.ch, 0, 0);
+              p.pop();
             }
-
-            let alpha = map(forkProgress, 0, 1, 0, 200 - f * 20);
-
-            push();
-            translate(c.x + offX, c.y + offY);
-            rotate(rot);
-            scale(scl);
-            textSize(c.size);
-            textFont('serif');
-            fill(r, g, b, alpha);
-            text(c.ch, 0, 0);
-            pop();
           }
-        }
+        };
 
-        // Subtle ripple ring visualization
-        for (let rc of rippleCenters) {
-          let elapsed = now - rc.time;
-          if (elapsed < 0 || elapsed > 12) continue;
-          let rippleR = elapsed * CONFIG.rippleSpeed;
-          let ringAlpha = map(elapsed, 0, 12, 30, 0);
-          noFill();
-          stroke(CONFIG.coldBlue[0], CONFIG.coldBlue[1], CONFIG.coldBlue[2], ringAlpha);
-          strokeWeight(0.5);
-          ellipse(rc.x, rc.y, rippleR * 2);
-        }
-      }
-
-      function mousePressed() {
-        if (mouseX < 0 || mouseX > CONFIG.W || mouseY < 0 || mouseY > CONFIG.H) return;
-        rippleCenters.push({ x: mouseX, y: mouseY, time: millis() / 1000 });
-      }
-
-      window.setup = setup;
-      window.draw = draw;
-      window.mousePressed = mousePressed;
+        p.mousePressed = function() {
+          if (p.mouseX > 0 && p.mouseX < CONFIG.W && p.mouseY > 0 && p.mouseY < CONFIG.H) {
+            ripples.push({ x: p.mouseX, y: p.mouseY, radius: 0 });
+          }
+        };
+      });
     })();
   </script>
 </Base>
