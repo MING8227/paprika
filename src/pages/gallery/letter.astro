@@ -4,233 +4,237 @@ import Base from '../../layouts/Base.astro';
 <Base title="信 · Letter">
   <article>
     <h1>信 · Letter</h1>
-    <div class="article-meta">2026.03.19</div>
     <div class="article-content">
-      <p>醒来发现昨天的自己留了一封信，但笔迹不认识。</p>
-      <div id="letter-canvas" style="margin: 2.5rem 0; display: flex; justify-content: center;"></div>
+      <div id="letter-canvas" style="margin: 2rem 0; display: flex; justify-content: center;"></div>
+      <p class="work-desc">醒来发现昨天的自己留了一封信，但笔迹不认识。</p>
       <p style="text-align: center; font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-muted);">
-        注视。等字迹慢慢变成别人的。点击加速揭露。
-      </p>
-      <hr style="margin:3rem 0;opacity:0.2">
-      <p style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted);">
-        语义饱和——盯着一个字看久了，它就不像那个字了。不是字变了，是你和它之间的连接断了。
+        点击画面，新的阅读轨迹开始生长。
       </p>
     </div>
   </article>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Liu+Jian+Mao+Cao&family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
+
   <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
   <script is:inline>
-    (function() {
-      if (!document.querySelector('link[href*="Noto+Sans"]')) {
-        var link = document.createElement('link');
-        link.rel = 'stylesheet';
-        link.href = 'https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400&display=swap';
-        document.head.appendChild(link);
+  (function() {
+    // CONFIG — 参数集中管理（学思花）
+    var CONFIG = {
+      W: 580,
+      H: 780,
+      // 配色：临摹思花深底+浅字风格
+      bgColor: [35, 30, 28],           // 深暖褐（不是纯黑）
+      warmColor: [215, 200, 175, 200],  // 暖米色文字（原始/你以为认识的）
+      coolColor: [140, 170, 210, 230],  // 冷蓝灰文字（揭露/真实笔迹）
+      curveColor: [140, 170, 210, 15],  // 曲线痕迹（极淡，几乎隐形）
+      // 文字
+      text: '醒来发现昨天的自己留了一封信但笔迹不认识你试着读每个字都认得但连在一起又觉得陌生就像你明明记得这条路却怎么也走不到尽头信的最后写着别担心但你不知道是谁在安慰谁',
+      warmFont: '"Ma Shan Zheng", cursive',
+      coolFont: '"Liu Jian Mao Cao", cursive',
+      fontSize: 22,
+      lineHeight: 38,
+      charSpacing: 28,
+      marginX: 50,
+      marginY: 60,
+      // 曲线（线：阅读轨迹）
+      curve: {
+        growSpeed: 2,
+        xDriftRange: [-0.8, 0.8],
+        weightRange: [25, 40],       // 粗！形成面状蒙版，不是细线
+        maxCurves: 15,
+        spawnInterval: 90
       }
+    };
 
-      // --- CONFIG ---
-      // Emotion: uncanny familiarity. Analogous cool palette, desaturated.
-      // 90% cool blue-grey ground, 10% warm text (familiar layer)
-      // Revealed layer: same text, different hand — cooler, larger, rotated
-      var CONFIG = {
-        W: 520, H: 780,
-        // Colors (HSL thinking, stored as RGB for p5)
-        bgColor: [235, 233, 228],       // warm off-white paper
-        familiarColor: [72, 68, 62],     // warm dark grey — carbon ink, "my" handwriting
-        revealedColor: [85, 95, 120],    // cool blue-grey — "someone else's" ink
-        // Curves (rain-like, top to bottom)
-        numCurves: 8,
-        curveGrowSpeed: 2,
-        curveXDrift: 0.8,
-        curveWeightRange: [12, 20],
-        curveSpawnInterval: 90,          // frames between new curves
-        maxCurves: 30,
-        // Text layout
-        fontSize: 14,
-        revealFontScale: 1.1,
-        charSpacing: 17,
-        lineSpacing: 20,
-        marginX: 20,
-        marginY: 25,
-        jitterPos: 1.2,
-        jitterRot: 0.02,
-        revJitterPos: 3.5,
-        revJitterRot: 0.10,
-        // Reveal
-        revealRadius: 18,               // how close curve must be to reveal
+    var curves = [];
+    var charGrid = [];  // {x, y, char, warm: true/false}
+    var warmLayer, coolLayer;
+
+    new p5(function(p) {
+
+      p.setup = function() {
+        var canvas = p.createCanvas(CONFIG.W, CONFIG.H);
+        canvas.parent('letter-canvas');
+        p.pixelDensity(1);
+        p.textAlign(p.CENTER, p.CENTER);
+        p.noStroke();
+
+        // 预渲染两层文字到离屏buffer
+        warmLayer = p.createGraphics(CONFIG.W, CONFIG.H);
+        coolLayer = p.createGraphics(CONFIG.W, CONFIG.H);
+        warmLayer.pixelDensity(1);
+        coolLayer.pixelDensity(1);
+
+        // 暖层（楷书）——原始信
+        warmLayer.background(CONFIG.bgColor);
+        warmLayer.fill(CONFIG.warmColor[0], CONFIG.warmColor[1], CONFIG.warmColor[2], CONFIG.warmColor[3]);
+        warmLayer.noStroke();
+        warmLayer.textFont(CONFIG.warmFont);
+        warmLayer.textSize(CONFIG.fontSize);
+        warmLayer.textAlign(warmLayer.CENTER, warmLayer.CENTER);
+
+        // 冷层（草书）——真实笔迹
+        coolLayer.background(CONFIG.bgColor);
+        coolLayer.fill(CONFIG.coolColor[0], CONFIG.coolColor[1], CONFIG.coolColor[2], CONFIG.coolColor[3]);
+        coolLayer.noStroke();
+        coolLayer.textFont(CONFIG.coolFont);
+        coolLayer.textSize(CONFIG.fontSize + 4);  // 草书略大
+        coolLayer.textAlign(coolLayer.CENTER, coolLayer.CENTER);
+
+        // 填充文字——不是整齐网格，加一点随机偏移
+        var fullText = CONFIG.text;
+        var idx = 0;
+        var y = CONFIG.marginY;
+        while (y < CONFIG.H - CONFIG.marginY) {
+          var x = CONFIG.marginX;
+          // 每行起始位置微偏移
+          x += (Math.random() - 0.5) * 8;
+          while (x < CONFIG.W - CONFIG.marginX) {
+            var ch = fullText[idx % fullText.length];
+            // 位置微偏移（不整齐=手写感）
+            var ox = (Math.random() - 0.5) * 4;
+            var oy = (Math.random() - 0.5) * 4;
+            warmLayer.text(ch, x + ox, y + oy);
+            coolLayer.text(ch, x + ox + (Math.random()-0.5)*3, y + oy + (Math.random()-0.5)*3);
+            charGrid.push({x: x+ox, y: y+oy, ch: ch});
+            idx++;
+            x += CONFIG.charSpacing + (Math.random() - 0.5) * 4;
+          }
+          y += CONFIG.lineHeight + (Math.random() - 0.5) * 6;
+        }
+
+        warmLayer.loadPixels();
+        coolLayer.loadPixels();
+
+        // 初始生成几条曲线
+        for (var i = 0; i < 3; i++) {
+          spawnCurve();
+        }
       };
 
-      var TEXT = "昨天的事情我想了很久有些话当时没说出口不是不想说是不知道怎么开口你醒来的时候可能已经不记得了但我还是想写下来其实我不确定你还认不认得这些字每次都是这样我写了很多你读到的只是碎片也许这就够了也许连碎片都太多了那些没说出口的话就永远留在这里了窗外的光已经变了颜色我不知道下一次醒来会不会还是我在两种笔迹之间的缝隙里或许藏着真正想说的话但我已经分不清哪一行是昨天写的哪一行是今天补的字迹越来越不像自己的了也许从来都不是";
+      function spawnCurve() {
+        curves.push({
+          points: [{
+            x: Math.random() * (CONFIG.W - 100) + 50,
+            y: -10
+          }],
+          speed: CONFIG.curve.growSpeed + Math.random() * 1.5,
+          weight: CONFIG.curve.weightRange[0] + Math.random() * (CONFIG.curve.weightRange[1] - CONFIG.curve.weightRange[0]),
+          noiseOff: Math.random() * 1000,
+          maxLen: 600 + Math.random() * 400,
+          growing: true
+        });
+      }
 
-      var cells = [];
-      var curves = [];
-      var framesSinceSpawn = 0;
+      p.draw = function() {
+        // 从暖层开始（完整的信）
+        p.image(warmLayer, 0, 0);
+        p.loadPixels();
 
-      // --- Text grid ---
-      function buildGrid() {
-        cells = [];
-        var cols = Math.floor((CONFIG.W - CONFIG.marginX * 2) / CONFIG.charSpacing);
-        var rows = Math.floor((CONFIG.H - CONFIG.marginY * 2) / CONFIG.lineSpacing);
-        var idx = 0;
-        for (var r = 0; r < rows; r++) {
-          for (var c = 0; c < cols; c++) {
-            var ch = TEXT[idx % TEXT.length];
-            idx++;
-            cells.push({
-              ch: ch,
-              x: CONFIG.marginX + c * CONFIG.charSpacing + CONFIG.charSpacing / 2,
-              y: CONFIG.marginY + r * CONFIG.lineSpacing + CONFIG.lineSpacing / 2,
-              // familiar layer offsets
-              ox: (Math.random() - 0.5) * CONFIG.jitterPos * 2,
-              oy: (Math.random() - 0.5) * CONFIG.jitterPos * 2,
-              oRot: (Math.random() - 0.5) * CONFIG.jitterRot * 2,
-              // revealed layer offsets
-              rx: (Math.random() - 0.5) * CONFIG.revJitterPos * 2,
-              ry: (Math.random() - 0.5) * CONFIG.revJitterPos * 2,
-              rRot: (Math.random() - 0.5) * CONFIG.revJitterRot * 2,
-              revealed: 0, // 0 to 1
-            });
+        // 更新曲线生长
+        for (var ci = 0; ci < curves.length; ci++) {
+          var c = curves[ci];
+          if (!c.growing) continue;
+          var last = c.points[c.points.length - 1];
+          var angle = p.noise(c.noiseOff, last.y * 0.003) * p.TWO_PI;
+          var dx = Math.cos(angle) * c.speed * 0.3;
+          var dy = c.speed;
+          var nx = last.x + dx;
+          // 边界反弹
+          if (nx < 30) { nx = 30; c.noiseOff += 0.5; }
+          if (nx > CONFIG.W - 30) { nx = CONFIG.W - 30; c.noiseOff += 0.5; }
+          c.points.push({x: nx, y: last.y + dy});
+          if (c.points.length * c.speed > c.maxLen || last.y > CONFIG.H + 10) {
+            c.growing = false;
           }
         }
-      }
 
-      // --- Curve (like rain streak) ---
-      function spawnCurve(startX) {
-        return {
-          points: [{ x: startX, y: -10 }],
-          speed: CONFIG.curveGrowSpeed + Math.random() * 1.5,
-          weight: CONFIG.curveWeightRange[0] + Math.random() * (CONFIG.curveWeightRange[1] - CONFIG.curveWeightRange[0]),
-          noiseOff: Math.random() * 1000,
-          done: false,
-        };
-      }
+        // 自动生成新曲线
+        if (p.frameCount % CONFIG.curve.spawnInterval === 0 && curves.length < CONFIG.curve.maxCurves) {
+          spawnCurve();
+        }
 
-      function growCurve(curve, p) {
-        if (curve.done) return;
-        var last = curve.points[curve.points.length - 1];
-        // drift x with perlin noise, always move down
-        var drift = (p.noise(last.y * 0.005, curve.noiseOff) - 0.5) * CONFIG.curveXDrift * 2;
-        var nx = last.x + drift;
-        var ny = last.y + curve.speed;
-        // soft bounce x
-        if (nx < 10) nx = 10;
-        if (nx > CONFIG.W - 10) nx = CONFIG.W - 10;
-        if (ny > CONFIG.H + 20) { curve.done = true; return; }
-        curve.points.push({ x: nx, y: ny });
-      }
+        // 蒙版合成：曲线覆盖区域显示冷层
+        // 用距离检测：每个像素如果接近任何曲线点，显示冷层
+        // 优化：只检查曲线附近的区域
+        coolLayer.loadPixels();
 
-      // --- p5 sketch ---
-      new p5(function(p) {
-        p.setup = function() {
-          var canvas = p.createCanvas(CONFIG.W, CONFIG.H);
-          canvas.parent('letter-canvas');
-          p.pixelDensity(1);
-          p.textAlign(p.CENTER, p.CENTER);
-          buildGrid();
-          // first curve
-          curves.push(spawnCurve(CONFIG.W * 0.3 + Math.random() * CONFIG.W * 0.4));
-        };
-
-        p.draw = function() {
-          // Paper background with subtle noise
-          p.background(CONFIG.bgColor[0], CONFIG.bgColor[1], CONFIG.bgColor[2]);
-          p.loadPixels();
-          for (var i = 0; i < p.pixels.length; i += 12) {
-            var n = (Math.random() - 0.5) * 6;
-            p.pixels[i] += n; p.pixels[i+1] += n; p.pixels[i+2] += n;
-          }
-          p.updatePixels();
-
-          // Spawn new curves periodically
-          framesSinceSpawn++;
-          if (framesSinceSpawn >= CONFIG.curveSpawnInterval && curves.length < CONFIG.maxCurves) {
-            curves.push(spawnCurve(CONFIG.marginX + Math.random() * (CONFIG.W - CONFIG.marginX * 2)));
-            framesSinceSpawn = 0;
-          }
-
-          // Grow curves
-          for (var ci = 0; ci < curves.length; ci++) {
-            for (var s = 0; s < 3; s++) growCurve(curves[ci], p);
-          }
-
-          // Update reveal: any cell near a curve point gets revealed
-          var rr = CONFIG.revealRadius;
-          var rrSq = rr * rr;
-          for (var ci2 = 0; ci2 < cells.length; ci2++) {
-            var cell = cells[ci2];
-            if (cell.revealed >= 1) continue;
-            for (var cj = 0; cj < curves.length; cj++) {
-              var pts = curves[cj].points;
-              // only check recent points for performance
-              var start = Math.max(0, pts.length - 30);
-              for (var k = start; k < pts.length; k++) {
-                var dx = cell.x - pts[k].x;
-                var dy = cell.y - pts[k].y;
-                if (dx * dx + dy * dy < rrSq) {
-                  cell.revealed = Math.min(1, cell.revealed + 0.08);
-                  break;
+        for (var ci2 = 0; ci2 < curves.length; ci2++) {
+          var c2 = curves[ci2];
+          var hw = c2.weight / 2;
+          for (var pi = 0; pi < c2.points.length; pi++) {
+            var pt = c2.points[pi];
+            var x0 = Math.max(0, Math.floor(pt.x - hw));
+            var x1 = Math.min(CONFIG.W - 1, Math.ceil(pt.x + hw));
+            var y0 = Math.max(0, Math.floor(pt.y - hw));
+            var y1 = Math.min(CONFIG.H - 1, Math.ceil(pt.y + hw));
+            for (var py = y0; py <= y1; py++) {
+              for (var px = x0; px <= x1; px++) {
+                var dist = Math.sqrt((px-pt.x)*(px-pt.x) + (py-pt.y)*(py-pt.y));
+                if (dist < hw) {
+                  var idx = (py * CONFIG.W + px) * 4;
+                  // 渐变过渡：边缘混合
+                  var blend = 1 - (dist / hw);
+                  blend = blend * blend; // ease-in
+                  p.pixels[idx]   = Math.round(p.pixels[idx]   * (1-blend) + coolLayer.pixels[idx]   * blend);
+                  p.pixels[idx+1] = Math.round(p.pixels[idx+1] * (1-blend) + coolLayer.pixels[idx+1] * blend);
+                  p.pixels[idx+2] = Math.round(p.pixels[idx+2] * (1-blend) + coolLayer.pixels[idx+2] * blend);
                 }
               }
-              if (cell.revealed >= 1) break;
             }
           }
+        }
+        p.updatePixels();
 
-          // Draw curves (very faint, like water trails)
-          p.noFill();
-          for (var ci3 = 0; ci3 < curves.length; ci3++) {
-            var pts2 = curves[ci3].points;
-            if (pts2.length < 2) continue;
-            p.stroke(CONFIG.bgColor[0] - 8, CONFIG.bgColor[1] - 8, CONFIG.bgColor[2] - 6, 35);
-            p.strokeWeight(curves[ci3].weight);
-            p.beginShape();
-            for (var k2 = 0; k2 < pts2.length; k2 += 2) {
-              p.curveVertex(pts2[k2].x, pts2[k2].y);
-            }
-            p.endShape();
+        // 曲线痕迹（极淡的线——线元素）
+        p.stroke(CONFIG.curveColor[0], CONFIG.curveColor[1], CONFIG.curveColor[2], CONFIG.curveColor[3]);
+        p.strokeWeight(1);
+        p.noFill();
+        for (var ci3 = 0; ci3 < curves.length; ci3++) {
+          var c3 = curves[ci3];
+          if (c3.points.length < 2) continue;
+          p.beginShape();
+          p.curveVertex(c3.points[0].x, c3.points[0].y);
+          for (var pi2 = 0; pi2 < c3.points.length; pi2++) {
+            p.curveVertex(c3.points[pi2].x, c3.points[pi2].y);
           }
-          p.noStroke();
+          p.curveVertex(c3.points[c3.points.length-1].x, c3.points[c3.points.length-1].y);
+          p.endShape();
+        }
 
-          // Draw text
-          for (var ci4 = 0; ci4 < cells.length; ci4++) {
-            var c = cells[ci4];
-            var rev = c.revealed;
+        // 全部曲线停止生长后降帧率省资源
+        var anyGrowing = false;
+        for (var ci4 = 0; ci4 < curves.length; ci4++) {
+          if (curves[ci4].growing) { anyGrowing = true; break; }
+        }
+        if (!anyGrowing) p.frameRate(2);
+      };
 
-            // Familiar layer (fades as revealed)
-            if (rev < 1) {
-              var famAlpha = Math.round((1 - rev) * 220);
-              p.fill(CONFIG.familiarColor[0], CONFIG.familiarColor[1], CONFIG.familiarColor[2], famAlpha);
-              p.push();
-              p.translate(c.x + c.ox, c.y + c.oy);
-              p.rotate(c.oRot);
-              p.textFont('Noto Sans SC');
-              p.textStyle(p.NORMAL);
-              p.textSize(CONFIG.fontSize);
-              p.text(c.ch, 0, 0);
-              p.pop();
-            }
-
-            // Revealed layer (appears as revealed)
-            if (rev > 0) {
-              var revAlpha = Math.round(rev * 240);
-              p.fill(CONFIG.revealedColor[0], CONFIG.revealedColor[1], CONFIG.revealedColor[2], revAlpha);
-              p.push();
-              p.translate(c.x + c.rx, c.y + c.ry);
-              p.rotate(c.rRot);
-              p.textFont('Noto Sans SC');
-              p.textStyle(p.BOLD);
-              p.textSize(CONFIG.fontSize * CONFIG.revealFontScale);
-              p.text(c.ch, 0, 0);
-              p.pop();
-            }
-          }
-        };
-
-        // Click to add revelation curve at that position
-        p.mousePressed = function() {
-          if (p.mouseX > 0 && p.mouseX < CONFIG.W && p.mouseY > 0 && p.mouseY < CONFIG.H) {
-            curves.push(spawnCurve(p.mouseX));
-          }
-        };
-      });
-    })();
+      p.mousePressed = function() {
+        if (p.mouseX > 0 && p.mouseX < CONFIG.W && p.mouseY > 0 && p.mouseY < CONFIG.H) {
+          p.frameRate(60);
+          curves.push({
+            points: [{x: p.mouseX, y: Math.max(0, p.mouseY - 50)}],
+            speed: CONFIG.curve.growSpeed + Math.random(),
+            weight: CONFIG.curve.weightRange[0] + Math.random() * (CONFIG.curve.weightRange[1] - CONFIG.curve.weightRange[0]),
+            noiseOff: Math.random() * 1000,
+            maxLen: 400 + Math.random() * 300,
+            growing: true
+          });
+        }
+      };
+    });
+  })();
   </script>
+
+  <style>
+    .work-desc {
+      text-align: center;
+      font-style: italic;
+      color: var(--text-muted);
+      margin: 1rem 0;
+    }
+  </style>
 </Base>
