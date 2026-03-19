@@ -20,16 +20,16 @@ import Base from '../../layouts/Base.astro';
   <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
   <script is:inline>
   (function() {
-    // CONFIG — 参数集中管理（学思花）
     var CONFIG = {
       W: 580,
       H: 780,
-      // 配色：临摹思花深底+浅字风格
-      bgColor: [35, 30, 28],           // 深暖褐（不是纯黑）
-      warmColor: [215, 200, 175, 200],  // 暖米色文字（原始/你以为认识的）
-      coolColor: [140, 170, 210, 230],  // 冷蓝灰文字（揭露/真实笔迹）
-      curveColor: [140, 170, 210, 15],  // 曲线痕迹（极淡，几乎隐形）
-      // 文字
+      // 深暖褐底——不是纯黑，有温度
+      bgColor: [35, 30, 28],
+      // 暖层：你以为认识的信（楷书，暖米色，半透明）
+      warmColor: [215, 200, 175, 190],
+      // 冷层：信本来的样子（草书，冷蓝灰，更实）
+      coolColor: [140, 170, 210, 230],
+      // 文字内容
       text: '醒来发现昨天的自己留了一封信但笔迹不认识你试着读每个字都认得但连在一起又觉得陌生就像你明明记得这条路却怎么也走不到尽头信的最后写着别担心但你不知道是谁在安慰谁',
       warmFont: '"Ma Shan Zheng", cursive',
       coolFont: '"Liu Jian Mao Cao", cursive',
@@ -38,19 +38,17 @@ import Base from '../../layouts/Base.astro';
       charSpacing: 28,
       marginX: 50,
       marginY: 60,
-      // 曲线（线：阅读轨迹）
+      // 曲线=阅读轨迹，从上往下生长
       curve: {
-        growSpeed: 2,
-        xDriftRange: [-0.8, 0.8],
-        weightRange: [25, 40],       // 粗！形成面状蒙版，不是细线
-        maxCurves: 15,
-        spawnInterval: 90
+        growSpeed: 2.2,
+        weightRange: [30, 50],
+        maxCurves: 12,
+        spawnInterval: 80
       }
     };
 
     var curves = [];
-    var charGrid = [];  // {x, y, char, warm: true/false}
-    var warmLayer, coolLayer;
+    var warmLayer, coolLayer, maskLayer;
 
     new p5(function(p) {
 
@@ -58,16 +56,16 @@ import Base from '../../layouts/Base.astro';
         var canvas = p.createCanvas(CONFIG.W, CONFIG.H);
         canvas.parent('letter-canvas');
         p.pixelDensity(1);
-        p.textAlign(p.CENTER, p.CENTER);
-        p.noStroke();
 
-        // 预渲染两层文字到离屏buffer
+        // 三个离屏buffer
         warmLayer = p.createGraphics(CONFIG.W, CONFIG.H);
         coolLayer = p.createGraphics(CONFIG.W, CONFIG.H);
+        maskLayer = p.createGraphics(CONFIG.W, CONFIG.H);
         warmLayer.pixelDensity(1);
         coolLayer.pixelDensity(1);
+        maskLayer.pixelDensity(1);
 
-        // 暖层（楷书）——原始信
+        // --- 暖层（楷书）---
         warmLayer.background(CONFIG.bgColor);
         warmLayer.fill(CONFIG.warmColor[0], CONFIG.warmColor[1], CONFIG.warmColor[2], CONFIG.warmColor[3]);
         warmLayer.noStroke();
@@ -75,40 +73,38 @@ import Base from '../../layouts/Base.astro';
         warmLayer.textSize(CONFIG.fontSize);
         warmLayer.textAlign(warmLayer.CENTER, warmLayer.CENTER);
 
-        // 冷层（草书）——真实笔迹
+        // --- 冷层（草书）---
         coolLayer.background(CONFIG.bgColor);
         coolLayer.fill(CONFIG.coolColor[0], CONFIG.coolColor[1], CONFIG.coolColor[2], CONFIG.coolColor[3]);
         coolLayer.noStroke();
         coolLayer.textFont(CONFIG.coolFont);
-        coolLayer.textSize(CONFIG.fontSize + 4);  // 草书略大
+        coolLayer.textSize(CONFIG.fontSize + 4);
         coolLayer.textAlign(coolLayer.CENTER, coolLayer.CENTER);
 
-        // 填充文字——不是整齐网格，加一点随机偏移
+        // 填充文字（手写感：位置微偏移）
         var fullText = CONFIG.text;
         var idx = 0;
         var y = CONFIG.marginY;
         while (y < CONFIG.H - CONFIG.marginY) {
-          var x = CONFIG.marginX;
-          // 每行起始位置微偏移
-          x += (Math.random() - 0.5) * 8;
+          var x = CONFIG.marginX + (Math.random() - 0.5) * 8;
           while (x < CONFIG.W - CONFIG.marginX) {
             var ch = fullText[idx % fullText.length];
-            // 位置微偏移（不整齐=手写感）
             var ox = (Math.random() - 0.5) * 4;
             var oy = (Math.random() - 0.5) * 4;
+            // 暖层：原始位置
             warmLayer.text(ch, x + ox, y + oy);
+            // 冷层：略偏移（不同笔迹不会完全对齐）
             coolLayer.text(ch, x + ox + (Math.random()-0.5)*3, y + oy + (Math.random()-0.5)*3);
-            charGrid.push({x: x+ox, y: y+oy, ch: ch});
             idx++;
             x += CONFIG.charSpacing + (Math.random() - 0.5) * 4;
           }
           y += CONFIG.lineHeight + (Math.random() - 0.5) * 6;
         }
 
-        warmLayer.loadPixels();
-        coolLayer.loadPixels();
+        // mask初始化：全黑=全部显示暖层
+        maskLayer.background(0);
 
-        // 初始生成几条曲线
+        // 初始3条曲线
         for (var i = 0; i < 3; i++) {
           spawnCurve();
         }
@@ -120,34 +116,52 @@ import Base from '../../layouts/Base.astro';
             x: Math.random() * (CONFIG.W - 100) + 50,
             y: -10
           }],
-          speed: CONFIG.curve.growSpeed + Math.random() * 1.5,
+          speed: CONFIG.curve.growSpeed + Math.random() * 1.2,
           weight: CONFIG.curve.weightRange[0] + Math.random() * (CONFIG.curve.weightRange[1] - CONFIG.curve.weightRange[0]),
           noiseOff: Math.random() * 1000,
-          maxLen: 600 + Math.random() * 400,
-          growing: true
+          maxLen: 500 + Math.random() * 400,
+          growing: true,
+          drawn: 0  // 已绘制到mask的点数
         });
       }
 
       p.draw = function() {
-        // 从暖层开始（完整的信）
-        p.image(warmLayer, 0, 0);
-        p.loadPixels();
+        var anyGrowing = false;
 
-        // 更新曲线生长
+        // 更新曲线 + 增量绘制到mask
         for (var ci = 0; ci < curves.length; ci++) {
           var c = curves[ci];
-          if (!c.growing) continue;
-          var last = c.points[c.points.length - 1];
-          var angle = p.noise(c.noiseOff, last.y * 0.003) * p.TWO_PI;
-          var dx = Math.cos(angle) * c.speed * 0.3;
-          var dy = c.speed;
-          var nx = last.x + dx;
-          // 边界反弹
-          if (nx < 30) { nx = 30; c.noiseOff += 0.5; }
-          if (nx > CONFIG.W - 30) { nx = CONFIG.W - 30; c.noiseOff += 0.5; }
-          c.points.push({x: nx, y: last.y + dy});
-          if (c.points.length * c.speed > c.maxLen || last.y > CONFIG.H + 10) {
-            c.growing = false;
+
+          if (c.growing) {
+            anyGrowing = true;
+            var last = c.points[c.points.length - 1];
+            var angle = p.noise(c.noiseOff, last.y * 0.003) * p.TWO_PI;
+            var dx = Math.cos(angle) * c.speed * 0.3;
+            var dy = c.speed;
+            var nx = last.x + dx;
+            // 边界反弹
+            if (nx < 30) { nx = 30; c.noiseOff += 0.5; }
+            if (nx > CONFIG.W - 30) { nx = CONFIG.W - 30; c.noiseOff += 0.5; }
+            c.points.push({x: nx, y: last.y + dy});
+
+            if (c.points.length * c.speed > c.maxLen || last.y > CONFIG.H + 10) {
+              c.growing = false;
+            }
+          }
+
+          // 增量绘制：只画新增的点到mask（白色=显示冷层）
+          if (c.points.length > c.drawn + 1) {
+            maskLayer.stroke(255);
+            maskLayer.strokeWeight(c.weight);
+            maskLayer.strokeCap(maskLayer.ROUND);
+            maskLayer.noFill();
+            for (var pi = Math.max(1, c.drawn); pi < c.points.length; pi++) {
+              maskLayer.line(
+                c.points[pi-1].x, c.points[pi-1].y,
+                c.points[pi].x, c.points[pi].y
+              );
+            }
+            c.drawn = c.points.length;
           }
         }
 
@@ -156,40 +170,24 @@ import Base from '../../layouts/Base.astro';
           spawnCurve();
         }
 
-        // 蒙版合成：曲线覆盖区域显示冷层
-        // 用距离检测：每个像素如果接近任何曲线点，显示冷层
-        // 优化：只检查曲线附近的区域
+        // 合成：逐像素按mask混合暖层和冷层
+        warmLayer.loadPixels();
         coolLayer.loadPixels();
+        maskLayer.loadPixels();
+        p.loadPixels();
 
-        for (var ci2 = 0; ci2 < curves.length; ci2++) {
-          var c2 = curves[ci2];
-          var hw = c2.weight / 2;
-          for (var pi = 0; pi < c2.points.length; pi++) {
-            var pt = c2.points[pi];
-            var x0 = Math.max(0, Math.floor(pt.x - hw));
-            var x1 = Math.min(CONFIG.W - 1, Math.ceil(pt.x + hw));
-            var y0 = Math.max(0, Math.floor(pt.y - hw));
-            var y1 = Math.min(CONFIG.H - 1, Math.ceil(pt.y + hw));
-            for (var py = y0; py <= y1; py++) {
-              for (var px = x0; px <= x1; px++) {
-                var dist = Math.sqrt((px-pt.x)*(px-pt.x) + (py-pt.y)*(py-pt.y));
-                if (dist < hw) {
-                  var idx = (py * CONFIG.W + px) * 4;
-                  // 渐变过渡：边缘混合
-                  var blend = 1 - (dist / hw);
-                  blend = blend * blend; // ease-in
-                  p.pixels[idx]   = Math.round(p.pixels[idx]   * (1-blend) + coolLayer.pixels[idx]   * blend);
-                  p.pixels[idx+1] = Math.round(p.pixels[idx+1] * (1-blend) + coolLayer.pixels[idx+1] * blend);
-                  p.pixels[idx+2] = Math.round(p.pixels[idx+2] * (1-blend) + coolLayer.pixels[idx+2] * blend);
-                }
-              }
-            }
-          }
+        var len = CONFIG.W * CONFIG.H * 4;
+        for (var i = 0; i < len; i += 4) {
+          var t = maskLayer.pixels[i] / 255;  // 0=暖, 1=冷
+          p.pixels[i]   = Math.round(warmLayer.pixels[i]   * (1-t) + coolLayer.pixels[i]   * t);
+          p.pixels[i+1] = Math.round(warmLayer.pixels[i+1] * (1-t) + coolLayer.pixels[i+1] * t);
+          p.pixels[i+2] = Math.round(warmLayer.pixels[i+2] * (1-t) + coolLayer.pixels[i+2] * t);
+          p.pixels[i+3] = 255;
         }
         p.updatePixels();
 
-        // 曲线痕迹（极淡的线——线元素）
-        p.stroke(CONFIG.curveColor[0], CONFIG.curveColor[1], CONFIG.curveColor[2], CONFIG.curveColor[3]);
+        // 曲线痕迹（极淡——阅读的痕迹）
+        p.stroke(140, 170, 210, 12);
         p.strokeWeight(1);
         p.noFill();
         for (var ci3 = 0; ci3 < curves.length; ci3++) {
@@ -204,25 +202,16 @@ import Base from '../../layouts/Base.astro';
           p.endShape();
         }
 
-        // 全部曲线停止生长后降帧率省资源
-        var anyGrowing = false;
-        for (var ci4 = 0; ci4 < curves.length; ci4++) {
-          if (curves[ci4].growing) { anyGrowing = true; break; }
-        }
         if (!anyGrowing) p.frameRate(2);
       };
 
       p.mousePressed = function() {
         if (p.mouseX > 0 && p.mouseX < CONFIG.W && p.mouseY > 0 && p.mouseY < CONFIG.H) {
           p.frameRate(60);
-          curves.push({
-            points: [{x: p.mouseX, y: Math.max(0, p.mouseY - 50)}],
-            speed: CONFIG.curve.growSpeed + Math.random(),
-            weight: CONFIG.curve.weightRange[0] + Math.random() * (CONFIG.curve.weightRange[1] - CONFIG.curve.weightRange[0]),
-            noiseOff: Math.random() * 1000,
-            maxLen: 400 + Math.random() * 300,
-            growing: true
-          });
+          spawnCurve();
+          // 点击位置附近生成
+          var last = curves[curves.length-1];
+          last.points[0] = {x: p.mouseX, y: Math.max(0, p.mouseY - 30)};
         }
       };
     });
