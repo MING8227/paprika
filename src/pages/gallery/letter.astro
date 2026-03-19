@@ -29,7 +29,7 @@ import Base from '../../layouts/Base.astro';
         coldPurple: [144, 136, 176], // #9088b0
         deepCold: [90, 100, 140],    // deeper cold for clicks
 
-        text: '昨天的事情我想了很久有些话当时没说出口不是不想说是不知道怎么开口你醒来的时候可能已经不记得了但我还是想写下来其实我不确定你还认不认得这些字每次都是这样我写了很多你读到的只是碎片',
+        text: '昨天的事情我想了很久有些话当时没说出口不是不想说是不知道怎么开口你醒来的时候可能已经不记得了但我还是想写下来其实我不确定你还认不认得这些字每次都是这样我写了很多你读到的只是碎片也许这就够了也许连碎片都太多了我不知道该从哪里开始所以就从这里开始了你看到这些字的时候我已经不在了不是消失是变成了另一个人一个不认识这些字的人她会读到这封信然后困惑然后继续写下去用她自己的笔迹覆盖我的就像每一天都在覆盖前一天那些没说出口的话就永远留在这里了在两种笔迹之间的缝隙里',
 
         // Fork parameters
         forkStartDelay: 0.5,       // seconds before forking begins
@@ -38,8 +38,8 @@ import Base from '../../layouts/Base.astro';
         forkGrowDuration: 3,       // seconds for a fork to fully grow in
 
         // Character layout
-        minSize: 18,
-        maxSize: 32,
+        minSize: 14,
+        maxSize: 38,
       };
 
       let chars = [];
@@ -73,14 +73,19 @@ import Base from '../../layouts/Base.astro';
 
         // Method: place on concentric rings with angular jitter
         let rings = [
-          { r: 0,   count: 1 },
-          { r: 50,  count: 5 },
-          { r: 95,  count: 8 },
-          { r: 135, count: 11 },
-          { r: 175, count: 13 },
-          { r: 210, count: 15 },
-          { r: 245, count: 16 },
-          { r: 270, count: 12 },
+          { r: 0,   count: 2 },
+          { r: 35,  count: 6 },
+          { r: 65,  count: 10 },
+          { r: 95,  count: 14 },
+          { r: 120, count: 16 },
+          { r: 145, count: 18 },
+          { r: 170, count: 20 },
+          { r: 195, count: 22 },
+          { r: 215, count: 22 },
+          { r: 235, count: 24 },
+          { r: 255, count: 24 },
+          { r: 272, count: 20 },
+          { r: 285, count: 16 },
         ];
 
         for (let ring of rings) {
@@ -95,7 +100,9 @@ import Base from '../../layouts/Base.astro';
             x = constrain(x, 35, CONFIG.W - 35);
             y = constrain(y, 35, CONFIG.H - 35);
 
-            let sz = random(CONFIG.minSize, CONFIG.maxSize);
+            let sz = map(ring.r, 0, 290, CONFIG.maxSize, CONFIG.minSize) + random(-3, 3);
+            sz = constrain(sz, CONFIG.minSize, CONFIG.maxSize);
+
             let distFromCenter = dist(x, y, cx, cy);
 
             chars.push({
