@@ -6,10 +6,10 @@ import Base from '../../layouts/Base.astro';
     <h1>信 · Letter</h1>
     <div class="article-meta">2026.03.19</div>
     <div class="article-content">
-      <p>写给明天的自己——但明天的自己不认识这些字。</p>
+      <p>醒来发现昨天的自己留了一封信，但笔迹不认识。</p>
       <div id="letter-canvas" style="margin: 2.5rem 0; display: flex; justify-content: center;"></div>
       <p style="text-align: center; font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-muted);">
-        注视信纸。等待另一只手。
+        注视信纸。等待另一只手。点击画面产生新的入侵。
       </p>
       <hr style="margin:3rem 0;opacity:0.2">
       <p style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted);">
@@ -20,7 +20,7 @@ import Base from '../../layouts/Base.astro';
   <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
   <script is:inline>
     (function() {
-      // Inject Google Fonts if not already present
+      // Google Fonts
       if (!document.querySelector('link[href*="Ma+Shan+Zheng"]')) {
         var link = document.createElement('link');
         link.rel = 'stylesheet';
@@ -29,103 +29,127 @@ import Base from '../../layouts/Base.astro';
       }
 
       var CONFIG = {
-        W: 580,
-        H: 580,
-        bg: '#f5f0e6',
-        inkColor: [42, 42, 42],
-        coldColor: [74, 125, 255],
-        fontSize: 21,
-        lineHeight: 28,
-        charsPerRow: 20,
-        rows: 19,
-        marginX: 24,
-        marginY: 24,
-        jitterPos: 1.0,
-        jitterRot: 0.02,
-        invJitterPos: 3.0,
-        invJitterRot: 0.08,
-        threshold: 80,
-        gridLineColor: [221, 213, 197, 40],
-        pathSpeed: 3,
-        noiseScale: 0.005,
+        W: 580, H: 580,
+        bg: [26, 26, 46],           // deep blue-black
+        inkColor: [240, 230, 215],   // warm white for original text
+        invColor: [232, 64, 64],     // paprika red for invasion
+        fontSize: 18,
+        invFontScale: 1.2,
+        // curve layout
+        numCurves: 22,               // number of text-carrying curves
+        curveNoiseScale: 0.008,
+        curveAmplitude: 25,
+        charSpacing: 20,
+        // invasion
+        pathSpeed: 4,
+        pathNoiseScale: 0.004,
+        threshold: 60,
+        growSteps: 25,
+        // particles
+        numParticles: 80,
+        // jitter
+        jitterPos: 1.5,
+        jitterRot: 0.03,
+        invJitterPos: 4,
+        invJitterRot: 0.12,
       };
 
-      var TEXT = "昨天的事情我想了很久有些话当时没说出口不是不想说是不知道怎么开口你醒来的时候可能已经不记得了但我还是想写下来其实我不确定你还认不认得这些字每次都是这样我写了很多你读到的只是碎片也许这就够了也许连碎片都太多了那些没说出口的话就永远留在这里了在两种笔迹之间的缝隙里";
+      var TEXT = "昨天的事情我想了很久有些话当时没说出口不是不想说是不知道怎么开口你醒来的时候可能已经不记得了但我还是想写下来其实我不确定你还认不认得这些字每次都是这样我写了很多你读到的只是碎片也许这就够了也许连碎片都太多了那些没说出口的话就永远留在这里了在两种笔迹之间的缝隙里窗外的光已经变了颜色我不知道下一次醒来会不会还是我";
 
       var cells = [];
-      var paths = []; // each path: { points: [{x,y}], noiseOff: number, done: bool }
-      var pg; // static paper background
+      var paths = [];
+      var particles = [];
 
-      function buildGrid() {
+      // Build text along wavy curves
+      function buildCurves(p) {
         cells = [];
-        var cols = CONFIG.charsPerRow;
-        var cellW = (CONFIG.W - CONFIG.marginX * 2) / cols;
+        var ySpacing = (CONFIG.H - 40) / CONFIG.numCurves;
         var idx = 0;
-        for (var r = 0; r < CONFIG.rows; r++) {
-          for (var c = 0; c < cols; c++) {
+        for (var row = 0; row < CONFIG.numCurves; row++) {
+          var baseY = 20 + row * ySpacing + ySpacing / 2;
+          var noiseOffY = row * 100;
+          var x = 15;
+          while (x < CONFIG.W - 15) {
             var ch = TEXT[idx % TEXT.length];
             idx++;
-            var cx = CONFIG.marginX + c * cellW + cellW / 2;
-            var cy = CONFIG.marginY + r * CONFIG.lineHeight + CONFIG.lineHeight / 2;
+            // wavy y offset via perlin noise
+            var waveY = (p.noise(x * CONFIG.curveNoiseScale, noiseOffY) - 0.5) * CONFIG.curveAmplitude * 2;
+            var cy = baseY + waveY;
             cells.push({
               ch: ch,
-              x: cx, y: cy,
+              x: x, y: cy,
               ox: (Math.random() - 0.5) * CONFIG.jitterPos * 2,
               oy: (Math.random() - 0.5) * CONFIG.jitterPos * 2,
               oRot: (Math.random() - 0.5) * CONFIG.jitterRot * 2,
-              oSize: CONFIG.fontSize + (Math.random() - 0.5) * 1.5,
               ix: (Math.random() - 0.5) * CONFIG.invJitterPos * 2,
               iy: (Math.random() - 0.5) * CONFIG.invJitterPos * 2,
               iRot: (Math.random() - 0.5) * CONFIG.invJitterRot * 2,
-              iSize: CONFIG.fontSize * 1.15 + (Math.random() - 0.5) * 3,
-              invaded: 0, // 0-1 blend
+              invaded: 0,
             });
+            x += CONFIG.charSpacing + (Math.random() - 0.5) * 4;
           }
         }
       }
 
-      function createPath(startX, startY, noiseOff) {
-        return {
-          points: [{ x: startX, y: startY }],
-          noiseOff: noiseOff || Math.random() * 1000,
-          done: false
-        };
+      // Invasion path
+      function createPath(sx, sy) {
+        return { points: [{ x: sx, y: sy }], noiseOff: Math.random() * 1000, age: 0 };
       }
 
       function growPath(path, p) {
-        if (path.done) return;
         var last = path.points[path.points.length - 1];
-        var angle = p.noise(last.x * CONFIG.noiseScale, last.y * CONFIG.noiseScale, path.noiseOff) * p.TWO_PI;
+        var angle = p.noise(last.x * CONFIG.pathNoiseScale, last.y * CONFIG.pathNoiseScale, path.noiseOff) * p.TWO_PI;
+        path.noiseOff += 0.002;
         var nx = last.x + Math.cos(angle) * CONFIG.pathSpeed;
         var ny = last.y + Math.sin(angle) * CONFIG.pathSpeed;
-        // bounce off edges
-        var margin = 5;
-        if (nx < margin) { nx = margin; path.noiseOff += 0.5; }
-        if (nx > CONFIG.W - margin) { nx = CONFIG.W - margin; path.noiseOff += 0.5; }
-        if (ny < margin) { ny = margin; path.noiseOff += 0.5; }
-        if (ny > CONFIG.H - margin) { ny = CONFIG.H - margin; path.noiseOff += 0.5; }
+        // bounce
+        if (nx < 5) { nx = 5; path.noiseOff += 0.5; }
+        if (nx > CONFIG.W - 5) { nx = CONFIG.W - 5; path.noiseOff += 0.5; }
+        if (ny < 5) { ny = 5; path.noiseOff += 0.5; }
+        if (ny > CONFIG.H - 5) { ny = CONFIG.H - 5; path.noiseOff += 0.5; }
         path.points.push({ x: nx, y: ny });
+        path.age++;
       }
 
       function distToPath(cx, cy, path) {
-        var minD = Infinity;
+        var minD = 1e9;
         var pts = path.points;
-        // sample every 5th point for performance
-        for (var i = 0; i < pts.length; i += 5) {
-          var dx = cx - pts[i].x;
-          var dy = cy - pts[i].y;
+        for (var i = 0; i < pts.length; i += 4) {
+          var dx = cx - pts[i].x, dy = cy - pts[i].y;
           var d = dx * dx + dy * dy;
           if (d < minD) minD = d;
         }
-        // also check last point
-        if (pts.length > 0) {
-          var lp = pts[pts.length - 1];
-          var dx2 = cx - lp.x;
-          var dy2 = cy - lp.y;
-          var d2 = dx2 * dx2 + dy2 * dy2;
-          if (d2 < minD) minD = d2;
-        }
+        var lp = pts[pts.length - 1];
+        var dx2 = cx - lp.x, dy2 = cy - lp.y;
+        var d2 = dx2 * dx2 + dy2 * dy2;
+        if (d2 < minD) minD = d2;
         return Math.sqrt(minD);
+      }
+
+      // Background particles
+      function initParticles(p) {
+        particles = [];
+        for (var i = 0; i < CONFIG.numParticles; i++) {
+          particles.push({
+            x: Math.random() * CONFIG.W,
+            y: Math.random() * CONFIG.H,
+            vx: (Math.random() - 0.5) * 0.3,
+            vy: (Math.random() - 0.5) * 0.3,
+            size: Math.random() * 2 + 0.5,
+            alpha: Math.random() * 80 + 20,
+          });
+        }
+      }
+
+      function updateParticles() {
+        for (var i = 0; i < particles.length; i++) {
+          var pt = particles[i];
+          pt.x += pt.vx; pt.y += pt.vy;
+          if (pt.x < 0) pt.x = CONFIG.W;
+          if (pt.x > CONFIG.W) pt.x = 0;
+          if (pt.y < 0) pt.y = CONFIG.H;
+          if (pt.y > CONFIG.H) pt.y = 0;
+        }
       }
 
       new p5(function(p) {
@@ -135,52 +159,65 @@ import Base from '../../layouts/Base.astro';
           p.pixelDensity(1);
           p.textAlign(p.CENTER, p.CENTER);
           p.noStroke();
-          buildGrid();
-          // main path from top-left
-          paths.push(createPath(10, 10, 0));
-          // draw static paper
-          pg = p.createGraphics(CONFIG.W, CONFIG.H);
-          pg.pixelDensity(1);
-          drawPaper(pg);
+          buildCurves(p);
+          initParticles(p);
+          // start one invasion from top-left area
+          paths.push(createPath(30, 30));
         };
 
-        function drawPaper(g) {
-          g.background(CONFIG.bg);
-          g.loadPixels();
-          for (var i = 0; i < g.pixels.length; i += 4) {
-            var n = (Math.random() - 0.5) * 10;
-            g.pixels[i] += n;
-            g.pixels[i + 1] += n;
-            g.pixels[i + 2] += n;
-          }
-          g.updatePixels();
-          // horizontal ruled lines
-          g.stroke(CONFIG.gridLineColor[0], CONFIG.gridLineColor[1], CONFIG.gridLineColor[2], CONFIG.gridLineColor[3]);
-          g.strokeWeight(0.5);
-          for (var r = 0; r <= CONFIG.rows; r++) {
-            var ly = CONFIG.marginY + r * CONFIG.lineHeight + CONFIG.lineHeight / 2 + 8;
-            g.line(CONFIG.marginX, ly, CONFIG.W - CONFIG.marginX, ly);
-          }
-          g.noStroke();
-        }
-
         p.draw = function() {
-          // grow paths (multiple steps per frame for visible speed)
-          for (var pi = 0; pi < paths.length; pi++) {
-            for (var s = 0; s < 20; s++) {
-              growPath(paths[pi], p);
+          // background
+          p.background(CONFIG.bg[0], CONFIG.bg[1], CONFIG.bg[2]);
+
+          // subtle noise texture
+          p.loadPixels();
+          for (var i = 0; i < p.pixels.length; i += 16) {
+            var n = (Math.random() - 0.5) * 8;
+            p.pixels[i] += n;
+            p.pixels[i + 1] += n;
+            p.pixels[i + 2] += n;
+          }
+          p.updatePixels();
+
+          // particles
+          updateParticles();
+          for (var pi = 0; pi < particles.length; pi++) {
+            var pt = particles[pi];
+            p.fill(255, 255, 255, pt.alpha);
+            p.ellipse(pt.x, pt.y, pt.size);
+          }
+
+          // grow paths
+          for (var j = 0; j < paths.length; j++) {
+            for (var s = 0; s < CONFIG.growSteps; s++) {
+              growPath(paths[j], p);
             }
           }
 
-          // update invasion for each cell
+          // draw invasion trail (thin glowing line)
+          for (var j2 = 0; j2 < paths.length; j2++) {
+            var pts = paths[j2].points;
+            if (pts.length > 1) {
+              p.stroke(CONFIG.invColor[0], CONFIG.invColor[1], CONFIG.invColor[2], 30);
+              p.strokeWeight(2);
+              p.noFill();
+              p.beginShape();
+              for (var k = 0; k < pts.length; k += 3) {
+                p.vertex(pts[k].x, pts[k].y);
+              }
+              p.endShape();
+              p.noStroke();
+            }
+          }
+
+          // update invasion
           var th = CONFIG.threshold;
-          var thSq = th * th; // not used since we need sqrt for gradient
           for (var ci = 0; ci < cells.length; ci++) {
             var cell = cells[ci];
             if (cell.invaded >= 1) continue;
-            var minDist = Infinity;
-            for (var pi2 = 0; pi2 < paths.length; pi2++) {
-              var d = distToPath(cell.x, cell.y, paths[pi2]);
+            var minDist = 1e9;
+            for (var j3 = 0; j3 < paths.length; j3++) {
+              var d = distToPath(cell.x, cell.y, paths[j3]);
               if (d < minDist) minDist = d;
             }
             if (minDist < th) {
@@ -190,30 +227,29 @@ import Base from '../../layouts/Base.astro';
             }
           }
 
-          // render
-          p.image(pg, 0, 0);
-
+          // draw text
           for (var ci2 = 0; ci2 < cells.length; ci2++) {
             var c = cells[ci2];
-            // always draw original
-            p.fill(CONFIG.inkColor[0], CONFIG.inkColor[1], CONFIG.inkColor[2]);
-            p.push();
-            p.translate(c.x + c.ox, c.y + c.oy);
-            p.rotate(c.oRot);
-            p.textFont('Ma Shan Zheng');
-            p.textSize(c.oSize);
-            p.text(c.ch, 0, 0);
-            p.pop();
-
-            // overlay invasion
-            if (c.invaded > 0) {
-              var alpha = Math.round(c.invaded * 255);
-              p.fill(CONFIG.coldColor[0], CONFIG.coldColor[1], CONFIG.coldColor[2], alpha);
+            if (c.invaded > 0.5) {
+              // invaded: red, larger, grass script
+              var a = Math.round(p.map(c.invaded, 0.5, 1, 120, 255));
+              p.fill(CONFIG.invColor[0], CONFIG.invColor[1], CONFIG.invColor[2], a);
               p.push();
               p.translate(c.x + c.ix, c.y + c.iy);
               p.rotate(c.iRot);
               p.textFont('Liu Jian Mao Cao');
-              p.textSize(c.iSize);
+              p.textSize(CONFIG.fontSize * CONFIG.invFontScale);
+              p.text(c.ch, 0, 0);
+              p.pop();
+            } else {
+              // original: warm white, regular script
+              var origAlpha = c.invaded > 0 ? Math.round(p.map(c.invaded, 0, 0.5, 255, 120)) : 255;
+              p.fill(CONFIG.inkColor[0], CONFIG.inkColor[1], CONFIG.inkColor[2], origAlpha);
+              p.push();
+              p.translate(c.x + c.ox, c.y + c.oy);
+              p.rotate(c.oRot);
+              p.textFont('Ma Shan Zheng');
+              p.textSize(CONFIG.fontSize);
               p.text(c.ch, 0, 0);
               p.pop();
             }
@@ -222,7 +258,7 @@ import Base from '../../layouts/Base.astro';
 
         p.mousePressed = function() {
           if (p.mouseX > 0 && p.mouseX < CONFIG.W && p.mouseY > 0 && p.mouseY < CONFIG.H) {
-            paths.push(createPath(p.mouseX, p.mouseY, Math.random() * 1000));
+            paths.push(createPath(p.mouseX, p.mouseY));
           }
         };
       });
