@@ -1,0 +1,105 @@
+---
+import Base from '../../layouts/Base.astro';
+---
+<Base title="实验7: 蒙版">
+  <article>
+    <h1>实验7: 蒙版 · Masked</h1>
+    <div class="article-content">
+      <div id="exp-canvas" style="margin: 2rem 0; display: flex; justify-content: center;"></div>
+      <p style="text-align: center; font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-muted);">
+        文字是窗口。透过字看到另一个世界。
+      </p>
+    </div>
+  </article>
+  <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
+  <script is:inline>
+  (function() {
+    var W = 580, H = 700;
+    var maskBuffer, sceneBuffer;
+
+    new p5(function(p) {
+      p.setup = function() {
+        var canvas = p.createCanvas(W, H);
+        canvas.parent('exp-canvas');
+        p.pixelDensity(1);
+        p.colorMode(p.HSB, 360, 100, 100, 100);
+
+        // Mask: text rendered white on black
+        maskBuffer = p.createGraphics(W, H);
+        maskBuffer.pixelDensity(1);
+        maskBuffer.background(0);
+        maskBuffer.fill(255);
+        maskBuffer.noStroke();
+        maskBuffer.textFont('Georgia');
+        maskBuffer.textAlign(maskBuffer.CENTER, maskBuffer.TOP);
+
+        // Large bold text fills the canvas
+        var words = ['醒来', '发现', '昨天', '的自己', '留了', '一封信'];
+        var sizes = [90, 80, 90, 70, 80, 90];
+        var y = 30;
+        for (var i = 0; i < words.length; i++) {
+          maskBuffer.textSize(sizes[i]);
+          maskBuffer.text(words[i], W/2, y);
+          y += sizes[i] + 20;
+        }
+
+        maskBuffer.loadPixels();
+
+        // Scene: a flowing abstract painting behind the text
+        sceneBuffer = p.createGraphics(W, H);
+        sceneBuffer.pixelDensity(1);
+      };
+
+      p.draw = function() {
+        var time = p.frameCount * 0.005;
+
+        // Draw flowing scene into buffer
+        sceneBuffer.colorMode(sceneBuffer.HSB, 360, 100, 100, 100);
+        sceneBuffer.background(0, 0, 0);
+        sceneBuffer.noStroke();
+
+        // Flowing blobs of color
+        for (var i = 0; i < 30; i++) {
+          var cx = p.noise(i * 0.5, time * 0.3) * W;
+          var cy = p.noise(i * 0.5 + 100, time * 0.3) * H;
+          var r = 80 + p.noise(i * 0.3, time * 0.5) * 150;
+          var hue = (200 + i * 12 + p.sin(time + i) * 30) % 360;
+          // Use additive-like overlapping circles
+          for (var j = 0; j < 5; j++) {
+            var jr = r * (1 - j * 0.18);
+            var alpha = 15 - j * 2;
+            sceneBuffer.fill(hue, 70, 80, alpha);
+            sceneBuffer.ellipse(cx, cy, jr, jr);
+          }
+        }
+
+        sceneBuffer.loadPixels();
+
+        // Main canvas: solid background
+        p.background(30, 5, 95); // warm off-white
+
+        // Manual masking: only draw scene pixels where mask is white
+        p.loadPixels();
+        for (var y = 0; y < H; y++) {
+          for (var x = 0; x < W; x++) {
+            var idx = (y * W + x) * 4;
+            var maskVal = maskBuffer.pixels[idx]; // 0 or 255
+            if (maskVal > 128) {
+              // Inside text: show scene
+              p.pixels[idx] = sceneBuffer.pixels[idx];
+              p.pixels[idx+1] = sceneBuffer.pixels[idx+1];
+              p.pixels[idx+2] = sceneBuffer.pixels[idx+2];
+              p.pixels[idx+3] = 255;
+            }
+            // Outside text: keep background (already drawn)
+          }
+        }
+        p.updatePixels();
+
+        // Subtle text outline for legibility
+        // (skip for now - see if masking alone works)
+      };
+    });
+  })();
+  </script>
+</Base>
