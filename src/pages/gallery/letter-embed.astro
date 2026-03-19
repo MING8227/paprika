@@ -1,6 +1,44 @@
-<html><head><meta charset="utf-8"><style>*{margin:0;padding:0}body{overflow:hidden;background:#f2ede5}</style></head><body>
+<html><head><meta charset="utf-8"><style>*{margin:0;padding:0}body{overflow:hidden}</style></head><body>
 <div id="letter-canvas"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
 <script>
-new p5(function(p){var W=400,H=400,LINES=10;p.setup=function(){p.createCanvas(W,H);p.colorMode(p.HSB,360,100,100,100);p.pixelDensity(1);p.noLoop();gen()};function gen(){p.background(40,8,95);p.noStroke();for(var i=0;i<2000;i++){p.fill(35,p.random(3,12),p.random(88,96),p.random(5,15));p.ellipse(p.random(W),p.random(H),p.random(2,6))}var mL=50,mR=W-40,sp=30,sY=45;for(var r=0;r<LINES;r++){var pr=r/(LINES-1),y=sY+r*sp;var h=p.lerp(30,215,pr*pr),s=p.lerp(45,20,pr),b=p.lerp(35,55,pr),w=p.lerp(1.8,0.8,pr),c=1-pr;drawLine(mL,y,mR,h,s,b,w,c,r)}}function drawLine(x1,y,x2,hue,sat,bri,wt,coh,row){var end=x1+(x2-x1)*p.random(0.7,1);if(row===LINES-1)end=x1+(x2-x1)*p.random(0.2,0.4);var segs=p.floor(p.random(10,18)),sw=(end-x1)/segs;for(var s=0;s<segs;s++){var sx=x1+s*sw,ex=sx+sw*p.random(0.5,0.95);if(p.random()>coh*0.7+0.3)continue;p.noFill();p.stroke((hue+p.random(-8,8)+360)%360,p.constrain(sat+p.random(-10,10),10,60),p.constrain(bri+p.random(-8,8),20,65),p.lerp(70,25,(1-coh)*(1-coh)));p.strokeWeight(wt*p.random(0.7,1.3));var wb=p.lerp(3,12,1-coh),j=(1-coh)*p.random(-5,5);p.beginShape();p.vertex(sx+j,y+p.random(-1,1)*(1-coh)*3);p.bezierVertex(sx+sw*0.33+j,y+p.random(-wb,wb),sx+sw*0.66+j,y+p.random(-wb,wb),ex+j,y+p.random(-1,1)*(1-coh)*5);p.endShape()}}}, 'letter-canvas');
+new p5(function(p){
+var W=400,H=400;
+p.setup=function(){p.createCanvas(W,H);p.colorMode(p.HSB,360,100,100,100);p.pixelDensity(1);p.noLoop();gen()};
+
+function gen(){
+  // gradient bg
+  for(var y=0;y<H;y++){var t=y/H;p.stroke(p.lerp(35,220,t*t),p.lerp(12,18,t),p.lerp(92,78,t));p.line(0,y,W,y)}
+  // texture
+  p.noStroke();
+  for(var i=0;i<5000;i++){var tx=p.random(W),ty=p.random(H),tt=ty/H;p.fill(p.lerp(35,200,tt),p.random(5,20),p.random(75,95),p.random(3,12));p.ellipse(tx,ty,p.random(1,5))}
+  // writing
+  var LINES=14,mL=45,mR=W-40,sp=24,sY=35;
+  for(var r=0;r<LINES;r++){var pr=r/(LINES-1),y=sY+r*sp;drawLine(mL,y,mR,pr,r,LINES)}
+  // ink drops
+  for(var d=0;d<40;d++){var dy=p.random(H*0.3,H*0.95),dx=p.random(mL,mR),dt=dy/H;p.noStroke();p.fill(p.lerp(25,225,dt*dt),p.lerp(40,15,dt),p.lerp(30,50,dt),p.random(8,25));p.ellipse(dx,dy,p.random(1,6)*(0.5+dt))}
+  // particles
+  for(var pi=0;pi<300;pi++){var py=p.random(H*0.45,H),px=p.random(mL,mR),pt=py/H;p.noStroke();p.fill(p.lerp(30,230,pt*pt),p.random(10,35),p.random(35,60),p.map(pt,0.45,1,5,20));p.ellipse(px,py,p.random(0.5,2.5))}
+  // vignette
+  p.noStroke();for(var v=0;v<30;v++){var va=v/30;p.fill(220,15,30,va*va*10);var s=(30-v)*1.2;p.rect(0,0,W,s);p.rect(0,H-s,W,s);p.rect(0,0,s,H);p.rect(W-s,0,s,H)}
+}
+
+function drawLine(x1,y,x2,progress,row,tot){
+  var coh=1-progress,lw=x2-x1;
+  var ef=row===tot-1?p.random(0.15,0.3):p.lerp(1,0.5,progress*progress);
+  var ae=x1+lw*ef*p.random(0.85,1);
+  var bh=p.lerp(25,220,progress*progress),bs=p.lerp(50,15,progress),bb=p.lerp(28,50,progress),ba=p.lerp(75,20,progress*progress);
+  var bw=p.lerp(2,0.5,progress);
+  var segs=p.floor(p.random(12,20)),sw=(ae-x1)/segs;
+  for(var s=0;s<segs;s++){
+    var sx=x1+s*sw,ex=sx+sw*p.random(0.5,0.95);
+    if(p.random()>coh*0.6+0.35){if(p.random()<0.5){p.noStroke();p.fill((bh+p.random(-20,20)+360)%360,bs*p.random(0.4,1),bb,p.random(8,ba*0.5));p.ellipse(sx+p.random(sw),y+p.random(-6,6)*(1-coh),p.random(0.8,2.5))}continue}
+    var wb=p.lerp(2,14,(1-coh)*(1-coh)),j=(1-coh)*p.random(-6,6);
+    p.noFill();p.stroke((bh+p.random(-10,10)+360)%360,p.constrain(bs+p.random(-10,10),8,60),p.constrain(bb+p.random(-8,8),15,55),ba*p.random(0.7,1));p.strokeWeight(bw*p.random(0.6,1.3));
+    p.beginShape();p.vertex(sx+j,y);p.bezierVertex(sx+sw*0.33+j,y+p.random(-wb,wb),sx+sw*0.66+j,y+p.random(-wb,wb),ex+j,y+p.random(-1,1)*(1-coh)*4);p.endShape();
+    if(coh>0.6&&p.random()<0.25){p.stroke(bh,bs*0.7,bb*1.1,ba*0.25);p.strokeWeight(bw*0.35);p.beginShape();p.vertex(sx+j,y+1.2);p.bezierVertex(sx+sw*0.33+j,y+p.random(-wb,wb)+1.2,sx+sw*0.66+j,y+p.random(-wb,wb)+1.2,ex+j,y+1.2);p.endShape()}
+  }
+  if(coh<0.4){p.noStroke();for(var b=0;b<p.floor(p.random(2,6)*(1-coh));b++){p.fill(bh,bs*0.5,bb*1.2,p.random(3,8));p.ellipse(p.random(x1,ae),y+p.random(-10,10),p.random(4,14))}}
+}
+},'letter-canvas');
 </script></body></html>
