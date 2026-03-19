@@ -33,7 +33,7 @@ import Base from '../../layouts/Base.astro';
         marginY: 24,
         jitterPos: 1.0,
         jitterRot: 0.01,
-        spreadSpeed: 0.4,              // px per frame
+        spreadSpeed: 0.7,              // px per frame
         transitionWidth: 30,           // px for blend zone
         gridLineColor: [200, 192, 178, 40],
       };
@@ -82,7 +82,7 @@ import Base from '../../layouts/Base.astro';
           p.noStroke();
           buildGrid();
           // initial ripple from center
-          ripples.push({ x: CONFIG.W / 2, y: CONFIG.H / 2, radius: 0 });
+          ripples.push({ x: CONFIG.W / 2, y: CONFIG.H / 2, radius: 40 });
           // draw static background once
           pg = p.createGraphics(CONFIG.W, CONFIG.H);
           drawPaper(pg, p);
