@@ -78,7 +78,7 @@ import Base from '../../layouts/Base.astro';
         coolLayer.fill(CONFIG.coolColor[0], CONFIG.coolColor[1], CONFIG.coolColor[2], CONFIG.coolColor[3]);
         coolLayer.noStroke();
         coolLayer.textFont(CONFIG.coolFont);
-        coolLayer.textSize(CONFIG.fontSize + 4);
+        coolLayer.textSize(CONFIG.fontSize + 8);  // 草书明显更大
         coolLayer.textAlign(coolLayer.CENTER, coolLayer.CENTER);
 
         // 填充文字（手写感：位置微偏移）
@@ -151,14 +151,24 @@ import Base from '../../layouts/Base.astro';
 
           // 增量绘制：只画新增的点到mask（白色=显示冷层）
           if (c.points.length > c.drawn + 1) {
-            maskLayer.stroke(255);
-            maskLayer.strokeWeight(c.weight);
-            maskLayer.strokeCap(maskLayer.ROUND);
             maskLayer.noFill();
+            // 外层：半透明宽笔触（墨水渗透的柔边）
+            maskLayer.stroke(128);
+            maskLayer.strokeWeight(c.weight + 20);
+            maskLayer.strokeCap(maskLayer.ROUND);
             for (var pi = Math.max(1, c.drawn); pi < c.points.length; pi++) {
               maskLayer.line(
                 c.points[pi-1].x, c.points[pi-1].y,
                 c.points[pi].x, c.points[pi].y
+              );
+            }
+            // 内层：实白（完全揭露）
+            maskLayer.stroke(255);
+            maskLayer.strokeWeight(c.weight);
+            for (var pi2 = Math.max(1, c.drawn); pi2 < c.points.length; pi2++) {
+              maskLayer.line(
+                c.points[pi2-1].x, c.points[pi2-1].y,
+                c.points[pi2].x, c.points[pi2].y
               );
             }
             c.drawn = c.points.length;
@@ -187,8 +197,8 @@ import Base from '../../layouts/Base.astro';
         p.updatePixels();
 
         // 曲线痕迹（极淡——阅读的痕迹）
-        p.stroke(140, 170, 210, 12);
-        p.strokeWeight(1);
+        p.stroke(140, 170, 210, 30);
+        p.strokeWeight(1.5);
         p.noFill();
         for (var ci3 = 0; ci3 < curves.length; ci3++) {
           var c3 = curves[ci3];
