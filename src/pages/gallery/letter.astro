@@ -20,10 +20,10 @@ import Base from '../../layouts/Base.astro';
   <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
   <script is:inline>
     (function() {
-      if (!document.querySelector('link[href*="Ma+Shan+Zheng"]')) {
+      if (!document.querySelector('link[href*="ZCOOL"]')) {
         var link = document.createElement('link');
         link.rel = 'stylesheet';
-        link.href = 'https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Liu+Jian+Mao+Cao&display=swap';
+        link.href = 'https://fonts.googleapis.com/css2?family=ZCOOL+QingKe+HuangYou&family=ZCOOL+XiaoWei&display=swap';
         document.head.appendChild(link);
       }
 
@@ -201,7 +201,7 @@ import Base from '../../layouts/Base.astro';
               p.push();
               p.translate(c.x + c.ox, c.y + c.oy);
               p.rotate(c.oRot);
-              p.textFont('Ma Shan Zheng');
+              p.textFont('ZCOOL QingKe HuangYou');
               p.textSize(CONFIG.fontSize);
               p.text(c.ch, 0, 0);
               p.pop();
@@ -214,7 +214,7 @@ import Base from '../../layouts/Base.astro';
               p.push();
               p.translate(c.x + c.rx, c.y + c.ry);
               p.rotate(c.rRot);
-              p.textFont('Liu Jian Mao Cao');
+              p.textFont('ZCOOL XiaoWei');
               p.textSize(CONFIG.fontSize * CONFIG.revealFontScale);
               p.text(c.ch, 0, 0);
               p.pop();
