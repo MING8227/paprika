@@ -7,30 +7,30 @@ import Base from '../../layouts/Base.astro';
   <script is:inline>
     const CONFIG = {
       canvas: { width: 580, height: 780 },
-      grid: { cols: 18, rows: 24, marginX: 30, marginY: 30, lineColor: [0,0,0,20], lineWeight: 0.5 },
+      grid: { cols: 14, rows: 20, marginX: 40, marginY: 40, lineColor: [0,0,0,30], lineWeight: 0.6 },
       text: {
         content: "醒来发现昨天的自己留了一封信但笔迹不认识你试着读每个字都认得但连在一起又觉得陌生信的最后写着别担心但你不知道是谁在安慰谁",
         color: [74,69,64],
-        size: 16
+        size: 20
       },
       damage: {
-        textAlpha: 0.45,
-        textOffset: 4,
-        blur: 1.5,
-        bgColor: '#e8ecf2',
-        gridBreakChance: 0.45,
-        rustColor: [190, 75, 55],
-        rustAlpha: 0.4,
-        rustCount: 25
+        textAlpha: 0.5,
+        textOffset: 3,
+        blur: 1,
+        bgColor: '#e0e6f0',
+        gridBreakChance: 0.35,
+        rustColor: [180, 70, 50],
+        rustAlpha: 0.3,
+        rustCount: 12
       },
       curve: {
         startYRange: [-20, 0],
-        growthSpeedRange: [4, 8],
+        growthSpeedRange: [2, 4],
         xDriftScale: 0.003,
-        maxLengthRange: [600, 900],
-        weight: 30,
-        spawnInterval: 40,
-        maxCurves: 15
+        maxLengthRange: [400, 700],
+        weight: 20,
+        spawnInterval: 120,
+        maxCurves: 5
       }
     };
 
