@@ -1,258 +1,215 @@
 ---
 import Base from '../../layouts/Base.astro';
 ---
+
 <Base title="信 · Letter">
-  <article>
-    <h1>信 · Letter</h1>
-    <div class="article-content">
-      <div id="letter-canvas" style="margin: 2rem 0; display: flex; justify-content: center;"></div>
-      <p class="work-desc">醒来发现昨天的自己留了一封信，但笔迹不认识。</p>
-      <p style="text-align: center; font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-muted);">
-        点击画面，新的阅读轨迹开始生长。
-      </p>
-    </div>
-  </article>
+  <div style="display:flex;justify-content:center;align-items:center;min-height:100vh;background:#1a1a1a;">
+    <div id="canvas-container"></div>
+  </div>
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai&family=Zhi+Mang+Xing&display=swap" rel="stylesheet">
-
-  <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
+  <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
   <script is:inline>
-  (function() {
-    var CONFIG = {
-      W: 580,
-      H: 780,
-      // Light warm paper — like real stationery
-      bgColor: '#f5f0e8',
-      // Ruled lines on paper
-      ruleColor: 'rgba(180,170,155,0.25)',
-      ruleSpacing: 38,
-      ruleMarginX: 40,
-      ruleMarginTop: 55,
-      // Warm layer: carbon ink on paper (the letter you think you know)
-      warmColor: [74, 69, 64, 210],
-      // Cool layer: indigo-blue ink (the letter as it really is)
-      coolColor: [42, 90, 138, 230],
-      // Text
-      text: '\u9192\u6765\u53d1\u73b0\u6628\u5929\u7684\u81ea\u5df1\u7559\u4e86\u4e00\u5c01\u4fe1\u4f46\u7b14\u8ff9\u4e0d\u8ba4\u8bc6\u4f60\u8bd5\u7740\u8bfb\u6bcf\u4e2a\u5b57\u90fd\u8ba4\u5f97\u4f46\u8fde\u5728\u4e00\u8d77\u53c8\u89c9\u5f97\u964c\u751f\u5c31\u50cf\u4f60\u660e\u660e\u8bb0\u5f97\u8fd9\u6761\u8def\u5374\u600e\u4e48\u4e5f\u8d70\u4e0d\u5230\u5c3d\u5934\u4fe1\u7684\u6700\u540e\u5199\u7740\u522b\u62c5\u5fc3\u4f46\u4f60\u4e0d\u77e5\u9053\u662f\u8c01\u5728\u5b89\u6170\u8c01',
-      warmFont: '"LXGW WenKai", serif',
-      coolFont: '"Zhi Mang Xing", cursive',
-      fontSize: 20,
-      lineHeight: 38,
-      charSpacing: 26,
-      marginX: 48,
-      marginY: 60,
-      // Curves = reading traces, growing top to bottom
-      curve: {
-        growSpeed: 2.2,
-        weightRange: [30, 50],
-        maxCurves: 12,
-        spawnInterval: 80
-      }
-    };
+    let font;
+    const W = 580, H = 780;
+    const COLS = 18, ROWS = 24;
+    const MARGIN_X = 30, MARGIN_Y = 30;
+    const CELL_W = (W - MARGIN_X * 2) / COLS;
+    const CELL_H = (H - MARGIN_Y * 2) / ROWS;
 
-    var curves = [];
-    var warmLayer, coolLayer, maskLayer;
+    const TEXT = "醒来发现昨天的自己留了一封信但笔迹不认识你试着读每个字都认得但连在一起又觉得陌生信的最后写着别担心但你不知道是谁在安慰谁";
 
-    new p5(function(p) {
+    // Spring grid
+    let nodes = [];
+    let springs = [];
 
-      p.setup = function() {
-        var canvas = p.createCanvas(CONFIG.W, CONFIG.H);
-        canvas.parent('letter-canvas');
-        p.pixelDensity(1);
+    // Water stain
+    let stains = [];
 
-        // Three off-screen buffers
-        warmLayer = p.createGraphics(CONFIG.W, CONFIG.H);
-        coolLayer = p.createGraphics(CONFIG.W, CONFIG.H);
-        maskLayer = p.createGraphics(CONFIG.W, CONFIG.H);
-        warmLayer.pixelDensity(1);
-        coolLayer.pixelDensity(1);
-        maskLayer.pixelDensity(1);
+    const STIFFNESS = 0.03;
+    const DAMPING = 0.85;
+    const REPULSE_STRENGTH = 3.5;
 
-        // --- Draw paper background on both layers ---
-        drawPaper(warmLayer);
-        drawPaper(coolLayer);
-
-        // --- Warm layer (pen handwriting - LXGW WenKai) ---
-        warmLayer.fill(CONFIG.warmColor[0], CONFIG.warmColor[1], CONFIG.warmColor[2], CONFIG.warmColor[3]);
-        warmLayer.noStroke();
-        warmLayer.textFont(CONFIG.warmFont);
-        warmLayer.textSize(CONFIG.fontSize);
-        warmLayer.textAlign(warmLayer.CENTER, warmLayer.CENTER);
-
-        // --- Cool layer (running script - Zhi Mang Xing) ---
-        coolLayer.fill(CONFIG.coolColor[0], CONFIG.coolColor[1], CONFIG.coolColor[2], CONFIG.coolColor[3]);
-        coolLayer.noStroke();
-        coolLayer.textFont(CONFIG.coolFont);
-        coolLayer.textSize(CONFIG.fontSize + 6);
-        coolLayer.textAlign(coolLayer.CENTER, coolLayer.CENTER);
-
-        // Fill text on ruled lines
-        var fullText = CONFIG.text;
-        var idx = 0;
-        var y = CONFIG.marginY;
-        while (y < CONFIG.H - CONFIG.marginY) {
-          var x = CONFIG.marginX + (Math.random() - 0.5) * 6;
-          while (x < CONFIG.W - CONFIG.marginX) {
-            var ch = fullText[idx % fullText.length];
-            var ox = (Math.random() - 0.5) * 3;
-            var oy = (Math.random() - 0.5) * 3;
-            warmLayer.text(ch, x + ox, y + oy);
-            coolLayer.text(ch, x + ox + (Math.random()-0.5)*2, y + oy + (Math.random()-0.5)*2);
-            idx++;
-            x += CONFIG.charSpacing + (Math.random() - 0.5) * 3;
-          }
-          y += CONFIG.lineHeight + (Math.random() - 0.5) * 4;
-        }
-
-        warmLayer.loadPixels();
-        coolLayer.loadPixels();
-
-        // Mask: all black = show warm layer
-        maskLayer.background(0);
-
-        // Start with 3 curves
-        for (var i = 0; i < 3; i++) {
-          spawnCurve();
-        }
-      };
-
-      function drawPaper(g) {
-        // Paper background
-        g.background(CONFIG.bgColor);
-        // Ruled lines
-        g.stroke(CONFIG.ruleColor);
-        g.strokeWeight(0.8);
-        var y = CONFIG.ruleMarginTop;
-        while (y < CONFIG.H - 30) {
-          g.line(CONFIG.ruleMarginX, y, CONFIG.W - CONFIG.ruleMarginX, y);
-          y += CONFIG.ruleSpacing;
-        }
-        g.noStroke();
-      }
-
-      function spawnCurve() {
-        curves.push({
-          points: [{
-            x: Math.random() * (CONFIG.W - 100) + 50,
-            y: -10
-          }],
-          speed: CONFIG.curve.growSpeed + Math.random() * 1.2,
-          weight: CONFIG.curve.weightRange[0] + Math.random() * (CONFIG.curve.weightRange[1] - CONFIG.curve.weightRange[0]),
-          noiseOff: Math.random() * 1000,
-          maxLen: 500 + Math.random() * 400,
-          growing: true,
-          drawn: 0
-        });
-      }
-
-      p.draw = function() {
-        var anyGrowing = false;
-
-        for (var ci = 0; ci < curves.length; ci++) {
-          var c = curves[ci];
-
-          if (c.growing) {
-            anyGrowing = true;
-            var last = c.points[c.points.length - 1];
-            var angle = p.noise(c.noiseOff, last.y * 0.003) * p.TWO_PI;
-            var dx = Math.cos(angle) * c.speed * 0.3;
-            var dy = c.speed;
-            var nx = last.x + dx;
-            if (nx < 30) { nx = 30; c.noiseOff += 0.5; }
-            if (nx > CONFIG.W - 30) { nx = CONFIG.W - 30; c.noiseOff += 0.5; }
-            c.points.push({x: nx, y: last.y + dy});
-
-            if (c.points.length * c.speed > c.maxLen || last.y > CONFIG.H + 10) {
-              c.growing = false;
-            }
-          }
-
-          // Incremental mask drawing (soft edge + solid core)
-          if (c.points.length > c.drawn + 1) {
-            maskLayer.noFill();
-            // Outer: semi-transparent wide stroke (ink bleed)
-            maskLayer.stroke(128);
-            maskLayer.strokeWeight(c.weight + 20);
-            maskLayer.strokeCap(maskLayer.ROUND);
-            for (var pi = Math.max(1, c.drawn); pi < c.points.length; pi++) {
-              maskLayer.line(
-                c.points[pi-1].x, c.points[pi-1].y,
-                c.points[pi].x, c.points[pi].y
-              );
-            }
-            // Inner: solid white (full reveal)
-            maskLayer.stroke(255);
-            maskLayer.strokeWeight(c.weight);
-            for (var pi2 = Math.max(1, c.drawn); pi2 < c.points.length; pi2++) {
-              maskLayer.line(
-                c.points[pi2-1].x, c.points[pi2-1].y,
-                c.points[pi2].x, c.points[pi2].y
-              );
-            }
-            c.drawn = c.points.length;
-          }
-        }
-
-        // Auto-spawn
-        if (p.frameCount % CONFIG.curve.spawnInterval === 0 && curves.length < CONFIG.curve.maxCurves) {
-          spawnCurve();
-        }
-
-        // Composite: blend warm and cool layers by mask
-        warmLayer.loadPixels();
-        coolLayer.loadPixels();
-        maskLayer.loadPixels();
-        p.loadPixels();
-
-        var len = CONFIG.W * CONFIG.H * 4;
-        for (var i = 0; i < len; i += 4) {
-          var t = maskLayer.pixels[i] / 255;
-          p.pixels[i]   = Math.round(warmLayer.pixels[i]   * (1-t) + coolLayer.pixels[i]   * t);
-          p.pixels[i+1] = Math.round(warmLayer.pixels[i+1] * (1-t) + coolLayer.pixels[i+1] * t);
-          p.pixels[i+2] = Math.round(warmLayer.pixels[i+2] * (1-t) + coolLayer.pixels[i+2] * t);
-          p.pixels[i+3] = 255;
-        }
-        p.updatePixels();
-
-        // Curve trace (subtle but visible)
-        p.stroke(42, 90, 138, 35);
-        p.strokeWeight(1.5);
-        p.noFill();
-        for (var ci3 = 0; ci3 < curves.length; ci3++) {
-          var c3 = curves[ci3];
-          if (c3.points.length < 2) continue;
-          p.beginShape();
-          p.curveVertex(c3.points[0].x, c3.points[0].y);
-          for (var pi3 = 0; pi3 < c3.points.length; pi3++) {
-            p.curveVertex(c3.points[pi3].x, c3.points[pi3].y);
-          }
-          p.curveVertex(c3.points[c3.points.length-1].x, c3.points[c3.points.length-1].y);
-          p.endShape();
-        }
-
-        if (!anyGrowing) p.frameRate(2);
-      };
-
-      p.mousePressed = function() {
-        if (p.mouseX > 0 && p.mouseX < CONFIG.W && p.mouseY > 0 && p.mouseY < CONFIG.H) {
-          p.frameRate(60);
-          spawnCurve();
-          var last = curves[curves.length-1];
-          last.points[0] = {x: p.mouseX, y: Math.max(0, p.mouseY - 30)};
-        }
-      };
-    });
-  })();
-  </script>
-
-  <style>
-    .work-desc {
-      text-align: center;
-      font-style: italic;
-      color: var(--text-muted);
-      margin: 1rem 0;
+    function preload() {
+      font = loadFont('/paprika/fonts/PingFangSanShengTi-2.ttf');
     }
-  </style>
+
+    function setup() {
+      let cnv = createCanvas(W, H);
+      cnv.parent('canvas-container');
+      colorMode(HSB, 360, 100, 100, 100);
+      textFont(font);
+      textAlign(CENTER, CENTER);
+      textSize(CELL_W * 0.65);
+
+      // Create grid nodes (COLS+1 x ROWS+1 for grid lines)
+      for (let r = 0; r <= ROWS; r++) {
+        nodes[r] = [];
+        for (let c = 0; c <= COLS; c++) {
+          let rx = MARGIN_X + c * CELL_W;
+          let ry = MARGIN_Y + r * CELL_H;
+          nodes[r][c] = {
+            x: rx, y: ry,
+            restX: rx, restY: ry,
+            vx: 0, vy: 0
+          };
+        }
+      }
+
+      // Create springs (horizontal + vertical)
+      for (let r = 0; r <= ROWS; r++) {
+        for (let c = 0; c <= COLS; c++) {
+          if (c < COLS) springs.push({ a: nodes[r][c], b: nodes[r][c + 1], restLen: CELL_W });
+          if (r < ROWS) springs.push({ a: nodes[r][c], b: nodes[r + 1][c], restLen: CELL_H });
+        }
+      }
+
+      // Initial water stain - center-upper
+      stains.push({ x: W * 0.52, y: H * 0.32, birth: frameCount, maxR: 130 });
+    }
+
+    function draw() {
+      background(43, 8, 96); // #f5f0e8 in HSB approx
+
+      let t = frameCount;
+
+      // Update stain radii
+      for (let s of stains) {
+        let age = t - s.birth;
+        let progress = 1 - Math.pow(0.97, age); // easeOut
+        s.currentR = s.maxR * progress;
+      }
+
+      // Apply forces to nodes
+      for (let r = 0; r <= ROWS; r++) {
+        for (let c = 0; c <= COLS; c++) {
+          let n = nodes[r][c];
+          // Anchor spring (return to rest)
+          let ax = (n.restX - n.x) * 0.01;
+          let ay = (n.restY - n.y) * 0.01;
+          n.vx += ax;
+          n.vy += ay;
+
+          // Water stain repulsion
+          for (let s of stains) {
+            let dx = n.x - s.x;
+            let dy = n.y - s.y;
+            let dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < s.currentR && dist > 1) {
+              let force = REPULSE_STRENGTH * (1 - dist / s.currentR);
+              n.vx += (dx / dist) * force;
+              n.vy += (dy / dist) * force;
+            }
+          }
+        }
+      }
+
+      // Spring forces
+      for (let sp of springs) {
+        let dx = sp.b.x - sp.a.x;
+        let dy = sp.b.y - sp.a.y;
+        let dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 0.1) continue;
+        let diff = (dist - sp.restLen) / dist;
+        let fx = dx * diff * STIFFNESS;
+        let fy = dy * diff * STIFFNESS;
+        sp.a.vx += fx;
+        sp.a.vy += fy;
+        sp.b.vx -= fx;
+        sp.b.vy -= fy;
+      }
+
+      // Integrate
+      for (let r = 0; r <= ROWS; r++) {
+        for (let c = 0; c <= COLS; c++) {
+          let n = nodes[r][c];
+          n.vx *= DAMPING;
+          n.vy *= DAMPING;
+          n.x += n.vx;
+          n.y += n.vy;
+        }
+      }
+
+      // Draw water stains
+      noStroke();
+      for (let s of stains) {
+        if (s.currentR < 1) continue;
+        // Edge ring - pepper red
+        for (let i = 5; i >= 0; i--) {
+          let rr = s.currentR + i * 3;
+          fill(5, 50, 55, 3);
+          ellipse(s.x, s.y, rr * 2, rr * 2);
+        }
+        // Main stain - blue
+        for (let i = 3; i >= 0; i--) {
+          let rr = s.currentR - i * 5;
+          if (rr < 0) continue;
+          fill(210, 30, 75, 8);
+          ellipse(s.x, s.y, rr * 2, rr * 2);
+        }
+      }
+
+      // Draw grid lines
+      stroke(40, 10, 80, 15);
+      strokeWeight(0.5);
+      for (let r = 0; r <= ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          line(nodes[r][c].x, nodes[r][c].y, nodes[r][c + 1].x, nodes[r][c + 1].y);
+        }
+      }
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c <= COLS; c++) {
+          line(nodes[r][c].x, nodes[r][c].y, nodes[r + 1][c].x, nodes[r + 1][c].y);
+        }
+      }
+
+      // Draw text in cells
+      noStroke();
+      fill(0, 0, 0); // will set per char
+      let charIdx = 0;
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          // Cell center = average of 4 corner nodes
+          let tl = nodes[r][c];
+          let tr = nodes[r][c + 1];
+          let bl = nodes[r + 1][c];
+          let br = nodes[r + 1][c + 1];
+          let cx = (tl.x + tr.x + bl.x + br.x) / 4;
+          let cy = (tl.y + tr.y + bl.y + br.y) / 4;
+
+          let ch = TEXT[charIdx % TEXT.length];
+          charIdx++;
+
+          // Check if inside stain - fade ink
+          let inStain = false;
+          for (let s of stains) {
+            let d = dist(cx, cy, s.x, s.y);
+            if (d < s.currentR * 0.7) {
+              inStain = true;
+              break;
+            }
+          }
+
+          if (inStain) {
+            fill(210, 15, 55, 50); // faded blue-gray
+          } else {
+            fill(35, 15, 29, 85); // warm gray ink #4a4540
+          }
+
+          push();
+          translate(cx, cy);
+          // Slight rotation from grid distortion
+          let angle = atan2(tr.y - tl.y, tr.x - tl.x);
+          rotate(angle);
+          text(ch, 0, 0);
+          pop();
+        }
+      }
+    }
+
+    function mousePressed() {
+      if (mouseX > 0 && mouseX < W && mouseY > 0 && mouseY < H) {
+        stains.push({ x: mouseX, y: mouseY, birth: frameCount, maxR: 100 + random(60), currentR: 0 });
+      }
+    }
+  </script>
 </Base>
