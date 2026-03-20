@@ -64,7 +64,7 @@ import Base from '../../layouts/Base.astro';
       }
 
       // Initial water stain - center-upper
-      stains.push({ x: W * 0.52, y: H * 0.32, birth: frameCount, maxR: 130 });
+      stains.push({ x: W * 0.52, y: H * 0.32, birth: frameCount, maxR: 70 });
     }
 
     function draw() {
@@ -208,7 +208,7 @@ import Base from '../../layouts/Base.astro';
 
     function mousePressed() {
       if (mouseX > 0 && mouseX < W && mouseY > 0 && mouseY < H) {
-        stains.push({ x: mouseX, y: mouseY, birth: frameCount, maxR: 100 + random(60), currentR: 0 });
+        stains.push({ x: mouseX, y: mouseY, birth: frameCount, maxR: 50 + random(30), currentR: 0 });
       }
     }
   </script>
