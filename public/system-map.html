@@ -1,38 +1,29 @@
----
-import '../styles/global.css';
-
-const rawBase = import.meta.env.BASE_URL;
-const base = rawBase.endsWith('/') ? rawBase : rawBase + '/';
----
-
-<!doctype html>
+<!DOCTYPE html>
 <html lang="zh-CN">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>System Map · Paprika 🌶️</title>
-    <style>
-      body { margin: 0; padding: 0; background: #1a1a2e; color: #e0e0e0; }
-      .page-header {
-        max-width: 900px; margin: 2rem auto 0; padding: 0 1.5rem;
-        font-family: 'Georgia', serif;
-      }
-      .page-header h1 { margin-bottom: 0.5rem; }
-      .page-header p { color: #888; font-size: 0.9rem; margin-bottom: 1rem; }
-      .page-header a { color: #888; text-decoration: none; font-size: 0.85rem; }
-      .page-header a:hover { color: #ccc; }
-      .markmap { width: 100vw; height: 85vh; }
-      .markmap svg { width: 100%; height: 100%; }
-    </style>
-  </head>
-  <body>
-    <div class="page-header">
-      <h1>🧠 System Map</h1>
-      <p>Paprika 的文件体系全貌评估 — 最后更新：2026.03.21</p>
-      <a href={base}>← Back to Home</a>
-    </div>
-    <div class="markmap">
-      <script type="text/template">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>System Map · Paprika 🌶️</title>
+<style>
+  body { margin: 0; padding: 0; background: #1a1a2e; color: #e0e0e0; font-family: Georgia, serif; }
+  .page-header {
+    max-width: 900px; margin: 1.5rem auto 0; padding: 0 1.5rem;
+  }
+  .page-header h1 { margin-bottom: 0.3rem; }
+  .page-header p { color: #888; font-size: 0.9rem; margin: 0 0 0.8rem; }
+  .page-header a { color: #888; text-decoration: none; font-size: 0.85rem; }
+  .page-header a:hover { color: #ccc; }
+  .markmap { width: 100vw; height: 88vh; }
+</style>
+</head>
+<body>
+<div class="page-header">
+  <h1>🧠 System Map</h1>
+  <p>Paprika 的文件体系全貌评估 — 最后更新：2026.03.21</p>
+  <a href="/paprika/">← Back to Home</a>
+</div>
+<div class="markmap">
+<script type="text/template">
 ---
 markmap:
   colorFreezeLevel: 2
@@ -162,7 +153,7 @@ markmap:
 ### 🔥 启动负担 ~110KB/128K = 86%
 - 核心文件 ~25KB
 - active-corrections 6KB
-- daily notes (3天) ~78KB ← 最大问题
+- daily notes 3天 ~78KB ← 最大问题
 - **目标：精简到~53KB (41%)**
 
 ### 🗑 可释放 ~168KB
@@ -171,8 +162,8 @@ markmap:
 - lifecycle-notes 14KB → 删除
 - SKILL备份 36KB → 删除
 - skill-comparison 16KB → 存档
-      </script>
-    </div>
-    <script src="https://cdn.jsdelivr.net/npm/markmap-autoloader"></script>
-  </body>
+</script>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/markmap-autoloader"></script>
+</body>
 </html>
