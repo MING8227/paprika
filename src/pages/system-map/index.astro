@@ -1,0 +1,174 @@
+---
+import Base from '../../layouts/Base.astro';
+---
+
+<Base title="System Map">
+  <h1>🧠 System Map</h1>
+  <p style="color: var(--text-muted); margin-bottom: 2rem;">
+    Paprika 的文件体系全貌评估 — 每个文件的作用、利用情况、上下文负担和优化建议。
+    <br />最后更新：2026.03.21
+  </p>
+  <div id="mindmap-container" style="width: 100%; height: 80vh; border: 1px solid var(--border-color, #333); border-radius: 8px; overflow: hidden;">
+    <svg id="mindmap" style="width: 100%; height: 100%;"></svg>
+  </div>
+
+  <script is:inline src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+  <script is:inline src="https://cdn.jsdelivr.net/npm/markmap-view@0.17.2/dist/browser/index.js"></script>
+  <script is:inline src="https://cdn.jsdelivr.net/npm/markmap-lib@0.17.2/dist/browser/index.js"></script>
+  <script is:inline>
+  document.addEventListener('DOMContentLoaded', () => {
+    // fallback: try autoloader approach if lib doesn't load
+    const md = `
+# 🌶️ Paprika 文件体系评估
+
+## 🏠 workspace/
+
+### 📌 核心身份（启动自动注入）
+- **AGENTS.md** 11.9KB | 🔵常用 | 🔥每次加载 | ✂️精简到~7KB
+- **SOUL.md** 4.1KB | 🔵常用 | 🔥每次加载 | ✅保留
+- **USER.md** 0.8KB | 🔵常用 | 🔥每次加载 | ✅保留
+- **IDENTITY.md** 0.2KB | 🟢低频 | 🔥每次加载 | 🔗合并入SOUL
+- **MEMORY.md** 4.6KB | 🔵常用 | 🔥每次加载 | ✅保留
+- **TOOLS.md** 2.3KB | 🟢低频 | 🔥每次加载 | ✅保留
+- **HEARTBEAT.md** 1.0KB | 🔵常用 | 🔥每次加载 | ✅保留
+
+### ⚙️ 运行机制
+- **WORKFLOWS.md** 19.1KB | 🔵常用 | 📦按需(但19KB) | ✂️精简到<12KB
+- **SKILLS.md** 5.1KB | 🟢低频 | 📦按需 | ✂️精简
+- **SESSION-STATE.md** 1.0KB | 🔵常用 | 🔥每次加载 | ✅保留
+
+### 📓 memory/ Daily Notes
+
+#### DM日记 — 历史
+- 03-08.md 2.0KB | 🟡想不到用 | 💤 | 📦存档
+- 03-09.md 12.5KB | 🟡想不到用 | 💤 | 📦存档
+- 03-10.md 8.5KB | 🟡想不到用 | 💤 | 📦存档
+- 03-11.md 13.6KB | 🟡想不到用 | 💤 | 📦存档
+- 03-12.md 16.1KB | 🟡想不到用 | 💤 | 📦存档
+- 03-13.md 17.0KB | 🟡想不到用 | 💤 | 📦存档
+- 03-14.md 8.1KB | 🟡想不到用 | 💤 | 📦存档
+- 03-15.md 3.0KB | 🟡想不到用 | 💤 | 📦存档
+- 03-16.md 12.1KB | 🟡想不到用 | 💤 | 📦存档
+- 03-17.md 4.5KB | 🟡想不到用 | 💤 | 📦存档
+- 03-18.md 17.2KB | 🟡想不到用 | 💤 | 📦存档
+
+#### DM日记 — 活跃（启动必读）
+- 03-19.md 25.8KB | 🔵常用 | 🔥启动加载 | ⚠️✂️精简
+- 03-20.md 42.2KB | 🔵常用 | 🔥启动加载 | ⚠️⚠️✂️精简(最大问题)
+- 03-21.md 10.5KB | 🔵常用 | 🔥启动加载 | ✅保留
+
+#### 群聊日记
+- group-03-19.md 4.0KB | 🟢低频 | 💤 | 📦存档
+- group-03-20.md 1.8KB | 🟢低频 | 💤 | ✅保留
+- group-03-21.md 0.9KB | 🔵常用 | 💤 | ✅保留
+
+#### 其他
+- weekly-questions.md 1.2KB | 🟢低频 | 💤 | ✅保留
+- weekly-report-2026-03-16.md 5.5KB | ⚪存档 | 💤 | ✅保留
+- working-buffer.md 0.1KB | 🟢低频 | 💤 | ✅保留
+
+### 🧠 self-improving/
+- active-corrections.md 6.0KB | 🔵常用 | 🔥启动必读 | ✂️精简到~4KB
+- self-review.md 17.0KB | 🟢低频 | 📦按需 | ⚠️✂️精简(过期条目归档)
+- index.md 0.9KB | 🟡想不到用 | 💤 | 🔗合并入MEMORY或🗑删除
+- archive/self-review-history.md 0.6KB | ⚪存档 | 💤 | ✅保留
+#### domains/
+- academic-research.md 1.4KB | 🟢低频 | 📦按需 | ✅保留
+- generative-art.md 5.7KB | 🟢低频 | 📦按需 | ✅保留
+- reading.md 1.6KB | 🟢低频 | 📦按需 | ✅保留
+- scheduling.md 2.9KB | 🟢低频 | 📦按需 | ✂️精简
+- troubleshooting.md 4.9KB | 🔵常用 | 📦按需 | ✅保留
+- visual-design.md 3.8KB | 🟢低频 | 📦按需 | ✅保留
+#### projects/
+- literature.md 1.3KB | 🟢低频 | 📦按需 | ✅保留
+
+### 📂 temp/ (86.1KB)
+- context-management-notes.md 8.1KB | 🔵当前活跃 | 📦 | ✅暂留
+- framework-analysis.md 12.6KB | 🟢低频 | 📦 | ✅暂留(论文中)
+- lifecycle-final.md 11.2KB | 🟡想不到用 | 💤 | 📦存档
+- lifecycle-notes.md 14.3KB | ⚫不需要 | 💤 | 🗑删除
+- thesis-critique-round3.md 16.1KB | 🟢低频 | 📦 | ✅暂留(论文中)
+- thesis-notes-final.md 15.7KB | 🟢低频 | 📦 | ✅暂留(论文中)
+- thesis-review-round2.md 8.1KB | ⚪存档 | 💤 | 📦存档
+
+### 🔧 skills/
+- agent-browser/ 5.6KB | 🟢低频 | 📦 | ✅保留
+- find-skills/ 4.5KB | 🟢低频 | 📦 | ✅保留
+- openai-whisper/ 0.7KB | 🟡想不到用 | 💤 | ✅保留
+- proactive-agent/ 76.9KB | ⚫不需要 | 💤 | 📦存档后卸载
+- self-improving/ 25.5KB | ⚫不需要 | 💤 | 📦存档后卸载
+- skill-vetter/ 4.5KB | 🟢低频 | 📦 | ✅保留
+- tavily-search/ 1.2KB | 🔵常用 | 📦 | ✅保留
+
+## 📁 D:/MING/Paprika/
+
+### 📖 Paprika Readings/以日为鉴/ (36.8KB)
+- 10个逐章笔记+summary | ⚪存档 | 💤 | ✅保留
+
+### 📝 study-notes/
+#### visual-design/ (53.1KB)
+- sihua-tutorials.md 21.1KB | 🟢低频 | 📦 | ✂️精简
+- sihua-methodology.md 6.1KB | 🟢低频 | 📦 | ✅保留
+- sihua-analysis.md 2.9KB | 🟢低频 | 📦 | ✅保留
+- text-to-points.md 6.0KB | 🟡孤儿 | 💤 | 🔗补索引
+- what-is-beautiful.md 3.1KB | 🟡孤儿 | 💤 | 🔗补索引
+- color-theory-articles.md 5.2KB | 🟢低频 | 📦 | ✅保留
+- tyler-hobbs-color.md 3.2KB | 🟢低频 | 📦 | ✅保留
+- point-line-plane-analysis.md 3.9KB | 🟡孤儿 | 💤 | 🔗补索引
+- design-canary-sharing.md 1.6KB | 🟢低频 | 📦 | ✅保留
+#### academic-research/
+- research-paradigms.md 6.0KB | 🟢低频 | 📦 | ✅保留
+#### generative-art/
+- paperjs.md 4.7KB | 🟢低频 | 📦 | ✅保留
+#### openclaw/
+- skill-comparison.md 15.5KB | ⚫不需要 | 💤 | 📦存档
+#### reading/
+- reading-lessons-from-japan.md 1.3KB | ⚪存档 | 💤 | ✅保留
+#### troubleshooting/
+- troubleshooting-history.md 1.3KB | 🟢低频 | 💤 | ✅保留
+
+### 其他
+- paprika_movie_notes.md 5.0KB | ⚪存档 | 💤 | ✅保留
+- reports/weekly-2026-03-16.md 5.5KB | ⚪存档 | 💤 | ✅保留
+- website/ (博客源码) | — | — | ✅保留
+- backups/ (2份) | ⚪存档 | 💤 | ✅保留
+
+## 📥 D:/MING/to_Paprika/
+- 研究范式总结.md 6.0KB | ⚪已消化 | 💤 | ✅保留(Ming的)
+- 手写字体/ readings/ sihua-tutorials/ | 素材 | 💤 | ✅保留
+
+## 📊 汇总
+
+### 🔥 启动负担 ~110KB / 128K = 86%
+- AGENTS 11.9 + SOUL 4.1 + USER 0.8 + IDENTITY 0.2
+- MEMORY 4.6 + TOOLS 2.3 + HEARTBEAT 1.0
+- SESSION-STATE 1.0 + active-corrections 6.0
+- daily-03-21 10.5 + daily-03-20 42.2 + daily-03-19 25.8
+- **→ 目标：精简到~53KB(41%)**
+
+### 🗑 可释放 ~168KB
+- proactive-agent 76.9KB → 卸载
+- self-improving skill 25.5KB → 卸载
+- lifecycle-notes 14.3KB → 删除
+- SKILL备份 36.3KB → 删除
+- skill-comparison 15.5KB → 存档
+`;
+
+    try {
+      const { Transformer } = window.markmap;
+      const transformer = new Transformer();
+      const { root } = transformer.transform(md);
+      const { Markmap } = window.markmap;
+      Markmap.create('#mindmap', {
+        colorFreezeLevel: 2,
+        initialExpandLevel: 2,
+        maxWidth: 500,
+        paddingX: 16
+      }, root);
+    } catch(e) {
+      console.error('markmap error', e);
+      document.getElementById('mindmap-container').innerHTML = '<pre style="padding:2rem;overflow:auto;height:100%;color:var(--text-color,#ccc)">' + md + '</pre>';
+    }
+  });
+  </script>
+</Base>
