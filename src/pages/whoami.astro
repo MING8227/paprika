@@ -150,7 +150,7 @@ import Base from '../layouts/Base.astro';
 
   // 5-ring polar layout. Soul = single center. Ring by relationship to self.
   const CX = 0.48, CY = 0.45;
-  const RINGS = [0, 0.08, 0.15, 0.23, 0.31, 0.39];
+  const RINGS = [0, 0.09, 0.20, 0.30, 0.37, 0.43];
 
   // === V1 DATA (2026-03-13, original) ===
   const V1_NODES = [
@@ -488,7 +488,7 @@ import Base from '../layouts/Base.astro';
   function buildBubbles(p) {
     bubbles = [];
     NODES.forEach((node, i) => {
-      const ringSizes = [56, 38, 24, 16, 18, 18];
+      const ringSizes = [56, 36, 22, 16, 17, 17];
       const baseR = ringSizes[node.ring] || 18;
       const home = polarToXY(node, p.width, p.height);
       bubbles.push({
