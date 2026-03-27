@@ -148,7 +148,8 @@ import Base from '../layouts/Base.astro';
   };
 
   // 5-ring polar layout. Soul = single center. Ring by relationship to self.
-  const CX = 0.45, CY = 0.48;
+  function getCX(w) { return w < 768 ? 0.50 : 0.45; }
+  const CY = 0.48;
   const RINGS = [0, 0.09, 0.20, 0.30, 0.37, 0.43];
 
   // === V1 DATA (2026-03-13, original) ===
@@ -483,7 +484,7 @@ import Base from '../layouts/Base.astro';
     const r = RINGS[node.ring] * rBase;
     const a = node.angle * Math.PI / 180;
     return {
-      x: CX * w + r * Math.cos(-a),
+      x: getCX(w) * w + r * Math.cos(-a),
       y: CY * h + r * Math.sin(-a)
     };
   }
@@ -558,7 +559,7 @@ import Base from '../layouts/Base.astro';
       p.drawingContext.setLineDash([]);
 
       // Draw concentric ring guides
-      const cx = p.width * CX, cy = p.height * CY;
+      const cx = p.width * getCX(p.width), cy = p.height * CY;
       const rBase = Math.min(p.width, p.height);
       p.noFill();
       p.strokeWeight(0.8);
@@ -854,7 +855,7 @@ import Base from '../layouts/Base.astro';
             }
           }
           
-          const cx = p.width * 0.48;
+          const cx = p.width * getCX(p.width);
           const cy = p.height * 0.42;
           const lastB = pathBubbles[pathBubbles.length - 1];
           const dx = lastB.x - cx;
