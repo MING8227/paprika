@@ -13,7 +13,7 @@ import Base from '../../layouts/Base.astro';
         sampleSize: 72,
         displaySize: 18,
         color: [74, 69, 64],
-        pointDensity: 0.35
+        pointDensity: 0.18
       },
       paper: {
         bg: [250, 250, 252],
@@ -51,9 +51,9 @@ import Base from '../../layouts/Base.astro';
       },
       // C: visual weight layers
       visualWeight: {
-        pristine:  { size: 0.5, alpha: 160 },
-        eroding:   { sizeMin: 0.5, sizeMax: 0.8, alphaMin: 50, alphaMax: 160, driftRange: [0.01, 0.5] },
-        eroded:    { sizeMin: 0.8, sizeMax: 1.2, alphaMin: 20,  alphaMax: 50, driftThreshold: 0.5 }
+        pristine:  { size: 0.4, alpha: 180 },
+        eroding:   { sizeMin: 0.4, sizeMax: 0.6, alphaMin: 60, alphaMax: 180, driftRange: [0.01, 0.5] },
+        eroded:    { sizeMin: 0.6, sizeMax: 1.0, alphaMin: 20,  alphaMax: 60, driftThreshold: 0.5 }
       }
     };
 
@@ -202,54 +202,66 @@ import Base from '../../layouts/Base.astro';
       // draw rust spots
       drawRust();
 
-      // draw all char points with visual weight layers + color inheritance
+      // draw all chars as connected stroke lines + color inheritance
       const base = CONFIG.colorInherit.baseColor;
       const warm = CONFIG.colorInherit.warmColor;
       const dm = CONFIG.damage;
       const vw = CONFIG.visualWeight;
+      noFill();
 
       for (let cd of charData) {
+        // update drifting positions first
         for (let pt of cd.points) {
-          const d = pt.drift;
-
-          if (d > 0.01) {
-            // drifting point - update position
+          if (pt.drift > 0.01) {
             const nx = noise(pt.noiseOff, frameCount * dm.driftSpeed);
             const ny = noise(pt.noiseOff + 500, frameCount * dm.driftSpeed);
-            pt.x = pt.homeX + (nx - 0.5) * 2 * dm.driftMax * d;
-            pt.y = pt.homeY + (ny - 0.5) * 2 * dm.driftMax * d;
+            pt.x = pt.homeX + (nx - 0.5) * 2 * dm.driftMax * pt.drift;
+            pt.y = pt.homeY + (ny - 0.5) * 2 * dm.driftMax * pt.drift;
+          }
+        }
 
-            // A: color interpolation based on drift
-            const colorT = constrain(map(d, CONFIG.colorInherit.driftStart, 1, 0, 1), 0, 1);
-            const cr = lerp(base[0], warm[0], colorT);
-            const cg = lerp(base[1], warm[1], colorT);
-            const cb = lerp(base[2], warm[2], colorT);
+        // draw as connected lines
+        const pts = cd.points;
+        if (pts.length < 2) continue;
 
-            if (d > vw.eroded.driftThreshold) {
-              // C: eroded layer - sparse large points, warm, low alpha
-              const t = constrain(map(d, 0.5, 1, 0, 1), 0, 1);
-              const sz = lerp(vw.eroded.sizeMin, vw.eroded.sizeMax, t);
-              const alpha = lerp(vw.eroded.alphaMax, vw.eroded.alphaMin, t);
-              // deterministic sparse: use noise offset as stable hash
-              if ((pt.noiseOff * 7) % 1 < 0.7) {
-                fill(cr, cg, cb, alpha);
-                ellipse(pt.x, pt.y, sz, sz);
-              }
-            } else {
-              // C: eroding layer - spreading, growing
-              const t = constrain(map(d, vw.eroding.driftRange[0], vw.eroding.driftRange[1], 0, 1), 0, 1);
-              const sz = lerp(vw.eroding.sizeMin, vw.eroding.sizeMax, t);
-              const alpha = lerp(vw.eroding.alphaMax, vw.eroding.alphaMin, t);
-              fill(cr, cg, cb, alpha);
-              ellipse(pt.x, pt.y, sz, sz);
+        for (let i = 0; i < pts.length - 1; i++) {
+          const pt = pts[i];
+          const pt2 = pts[i + 1];
+          const d = max(pt.drift, pt2.drift);
+
+          // skip if points too far apart (different strokes of the char)
+          const gap = dist(pt.x, pt.y, pt2.x, pt2.y);
+          if (gap > 8) continue;
+
+          const colorT = constrain(map(d, CONFIG.colorInherit.driftStart, 1, 0, 1), 0, 1);
+          const cr = lerp(base[0], warm[0], colorT);
+          const cg = lerp(base[1], warm[1], colorT);
+          const cb = lerp(base[2], warm[2], colorT);
+
+          if (d > vw.eroded.driftThreshold) {
+            const t = constrain(map(d, 0.5, 1, 0, 1), 0, 1);
+            const alpha = lerp(vw.eroded.alphaMax, vw.eroded.alphaMin, t);
+            const sw = lerp(vw.eroded.sizeMin, vw.eroded.sizeMax, t);
+            if ((pt.noiseOff * 7) % 1 < 0.7) {
+              stroke(cr, cg, cb, alpha);
+              strokeWeight(sw);
+              line(pt.x, pt.y, pt2.x, pt2.y);
             }
+          } else if (d > 0.01) {
+            const t = constrain(map(d, vw.eroding.driftRange[0], vw.eroding.driftRange[1], 0, 1), 0, 1);
+            const alpha = lerp(vw.eroding.alphaMax, vw.eroding.alphaMin, t);
+            const sw = lerp(vw.eroding.sizeMin, vw.eroding.sizeMax, t);
+            stroke(cr, cg, cb, alpha);
+            strokeWeight(sw);
+            line(pt.x, pt.y, pt2.x, pt2.y);
           } else {
-            // C: pristine layer - crisp small dots
-            fill(base[0], base[1], base[2], vw.pristine.alpha);
-            ellipse(pt.x, pt.y, vw.pristine.size, vw.pristine.size);
+            stroke(base[0], base[1], base[2], vw.pristine.alpha);
+            strokeWeight(vw.pristine.size);
+            line(pt.x, pt.y, pt2.x, pt2.y);
           }
         }
       }
+      noStroke();
     }
 
     function drawGrid() {
