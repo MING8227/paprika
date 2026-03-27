@@ -57,7 +57,14 @@
   .intro .highlight { color: rgba(255,255,255,0.75); }
   /* Dark markmap nodes */
   .markmap-node text { fill: #ffffff !important; }
-  .markmap-node circle { stroke-width: 1.5px; }
+  /* Override markmap CSS variables for dark theme */
+  .markmap {
+    --markmap-text-color: #ffffff !important;
+    --markmap-code-bg: rgba(255,255,255,0.1) !important;
+    --markmap-code-color: #e0e0e0 !important;
+    --markmap-circle-open-bg: #2a2a28 !important;
+    --markmap-a-color: #7db8e0 !important;
+  }
   /* Mobile */
   @media (max-width: 768px) {
     .topbar { padding: 0 12px; height: 42px; }
