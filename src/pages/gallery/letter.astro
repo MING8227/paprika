@@ -29,12 +29,12 @@ import Base from '../../layouts/Base.astro';
         rustCount: 0
       },
       rain: {
-        initialInterval: 30,    // frames between first drops
-        minInterval: 15,        // fastest drop interval
-        rampDrops: 4,           // after this many drops, interval reaches min
-        wetnessPerDrop: 0.8,
-        diffusionRate: 0.002,
-        maxWetCells: 15
+        initialInterval: 90,
+        minInterval: 45,
+        rampDrops: 6,
+        wetnessPerDrop: 0.7,
+        diffusionRate: 0.0015,
+        maxWetCells: 10
       },
       colorInherit: {
         baseColor: [74, 69, 64],
@@ -61,6 +61,7 @@ import Base from '../../layouts/Base.astro';
     let wetAge = []; // frames since cell became wet
     let dropCount = 0;
     let lastDropFrame = -100;
+    let zoneOrder = []; // shuffled zone indices
 
     function preload() {
       sanShengFont = loadFont('/paprika/fonts/SanSheng-subset.ttf');
@@ -72,6 +73,7 @@ import Base from '../../layouts/Base.astro';
       canvas.parent(document.querySelector('main') || document.body);
 
       initWetGrid();
+      shuffleZones();
       buildCharPoints();
       noStroke();
     }
@@ -88,6 +90,14 @@ import Base from '../../layouts/Base.astro';
       lastDropFrame = -100;
     }
 
+    function shuffleZones() {
+      zoneOrder = [0,1,2,3,4,5,6,7,8];
+      for (let i = zoneOrder.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [zoneOrder[i], zoneOrder[j]] = [zoneOrder[j], zoneOrder[i]];
+      }
+    }
+
     function buildCharPoints() {
       const { cols, rows, marginX, marginY } = CONFIG.grid;
       const cellW = (width - marginX * 2) / cols;
@@ -99,6 +109,9 @@ import Base from '../../layouts/Base.astro';
       let idx = 0;
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
+          // Only place text in rows 2-11 (upper half, like a letter)
+          if (r < 2 || r > 11) continue;
+
           const ch = content[idx % content.length];
           idx++;
 
@@ -157,9 +170,9 @@ import Base from '../../layouts/Base.astro';
           if (wetGrid[r][c] > 0.05) wetCount++;
       if (wetCount >= CONFIG.rain.maxWetCells) return;
 
-      // Zone-based rotation: divide grid into 3x3 zones, cycle through them
+      // Zone-based rotation with shuffled order
       const zoneRows = 3, zoneCols = 3;
-      const zoneIdx = dropCount % (zoneRows * zoneCols);
+      const zoneIdx = zoneOrder[dropCount % 9];
       const zr = Math.floor(zoneIdx / zoneCols);
       const zc = zoneIdx % zoneCols;
       const rStart = Math.floor(zr * rows / zoneRows);
@@ -368,8 +381,8 @@ import Base from '../../layouts/Base.astro';
       const my = CONFIG.grid.marginY;
       const pw = width - mx * 2;
       const ph = height - my * 2;
-      const amp = 7;
-      const noiseScale = 0.015;
+      const amp = 18;
+      const noiseScale = 0.025;
       const edgeSteps = 120;
 
       let paperVerts = [];
@@ -455,9 +468,22 @@ import Base from '../../layouts/Base.astro';
         let sy = lerp(y1, y2, t);
 
         const w = getWetnessAt(sx, sy);
+
+        // Water = void: high wetness segments disappear
+        if (w > 0.2) {
+          // Skip this segment (grid line dissolves)
+          prevX = sx; prevY = sy;
+          continue;
+        }
+
+        // Fade near threshold: alpha drops as wetness approaches 0.2
+        let segAlpha = 1.0;
+        if (w > 0.1) {
+          segAlpha = map(w, 0.1, 0.2, 1.0, 0.0);
+        }
+
         let cw = 0;
         if (w > 0.1) {
-          // Sharper falloff: square the wetness so only high-wetness areas bend significantly
           const ww = w * w;
           cw = (noise(sx * warpScale * 2.5 + 500, sy * warpScale * 2.5 + 500) - 0.5) * 2 * warpAmp * ww;
         }
@@ -465,6 +491,10 @@ import Base from '../../layouts/Base.astro';
         const handNoise = noise(sx * 0.1 + lineId, sy * 0.1);
         const sw = baseWeight * (0.6 + handNoise * 0.8);
         strokeWeight(sw);
+
+        // Apply alpha fade
+        const lc = CONFIG.paper.lineColor;
+        stroke(lc[0], lc[1], lc[2], lc[3] * segAlpha);
 
         if (isVertical) sx += cw; else sy += cw;
 
@@ -535,6 +565,7 @@ import Base from '../../layouts/Base.astro';
       if (mouseX >= 0 && mouseX <= width && mouseY >= 0 && mouseY <= height) {
         // Reset everything
         initWetGrid();
+        shuffleZones();
         for (let cd of charData) {
           for (let pt of cd.points) {
             pt.drift = 0;
