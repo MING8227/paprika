@@ -4,30 +4,53 @@
 <meta charset="UTF-8">
 <title>Paprika 文件体系 — 现状快照 2026-03-27</title>
 <style>
-  body { margin: 0; padding: 0; background: #1a1a2e; }
-  #markmap { width: 100vw; height: 100vh; }
-  .toolbar {
-    position: fixed; top: 12px; right: 16px; z-index: 999;
-    display: flex; gap: 6px;
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 0;
+    background: #faf8f5;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   }
+  #markmap { width: 100vw; height: calc(100vh - 52px); }
+  .topbar {
+    height: 52px; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 24px;
+    border-bottom: 1px solid #e8e4df;
+    background: #faf8f5;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 16px; }
+  .topbar-left a {
+    color: #8b7d6b; text-decoration: none; font-size: 14px;
+    transition: color .2s;
+  }
+  .topbar-left a:hover { color: #c0392b; }
+  .topbar-title {
+    font-size: 15px; font-weight: 500; color: #3d3328;
+    letter-spacing: .02em;
+  }
+  .toolbar { display: flex; gap: 6px; }
   .toolbar button {
-    padding: 6px 14px; border: 1px solid #444; border-radius: 6px;
-    background: #2a2a3e; color: #e0e0e0; cursor: pointer; font-size: 14px;
-    box-shadow: 0 1px 3px rgba(0,0,0,.4);
+    padding: 5px 12px; border: 1px solid #ddd6cc; border-radius: 5px;
+    background: #f3efe9; color: #6b5e50; cursor: pointer; font-size: 13px;
+    transition: all .2s;
   }
-  .toolbar button:hover { background: #3a3a52; }
-  /* Dark theme for markmap nodes */
-  .markmap-node text { fill: #e0e0e0 !important; }
-  .markmap-node circle { stroke-width: 1.5px; }
+  .toolbar button:hover { background: #e8e1d8; border-color: #c9c0b4; }
+  /* Warm markmap node text */
+  .markmap-node text { fill: #3d3328 !important; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
 <script src="https://cdn.jsdelivr.net/npm/markmap-view"></script>
 <script src="https://cdn.jsdelivr.net/npm/markmap-lib"></script>
 </head>
 <body>
-<div class="toolbar">
-  <button onclick="expandAll()">📖 全部展开</button>
-  <button onclick="collapseAll()">📕 全部折叠</button>
+<div class="topbar">
+  <div class="topbar-left">
+    <a href="/paprika/">← Paprika</a>
+    <span class="topbar-title">🌶️ System Map</span>
+  </div>
+  <div class="toolbar">
+    <button onclick="expandAll()">📖 展开</button>
+    <button onclick="collapseAll()">📕 折叠</button>
+  </div>
 </div>
 <svg id="markmap"></svg>
 <script id="md" type="text/template">
