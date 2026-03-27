@@ -17,8 +17,8 @@ import Base from '../../layouts/Base.astro';
       },
       paper: {
         bg: [250, 250, 252],
-        lineColor: [120, 165, 160, 70],
-        lineWeight: 0.35
+        lineColor: [100, 110, 105, 200],
+        lineWeight: 0.7
       },
       damage: {
         driftMax: 12,
@@ -156,6 +156,7 @@ import Base from '../../layouts/Base.astro';
     function draw() {
       background(CONFIG.paper.bg[0], CONFIG.paper.bg[1], CONFIG.paper.bg[2]);
 
+      drawWaterStains();
       drawGrid();
 
       // spawn curves
@@ -198,9 +199,6 @@ import Base from '../../layouts/Base.astro';
       if (curveHistory.length > 3000) {
         curveHistory = curveHistory.slice(-2000);
       }
-
-      // draw rust spots
-      drawRust();
 
       // draw all chars: pristine = text(), eroding/eroded = stroke lines
       const base = CONFIG.colorInherit.baseColor;
@@ -299,9 +297,9 @@ import Base from '../../layouts/Base.astro';
     }
 
     function drawDamagedLine(x1, y1, x2, y2, isVertical, gd) {
-      // Break line into small segments, check each against curve trail
-      const steps = 40;
-      let drawing = true;
+      // Draw line as small segments; damaged areas bend via perlin noise (no breaks)
+      const steps = 60;
+      const maxBend = 4.5; // max bend in px
       let prevX = x1, prevY = y1;
 
       for (let s = 1; s <= steps; s++) {
@@ -309,44 +307,64 @@ import Base from '../../layouts/Base.astro';
         let sx = lerp(x1, x2, t);
         let sy = lerp(y1, y2, t);
 
-        // check midpoint of this segment
         const mx = (prevX + sx) / 2;
         const my = (prevY + sy) / 2;
         const inf = curveInfluenceAt(mx, my, gd.radius);
 
-        if (inf > 0.3) {
-          // damaged: skip (break) this segment
-          prevX = sx;
-          prevY = sy;
-          continue;
-        } else if (inf > 0.1) {
-          // slightly damaged: offset
-          const off = (inf - 0.1) / 0.2 * gd.offsetMax;
-          const offDir = noise(mx * 0.05, my * 0.05) - 0.5;
+        // Apply continuous bend based on influence
+        if (inf > 0.05) {
+          const bendAmount = inf * maxBend;
+          const n = (noise(mx * 0.03, my * 0.03) - 0.5) * 2; // -1 to 1
           if (isVertical) {
-            line(prevX + offDir * off, prevY, sx + offDir * off, sy);
+            sx += n * bendAmount;
           } else {
-            line(prevX, prevY + offDir * off, sx, sy + offDir * off);
+            sy += n * bendAmount;
           }
-        } else {
-          // intact
-          line(prevX, prevY, sx, sy);
         }
+
+        line(prevX, prevY, sx, sy);
         prevX = sx;
         prevY = sy;
       }
     }
 
-    function drawRust() {
-      randomSeed(42);
-      const rc = CONFIG.damage.rustColor;
+    function drawWaterStains() {
+      // Draw water stains in areas where curveHistory is dense
+      if (curveHistory.length < 10) return;
+      const stainColor = [180, 210, 230, 40];
       noStroke();
-      for (let i = 0; i < CONFIG.damage.rustCount; i++) {
-        fill(rc[0], rc[1], rc[2], CONFIG.damage.rustAlpha * 255);
-        const rx = random(CONFIG.grid.marginX + 20, width - CONFIG.grid.marginX - 20);
-        const ry = random(CONFIG.grid.marginY + 20, height - CONFIG.grid.marginY - 20);
-        const rs = random(5, 15);
-        ellipse(rx, ry, rs, rs);
+
+      // Build density clusters from curveHistory
+      const gridSize = 60;
+      const densityMap = {};
+      for (let trail of curveHistory) {
+        const key = Math.floor(trail.x / gridSize) + ',' + Math.floor(trail.y / gridSize);
+        densityMap[key] = (densityMap[key] || 0) + 1;
+      }
+
+      randomSeed(42);
+      for (let key in densityMap) {
+        if (densityMap[key] < 8) continue; // only dense areas
+        const parts = key.split(',');
+        const bx = parseInt(parts[0]) * gridSize + gridSize / 2;
+        const by = parseInt(parts[1]) * gridSize + gridSize / 2;
+        const intensity = min(densityMap[key] / 40, 1);
+
+        // Draw 3-5 overlapping irregular ellipses per cluster
+        const count = 3 + Math.floor(intensity * 3);
+        for (let i = 0; i < count; i++) {
+          const ox = (random() - 0.5) * gridSize * 0.6;
+          const oy = (random() - 0.5) * gridSize * 0.6;
+          const w = random(15, 40) * (0.5 + intensity * 0.5);
+          const h = random(10, 30) * (0.5 + intensity * 0.5);
+          const a = stainColor[3] * (0.4 + intensity * 0.6);
+          fill(stainColor[0], stainColor[1], stainColor[2], a);
+          push();
+          translate(bx + ox, by + oy);
+          rotate(random(TWO_PI));
+          ellipse(0, 0, w, h);
+          pop();
+        }
       }
       randomSeed(millis());
     }
