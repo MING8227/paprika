@@ -371,23 +371,16 @@ import Base from '../../layouts/Base.astro';
         // Smooth intensity to avoid jumps — use max drift as stable measure
         const intensity = constrain(maxDrift, 0, 1);
 
-        // Fixed number of ellipses per char (always 4), alpha scales with intensity
+        // Scattered raindrops around eroding chars
         randomSeed(ci * 137 + 42);
-        const count = 4;
+        const count = 12 + Math.floor(intensity * 8); // 12-20 small drops
         for (let i = 0; i < count; i++) {
-          const ox = (random() - 0.5) * cellW * 1.6;
-          const oy = (random() - 0.5) * cellH * 1.6;
-          const w = random(cellW * 0.5, cellW * 1.2);
-          const h = random(cellH * 0.4, cellH * 1.0);
-          const rot = random(TWO_PI);
-          // Alpha smoothly scales with intensity
-          const a = 40 * intensity;
+          const ox = (random() - 0.5) * cellW * 2.5;
+          const oy = (random() - 0.5) * cellH * 2.5;
+          const r = random(1.5, 4); // small raindrop size
+          const a = (20 + random(25)) * intensity;
           fill(stainColor[0], stainColor[1], stainColor[2], a);
-          push();
-          translate(cd.cx + ox, cd.cy + oy);
-          rotate(rot);
-          ellipse(0, 0, w, h);
-          pop();
+          ellipse(cd.cx + ox, cd.cy + oy, r, r * random(1.0, 1.5));
         }
       }
       randomSeed(millis());
@@ -405,8 +398,10 @@ import Base from '../../layouts/Base.astro';
         }
         curves = [];
         curveHistory = [];
-        // Immediately spawn a new curve so animation restarts
-        spawnCurve();
+        // Spawn curves at various heights so effect starts quickly
+        spawnCurve(undefined, -20);
+        spawnCurve(undefined, height * 0.25);
+        spawnCurve(undefined, height * 0.5);
         lastSpawnFrame = frameCount;
       }
     }
