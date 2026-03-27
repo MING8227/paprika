@@ -13,16 +13,16 @@ import Base from '../../layouts/Base.astro';
         sampleSize: 72,
         displaySize: 18,
         color: [74, 69, 64],
-        pointDensity: 0.15
+        pointDensity: 0.08
       },
       paper: {
-        bg: [245, 242, 235],
-        lineColor: [0, 0, 0, 18],
+        bg: [250, 250, 252],
+        lineColor: [180, 210, 200, 22],
         lineWeight: 0.4
       },
       damage: {
         driftMax: 12,
-        driftSpeed: 0.02,
+        driftSpeed: 0.008,
         fadeAlpha: 80,
         rustColor: [180, 75, 55],
         rustAlpha: 0.2,
@@ -45,15 +45,15 @@ import Base from '../../layouts/Base.astro';
       },
       // B: grid damage
       gridDamage: {
-        radius: 40,         // influence radius from curve center
-        breakGap: 6,        // gap size when line breaks
-        offsetMax: 3         // max pixel offset for damaged segments
+        radius: 50,
+        breakGap: 8,
+        offsetMax: 5
       },
       // C: visual weight layers
       visualWeight: {
-        pristine:  { size: 2.2, alpha: 240 },
-        eroding:   { sizeMin: 2.2, sizeMax: 3.5, alphaMin: 140, alphaMax: 240, driftRange: [0.01, 0.5] },
-        eroded:    { sizeMin: 3.5, sizeMax: 5.0, alphaMin: 60,  alphaMax: 140, driftThreshold: 0.5 }
+        pristine:  { size: 1.8, alpha: 220 },
+        eroding:   { sizeMin: 1.8, sizeMax: 2.5, alphaMin: 100, alphaMax: 220, driftRange: [0.01, 0.5] },
+        eroded:    { sizeMin: 2.5, sizeMax: 3.5, alphaMin: 40,  alphaMax: 100, driftThreshold: 0.5 }
       }
     };
 
