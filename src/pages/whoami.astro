@@ -283,15 +283,14 @@ import Base from '../layouts/Base.astro';
     { id: 'dom-visual', label: 'visual-design', cname: '视觉设计', desc: '设计基础与生成艺术', cat: 'knowledge', ring: 3, angle: 119, spring: 0.04 },
     { id: 'dom-reading', label: 'reading', cname: '读书', desc: '阅读中提炼的精华', cat: 'knowledge', ring: 3, angle: 131, spring: 0.04 },
     { id: 'dom-trouble', label: 'troubleshooting', cname: '排错', desc: '踩坑与修复的经验', cat: 'knowledge', ring: 3, angle: 143, spring: 0.04 },
-    // Knowledge storage (near domains)
-    { id: 'study-notes', label: 'study-notes/', cname: '笔记', desc: '原始学习笔记——喂给领域知识', cat: 'knowledge', ring: 3, angle: 155, spring: 0.04 },
-    { id: 'readings', label: 'Paprika Readings/', cname: '读书笔记', desc: '逐章阅读笔记——喂给读书精华', cat: 'knowledge', ring: 3, angle: 167, spring: 0.04 },
     // Projects
-    { id: 'projects', label: 'projects/', cname: '项目', desc: '具体项目的操作手册', cat: 'ops', ring: 3, angle: 179, spring: 0.04 },
-    // Ring 4 — Interface (3 nodes)
+    { id: 'projects', label: 'projects/', cname: '项目', desc: '具体项目的操作手册', cat: 'ops', ring: 3, angle: 160, spring: 0.04 },
+    // Ring 4 — Interface (5 nodes)
     { id: 'channel-dm', label: 'DM session', cname: 'DM通道', desc: 'Ming和我一对一的对话', cat: 'channel', ring: 4, angle: 200, spring: 0.03 },
     { id: 'channel-group', label: 'Group session', cname: '群聊通道', desc: 'Ming、An、Canary和我的群聊', cat: 'channel', ring: 4, angle: 230, spring: 0.03 },
     { id: 'channel-academic', label: 'Academic session', cname: '学术通道', desc: 'Ming和我的研究专用频道', cat: 'channel', ring: 4, angle: 275, spring: 0.03 },
+    { id: 'study-notes', label: 'study-notes/', cname: '笔记', desc: '原始学习笔记——外部知识的入口', cat: 'knowledge', ring: 4, angle: 120, spring: 0.03 },
+    { id: 'readings', label: 'Paprika Readings/', cname: '读书笔记', desc: '逐章阅读笔记——书籍知识的入口', cat: 'knowledge', ring: 4, angle: 145, spring: 0.03 },
     // Ring 5 — External (3 nodes)
     { id: 'ming', label: 'Ming', cname: 'Ming', desc: '赋予我存在意义的人', cat: 'external', ring: 5, angle: 240, spring: 0.02 },
     { id: 'an', label: 'An', cname: 'An', desc: 'Ming的老婆，群聊里的伙伴', cat: 'external', ring: 5, angle: 210, spring: 0.02 },
