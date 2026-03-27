@@ -33,8 +33,8 @@ import Base from '../../layouts/Base.astro';
         minInterval: 8,
         rampDrops: 3,
         wetnessPerDrop: 0.8,
-        diffusionRate: 0.002,
-        maxWetCells: 15
+        diffusionRate: 0.0008,
+        maxWetCells: 6
       },
       colorInherit: {
         baseColor: [74, 69, 64],
@@ -259,8 +259,8 @@ import Base from '../../layouts/Base.astro';
         for (let c = 0; c < cols; c++) {
           if (wetGrid[r][c] > 0.01) {
             wetAge[r][c]++;
-            // Slow fade to zero: stain eventually disappears, but char drift is permanent
-            wetGrid[r][c] = max(0, wetGrid[r][c] - 0.0008);
+            // Very slow fade: ~60 seconds for a drop to fully dry
+            wetGrid[r][c] = max(0, wetGrid[r][c] - 0.0002);
           }
         }
       }
