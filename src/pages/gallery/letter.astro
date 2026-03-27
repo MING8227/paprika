@@ -455,7 +455,7 @@ import Base from '../../layouts/Base.astro';
       let prevX = x1, prevY = y1;
       {
         const w = getWetnessAt(x1, y1);
-        if (w > 0.1) {
+        if (w > 0.05) {
           const ww = w * w;
           const cw = (noise(x1 * warpScale * 2.5 + 500, y1 * warpScale * 2.5 + 500) - 0.5) * 2 * warpAmp * ww;
           if (isVertical) prevX = x1 + cw; else prevY = y1 + cw;
@@ -469,34 +469,33 @@ import Base from '../../layouts/Base.astro';
 
         const w = getWetnessAt(sx, sy);
 
-        // Water = void: high wetness segments disappear
-        if (w > 0.2) {
-          // Skip this segment (grid line dissolves)
+        // Warp first (visible bending even before dissolving)
+        let cw = 0;
+        if (w > 0.05) {
+          const ww = w * w;
+          cw = (noise(sx * warpScale * 2.5 + 500, sy * warpScale * 2.5 + 500) - 0.5) * 2 * warpAmp * ww;
+        }
+
+        if (isVertical) sx += cw; else sy += cw;
+
+        // Water = void: very high wetness segments disappear
+        if (w > 0.5) {
           prevX = sx; prevY = sy;
           continue;
         }
 
-        // Fade near threshold: alpha drops as wetness approaches 0.2
+        // Fade near threshold
         let segAlpha = 1.0;
-        if (w > 0.1) {
-          segAlpha = map(w, 0.1, 0.2, 1.0, 0.0);
-        }
-
-        let cw = 0;
-        if (w > 0.1) {
-          const ww = w * w;
-          cw = (noise(sx * warpScale * 2.5 + 500, sy * warpScale * 2.5 + 500) - 0.5) * 2 * warpAmp * ww;
+        if (w > 0.3) {
+          segAlpha = map(w, 0.3, 0.5, 1.0, 0.0);
         }
 
         const handNoise = noise(sx * 0.1 + lineId, sy * 0.1);
         const sw = baseWeight * (0.6 + handNoise * 0.8);
         strokeWeight(sw);
 
-        // Apply alpha fade
         const lc = CONFIG.paper.lineColor;
         stroke(lc[0], lc[1], lc[2], lc[3] * segAlpha);
-
-        if (isVertical) sx += cw; else sy += cw;
 
         line(prevX, prevY, sx, sy);
         prevX = sx;
