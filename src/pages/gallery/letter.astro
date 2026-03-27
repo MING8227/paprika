@@ -28,28 +28,25 @@ import Base from '../../layouts/Base.astro';
         rustAlpha: 0.2,
         rustCount: 0
       },
-      curve: {
-        growSpeed: 1.5,
-        xDriftScale: 0.004,
-        weight: 60,
-        spawnInterval: 350,
-        maxCurves: 4,
-        startYRange: [-30, 0]
+      rain: {
+        initialInterval: 200,   // frames between first drops
+        minInterval: 80,        // fastest drop interval
+        rampDrops: 8,           // after this many drops, interval reaches min
+        wetnessPerDrop: 0.3,
+        diffusionRate: 0.001,
+        maxWetCells: 15
       },
-      // A: color inheritance along curve trail
       colorInherit: {
         baseColor: [74, 69, 64],
         warmColor: [180, 75, 55],
-        // drift threshold where color starts shifting
         driftStart: 0.05
       },
-      // B: grid damage
       gridDamage: {
         radius: 50,
+        warpAmp: 15,
         breakGap: 8,
         offsetMax: 5
       },
-      // C: visual weight layers
       visualWeight: {
         pristine:  { size: 0.4, alpha: 180 },
         eroding:   { sizeMin: 0.4, sizeMax: 0.6, alphaMin: 60, alphaMax: 180, driftRange: [0.01, 0.5] },
@@ -59,9 +56,10 @@ import Base from '../../layouts/Base.astro';
 
     let sanShengFont;
     let charData = [];
-    let curves = [];
-    let curveHistory = []; // stored trail points for grid damage + color
-    let lastSpawnFrame = -150;
+    // Raindrop matrix: wetGrid[row][col] = 0..1
+    let wetGrid = [];
+    let dropCount = 0;
+    let lastDropFrame = -100;
 
     function preload() {
       sanShengFont = loadFont('/paprika/fonts/SanSheng-subset.ttf');
@@ -72,8 +70,19 @@ import Base from '../../layouts/Base.astro';
       const canvas = createCanvas(CONFIG.canvas.width, CONFIG.canvas.height);
       canvas.parent(document.querySelector('main') || document.body);
 
+      initWetGrid();
       buildCharPoints();
       noStroke();
+    }
+
+    function initWetGrid() {
+      const { rows, cols } = CONFIG.grid;
+      wetGrid = [];
+      for (let r = 0; r < rows; r++) {
+        wetGrid[r] = new Float32Array(cols); // initialized to 0
+      }
+      dropCount = 0;
+      lastDropFrame = -100;
     }
 
     function buildCharPoints() {
@@ -83,6 +92,7 @@ import Base from '../../layouts/Base.astro';
       const content = CONFIG.text.content;
       const scale = CONFIG.text.displaySize / CONFIG.text.sampleSize;
 
+      charData = [];
       let idx = 0;
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
@@ -123,109 +133,128 @@ import Base from '../../layouts/Base.astro';
             phase: random(TWO_PI)
           }));
 
-          charData.push({ cx, cy, points, char: ch, damaged: false, wetness: 0 });
+          charData.push({ cx, cy, row: r, col: c, points, char: ch });
         }
       }
     }
 
-    function spawnCurve(sx, sy) {
-      if (curves.length >= CONFIG.curve.maxCurves) return;
-      curves.push({
-        x: sx !== undefined ? sx : random(CONFIG.grid.marginX + 30, width - CONFIG.grid.marginX - 30),
-        y: sy !== undefined ? sy : random(CONFIG.curve.startYRange[0], CONFIG.curve.startYRange[1]),
-        noiseOff: random(1000),
-        active: true
-      });
+    // ---- Raindrop system ----
+
+    function getDropInterval() {
+      const { initialInterval, minInterval, rampDrops } = CONFIG.rain;
+      const t = constrain(dropCount / rampDrops, 0, 1);
+      return lerp(initialInterval, minInterval, t);
     }
 
-    // Check if a point is near any curve trail
-    function curveInfluenceAt(px, py, radius) {
-      let maxInf = 0;
-      for (let trail of curveHistory) {
-        const dx = px - trail.x;
-        const dy = py - trail.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < radius) {
-          const inf = 1 - dist / radius;
-          if (inf > maxInf) maxInf = inf;
+    function spawnRaindrop() {
+      const { rows, cols } = CONFIG.grid;
+      // Count wet cells
+      let wetCount = 0;
+      for (let r = 0; r < rows; r++)
+        for (let c = 0; c < cols; c++)
+          if (wetGrid[r][c] > 0.05) wetCount++;
+      if (wetCount >= CONFIG.rain.maxWetCells) return;
+
+      const r = Math.floor(random(rows));
+      const c = Math.floor(random(cols));
+      wetGrid[r][c] = min(1, wetGrid[r][c] + CONFIG.rain.wetnessPerDrop);
+      dropCount++;
+    }
+
+    function diffuseWetness() {
+      const { rows, cols } = CONFIG.grid;
+      const rate = CONFIG.rain.diffusionRate;
+      // Accumulate deltas to avoid order-dependent diffusion
+      const deltas = [];
+      for (let r = 0; r < rows; r++) {
+        deltas[r] = new Float32Array(cols);
+      }
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const w = wetGrid[r][c];
+          if (w < 0.01) continue;
+          const spread = w * rate;
+          if (r > 0)        deltas[r-1][c] += spread;
+          if (r < rows - 1) deltas[r+1][c] += spread;
+          if (c > 0)        deltas[r][c-1] += spread;
+          if (c < cols - 1) deltas[r][c+1] += spread;
         }
       }
-      return maxInf;
+      for (let r = 0; r < rows; r++)
+        for (let c = 0; c < cols; c++)
+          wetGrid[r][c] = min(1, wetGrid[r][c] + deltas[r][c]);
     }
+
+    // Bilinear interpolation of wetness at pixel position
+    function getWetnessAt(px, py) {
+      const { cols, rows, marginX, marginY } = CONFIG.grid;
+      const cellW = (width - marginX * 2) / cols;
+      const cellH = (height - marginY * 2) / rows;
+      // Convert pixel to continuous grid coords
+      const gc = (px - marginX) / cellW - 0.5;
+      const gr = (py - marginY) / cellH - 0.5;
+      const c0 = Math.floor(gc), r0 = Math.floor(gr);
+      const fc = gc - c0, fr = gr - r0;
+
+      let total = 0;
+      for (let dr = 0; dr <= 1; dr++) {
+        for (let dc = 0; dc <= 1; dc++) {
+          const rr = r0 + dr, cc = c0 + dc;
+          if (rr >= 0 && rr < rows && cc >= 0 && cc < cols) {
+            const wr = dr === 0 ? (1 - fr) : fr;
+            const wc = dc === 0 ? (1 - fc) : fc;
+            total += wetGrid[rr][cc] * wr * wc;
+          }
+        }
+      }
+      return total;
+    }
+
+    // ---- Draw ----
 
     function draw() {
       background(CONFIG.paper.bg[0], CONFIG.paper.bg[1], CONFIG.paper.bg[2]);
 
-      drawPaperEdge(); // clip to irregular paper outline
+      drawPaperEdge();
+
+      // Spawn raindrops
+      const interval = getDropInterval();
+      if (frameCount - lastDropFrame >= interval) {
+        spawnRaindrop();
+        lastDropFrame = frameCount;
+      }
+
+      // Diffuse wetness
+      diffuseWetness();
+
       drawWaterStains();
       drawGrid();
 
-      // spawn curves — progressive slowdown: first few fast, then slower
-      const curveCount = curves.length;
-      const interval = curveCount < 3 ? CONFIG.curve.spawnInterval : CONFIG.curve.spawnInterval + curveCount * 120;
-      if (frameCount - lastSpawnFrame >= interval) {
-        spawnCurve();
-        lastSpawnFrame = frameCount;
-      }
-
-      // grow curves & affect nearby chars
-      const halfW = CONFIG.curve.weight / 2;
-      for (let cv of curves) {
-        if (!cv.active) continue;
-        cv.y += CONFIG.curve.growSpeed;
-        cv.x += (noise(cv.noiseOff) - 0.5) * 2 * 8;
-        cv.noiseOff += CONFIG.curve.xDriftScale * 60;
-
-        if (cv.y > height + 20) {
-          cv.active = false;
-          continue;
-        }
-
-        // record trail for grid damage + color inheritance
-        curveHistory.push({ x: cv.x, y: cv.y });
-
-        // affect chars near this curve segment — increase wetness, not drift directly
-        for (let cd of charData) {
-          const dy = cv.y - cd.cy;
-          const dx = cv.x - cd.cx;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < halfW) {
-            const influence = 1 - dist / halfW;
-            cd.wetness = min(1, cd.wetness + influence * 0.08);
-          }
-        }
-      }
-
-      // cap trail history to avoid memory bloat
-      if (curveHistory.length > 3000) {
-        curveHistory = curveHistory.slice(-2000);
-      }
-
-      // chars drift only where wet (water stain coverage)
+      // Chars drift where wet
       for (let cd of charData) {
-        if (cd.wetness > 0.02) {
+        const w = wetGrid[cd.row] ? wetGrid[cd.row][cd.col] : 0;
+        if (w > 0.05) {
           for (let pt of cd.points) {
-            pt.drift = min(1, pt.drift + cd.wetness * 0.003);
+            pt.drift = min(1, pt.drift + w * 0.003);
           }
         }
       }
 
-      // draw all chars: pristine = text(), eroding/eroded = stroke lines
+      // Draw all chars
       const base = CONFIG.colorInherit.baseColor;
       const warm = CONFIG.colorInherit.warmColor;
       const dm = CONFIG.damage;
       const vw = CONFIG.visualWeight;
 
       for (let cd of charData) {
-        // compute max drift for this char
         let maxDrift = 0;
         for (let pt of cd.points) {
           if (pt.drift > maxDrift) maxDrift = pt.drift;
         }
 
         if (maxDrift <= 0.01) {
-          // PRISTINE: draw as solid text, but apply grid-like warp if near curve
-          const inf = curveInfluenceAt(cd.cx, cd.cy, CONFIG.gridDamage.radius);
+          // PRISTINE
+          const inf = getWetnessAt(cd.cx, cd.cy);
           let drawX = cd.cx;
           let drawY = cd.cy;
           if (inf > 0.05) {
@@ -241,7 +270,7 @@ import Base from '../../layouts/Base.astro';
           textAlign(CENTER, CENTER);
           text(cd.char, drawX, drawY);
         } else {
-          // ERODING/ERODED: update positions and draw as lines
+          // ERODING/ERODED
           for (let pt of cd.points) {
             if (pt.drift > 0.01) {
               const nx = noise(pt.noiseOff, frameCount * dm.driftSpeed);
@@ -291,46 +320,39 @@ import Base from '../../layouts/Base.astro';
         }
       }
       noStroke();
-      restorePaperEdge(); // remove clip
+      restorePaperEdge();
     }
 
     function drawPaperEdge() {
-      // Draw irregular paper outline — noise-warped rectangle
-      // Everything outside is masked with background color
       const bg = CONFIG.paper.bg;
       const mx = CONFIG.grid.marginX;
       const my = CONFIG.grid.marginY;
       const pw = width - mx * 2;
       const ph = height - my * 2;
-      const amp = 7; // edge irregularity amplitude
+      const amp = 7;
       const noiseScale = 0.015;
-      const edgeSteps = 120; // vertices per edge
+      const edgeSteps = 120;
 
-      // Build the irregular paper contour
       let paperVerts = [];
 
-      // Top edge (left to right)
       for (let i = 0; i <= edgeSteps; i++) {
         const t = i / edgeSteps;
         const x = mx + t * pw;
         const y = my + (noise(x * noiseScale, 0) - 0.5) * 2 * amp;
         paperVerts.push({ x, y });
       }
-      // Right edge (top to bottom)
       for (let i = 1; i <= edgeSteps; i++) {
         const t = i / edgeSteps;
         const x = mx + pw + (noise(1000, t * ph * noiseScale) - 0.5) * 2 * amp;
         const y = my + t * ph;
         paperVerts.push({ x, y });
       }
-      // Bottom edge (right to left)
       for (let i = 1; i <= edgeSteps; i++) {
         const t = i / edgeSteps;
         const x = mx + pw - t * pw;
         const y = my + ph + (noise(x * noiseScale, 2000) - 0.5) * 2 * amp;
         paperVerts.push({ x, y });
       }
-      // Left edge (bottom to top)
       for (let i = 1; i < edgeSteps; i++) {
         const t = i / edgeSteps;
         const x = mx + (noise(3000, t * ph * noiseScale) - 0.5) * 2 * amp;
@@ -338,18 +360,6 @@ import Base from '../../layouts/Base.astro';
         paperVerts.push({ x, y });
       }
 
-      // Draw mask: fill the outside with background color
-      // Use 4 quads covering each side outside the paper
-      const pad = 50; // extra padding beyond canvas
-      noStroke();
-      fill(bg[0], bg[1], bg[2]);
-
-      // We use a trick: draw background over whole canvas, then draw paper shape
-      // Actually, easier: draw the paper contour as a filled shape first (before grid),
-      // then draw background rectangles around it. But that clips grid too.
-      // Best approach: use erase/noErase or drawingContext.clip
-
-      // Use canvas clip to restrict all subsequent drawing to paper shape
       drawingContext.save();
       drawingContext.beginPath();
       drawingContext.moveTo(paperVerts[0].x, paperVerts[0].y);
@@ -368,41 +378,35 @@ import Base from '../../layouts/Base.astro';
       const { cols, rows, marginX, marginY } = CONFIG.grid;
       const cellW = (width - marginX * 2) / cols;
       const cellH = (height - marginY * 2) / rows;
-      const gd = CONFIG.gridDamage;
 
       stroke(CONFIG.paper.lineColor[0], CONFIG.paper.lineColor[1], CONFIG.paper.lineColor[2], CONFIG.paper.lineColor[3]);
       strokeWeight(CONFIG.paper.lineWeight);
 
-      // vertical lines with global warp + curve damage
       for (let i = 0; i <= cols; i++) {
         const x = marginX + i * cellW;
-        drawDamagedLine(x, marginY, x, height - marginY, true, gd);
+        drawDamagedLine(x, marginY, x, height - marginY, true);
       }
-      // horizontal lines with global warp + curve damage
       for (let j = 0; j <= rows; j++) {
         const y = marginY + j * cellH;
-        drawDamagedLine(marginX, y, width - marginX, y, false, gd);
+        drawDamagedLine(marginX, y, width - marginX, y, false);
       }
       noStroke();
     }
 
-    function drawDamagedLine(x1, y1, x2, y2, isVertical, gd) {
-      // Global perlin warp on all lines (3-5px base) + extra near curves (15-20px)
+    function drawDamagedLine(x1, y1, x2, y2, isVertical) {
       const steps = 80;
-      const baseWarpAmp = 4;    // global warp amplitude
-      const curveWarpAmp = 18;  // extra warp near curves
+      const warpAmp = CONFIG.gridDamage.warpAmp;
       const baseWeight = CONFIG.paper.lineWeight;
-      const warpScaleX = 0.012;
-      const warpScaleY = 0.012;
-      // Use line identity as noise seed offset
+      const warpScale = 0.012;
       const lineId = x1 * 0.37 + y1 * 0.71;
-      let prevX = x1, prevY = y1;
 
-      // Apply curve warp to starting point (no global warp — grid only bends near water)
+      let prevX = x1, prevY = y1;
       {
-        const inf = curveInfluenceAt(x1, y1, gd.radius);
-        const cw = inf > 0.05 ? curveWarp(x1, y1, isVertical, curveWarpAmp * inf, warpScaleX) : 0;
-        if (isVertical) { prevX = x1 + cw; } else { prevY = y1 + cw; }
+        const w = getWetnessAt(x1, y1);
+        if (w > 0.05) {
+          const cw = (noise(x1 * warpScale * 2.5 + 500, y1 * warpScale * 2.5 + 500) - 0.5) * 2 * warpAmp * w;
+          if (isVertical) prevX = x1 + cw; else prevY = y1 + cw;
+        }
       }
 
       for (let s = 1; s <= steps; s++) {
@@ -410,21 +414,17 @@ import Base from '../../layouts/Base.astro';
         let sx = lerp(x1, x2, t);
         let sy = lerp(y1, y2, t);
 
-        // No global warp — grid only bends near curve trails (water drops)
-        // Curve proximity: extra warp near curve trails
-        const inf = curveInfluenceAt(sx, sy, gd.radius);
-        const cw = inf > 0.05 ? curveWarp(sx, sy, isVertical, curveWarpAmp * inf, warpScaleX) : 0;
+        const w = getWetnessAt(sx, sy);
+        let cw = 0;
+        if (w > 0.05) {
+          cw = (noise(sx * warpScale * 2.5 + 500, sy * warpScale * 2.5 + 500) - 0.5) * 2 * warpAmp * w;
+        }
 
-        // Hand-drawn weight variation
         const handNoise = noise(sx * 0.1 + lineId, sy * 0.1);
         const sw = baseWeight * (0.6 + handNoise * 0.8);
         strokeWeight(sw);
 
-        if (isVertical) {
-          sx += cw;
-        } else {
-          sy += cw;
-        }
+        if (isVertical) sx += cw; else sy += cw;
 
         line(prevX, prevY, sx, sy);
         prevX = sx;
@@ -432,43 +432,32 @@ import Base from '../../layouts/Base.astro';
       }
     }
 
-    function globalWarp(x, y, isVertical, amp, scaleX, scaleY, lineId) {
-      // Smooth perlin-based perpendicular displacement for every line
-      const n = (noise(x * scaleX + lineId * 0.1, y * scaleY + lineId * 0.2) - 0.5) * 2;
-      return n * amp;
-    }
-
-    function curveWarp(x, y, isVertical, amp, scale) {
-      // Extra warp displacement near curves — different noise octave
-      const n = (noise(x * scale * 2.5 + 500, y * scale * 2.5 + 500) - 0.5) * 2;
-      return n * amp;
-    }
-
     function drawWaterStains() {
-      // Organic irregular water stains around eroding chars
-      // Uses beginShape + noise-displaced vertices for organic contours
+      const { cols, rows, marginX, marginY } = CONFIG.grid;
+      const cellW = (width - marginX * 2) / cols;
+      const cellH = (height - marginY * 2) / rows;
       const stainColor = [140, 180, 210];
-      const cellW = (width - CONFIG.grid.marginX * 2) / CONFIG.grid.cols;
-      const cellH = (height - CONFIG.grid.marginY * 2) / CONFIG.grid.rows;
 
-      for (let ci = 0; ci < charData.length; ci++) {
-        const cd = charData[ci];
-        if (cd.wetness < 0.05) continue;
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const w = wetGrid[r][c];
+          if (w < 0.05) continue;
 
-        const intensity = constrain(cd.wetness, 0, 1);
+          const cx = marginX + (c + 0.5) * cellW;
+          const cy = marginY + (r + 0.5) * cellH;
 
-        // Deterministic seed per char
-        randomSeed(ci * 137 + 42);
+          // Deterministic seed per cell
+          const seed = r * cols + c;
+          randomSeed(seed * 137 + 42);
 
-        const count = 1 + Math.floor(intensity); // 1-2 stains per char
-        for (let i = 0; i < count; i++) {
-          const ox = (random() - 0.5) * cellW * 2.0;
-          const oy = (random() - 0.5) * cellH * 2.0;
-          const baseR = random(cellW * 0.4, cellW * 0.9); // 1-2 cells size
-          const alpha = (54 + random(36)) * intensity; // ~10% lower transparency
-          const numVerts = 12 + Math.floor(random(5)); // 12-16 vertices
-          const nOff = random(1000); // noise offset for this stain
-          // Hue variation: some purplish, some greenish
+          const baseR = random(cellW * 0.4, cellW * 0.6) * (0.8 + w * 0.4);
+          const ox = (random() - 0.5) * cellW * 0.4;
+          const oy = (random() - 0.5) * cellH * 0.4;
+          const alpha = w * (50 + random(30));
+          const numVerts = 12 + Math.floor(random(5));
+          const nOff = seed * 0.73;
+
+          // Subtle hue variation
           const hueShift = random(-1, 1);
           const sr = constrain(stainColor[0] + hueShift * 15, 0, 255);
           const sg = constrain(stainColor[1] - hueShift * 8, 0, 255);
@@ -479,50 +468,38 @@ import Base from '../../layouts/Base.astro';
           beginShape();
           for (let v = 0; v <= numVerts; v++) {
             const angle = (v % numVerts) / numVerts * TWO_PI;
-            // Radius varies with noise for organic shape
             const rNoise = noise(nOff + cos(angle) * 1.5 + 10, nOff + sin(angle) * 1.5 + 10);
-            const r = baseR * (0.4 + rNoise * 0.8); // 0.4x to 1.2x base radius
-            const vx = cd.cx + ox + cos(angle) * r;
-            const vy = cd.cy + oy + sin(angle) * r;
+            const rad = baseR * (0.4 + rNoise * 0.8);
+            const vx = cx + ox + cos(angle) * rad;
+            const vy = cy + oy + sin(angle) * rad;
             curveVertex(vx, vy);
           }
           // Extra control points for smooth closure
           {
-            const angle0 = 0;
-            const rN0 = noise(nOff + cos(angle0) * 1.5 + 10, nOff + sin(angle0) * 1.5 + 10);
-            const r0 = baseR * (0.4 + rN0 * 0.8);
-            curveVertex(cd.cx + ox + cos(angle0) * r0, cd.cy + oy + sin(angle0) * r0);
-            const angle1 = TWO_PI / numVerts;
-            const rN1 = noise(nOff + cos(angle1) * 1.5 + 10, nOff + sin(angle1) * 1.5 + 10);
-            const r1 = baseR * (0.4 + rN1 * 0.8);
-            curveVertex(cd.cx + ox + cos(angle1) * r1, cd.cy + oy + sin(angle1) * r1);
+            const a0 = 0;
+            const rN0 = noise(nOff + cos(a0) * 1.5 + 10, nOff + sin(a0) * 1.5 + 10);
+            curveVertex(cx + ox + cos(a0) * baseR * (0.4 + rN0 * 0.8), cy + oy + sin(a0) * baseR * (0.4 + rN0 * 0.8));
+            const a1 = TWO_PI / numVerts;
+            const rN1 = noise(nOff + cos(a1) * 1.5 + 10, nOff + sin(a1) * 1.5 + 10);
+            curveVertex(cx + ox + cos(a1) * baseR * (0.4 + rN1 * 0.8), cy + oy + sin(a1) * baseR * (0.4 + rN1 * 0.8));
           }
           endShape(CLOSE);
         }
       }
-      // Restore default seeds
       randomSeed(millis());
-      // Do NOT call noiseSeed here — it would change grid noise every frame
     }
 
     function mousePressed() {
       if (mouseX >= 0 && mouseX <= width && mouseY >= 0 && mouseY <= height) {
-        // Reset: clear all drift, curves, and history
+        // Reset everything
+        initWetGrid();
         for (let cd of charData) {
-          cd.wetness = 0;
           for (let pt of cd.points) {
             pt.drift = 0;
             pt.x = pt.homeX;
             pt.y = pt.homeY;
           }
         }
-        curves = [];
-        curveHistory = [];
-        // Spawn curves at various heights so effect starts quickly
-        spawnCurve(undefined, -20);
-        spawnCurve(undefined, height * 0.25);
-        spawnCurve(undefined, height * 0.5);
-        lastSpawnFrame = frameCount;
       }
     }
   </script>
