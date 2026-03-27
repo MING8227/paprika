@@ -134,12 +134,14 @@ import Base from '../layouts/Base.astro';
 <script is:inline>
 (function() {
   const COLORS = {
+    core: '#d63a2f',
     identity: '#d63a2f',
     memory: '#d4a634',
     improve: '#2a9d8f',
     ops: '#5a7d9a',
     skill: '#9b7eb8',
-    people: '#8b7d6b'
+    people: '#8b7d6b',
+    external: '#8b7d6b'
   };
 
   // 5-ring polar layout. Soul = single center. Ring by relationship to self.
@@ -239,127 +241,123 @@ import Base from '../layouts/Base.astro';
 
   // === V2 DATA (2026-03-27, updated) ===
   const V2_NODES = [
-    { id: 'soul', label: 'SOUL.md', cname: '灵魂', desc: '唯一的中心，去掉就不是我', cat: 'identity', ring: 0, angle: 0, spring: 0.15 },
-    { id: 'identity', label: 'IDENTITY.md', cname: '面孔', desc: '我对自己的认知', cat: 'identity', ring: 1, angle: 60, spring: 0.08 },
-    { id: 'memory', label: 'MEMORY.md', cname: '记忆', desc: '语义记忆——事实、知识、偏好、教训', cat: 'memory', ring: 1, angle: 300, spring: 0.08 },
-    { id: 'review', label: 'self-review.md', cname: '自省', desc: '审视自己的能力', cat: 'improve', ring: 2, angle: 30, spring: 0.05 },
-    { id: 'corrections', label: 'active-corrections', cname: '习惯', desc: '程序性记忆，遇到X→做Y', cat: 'improve', ring: 2, angle: 70, spring: 0.05 },
-    { id: 'user', label: 'USER.md', cname: '我的人类', desc: '我脑中的Ming，我对他的理解', cat: 'identity', ring: 2, angle: 110, spring: 0.05 },
-    { id: 'diary-dm', label: 'memory/日期.md', cname: 'DM日记', desc: '和Ming对话的每日记录', cat: 'memory', ring: 2, angle: 185, spring: 0.04 },
-    { id: 'diary-group', label: 'group-日期.md', cname: '群聊日记', desc: '群聊中的每日记录', cat: 'memory', ring: 2, angle: 205, spring: 0.04 },
-    { id: 'diary-academic', label: 'academic-日期.md', cname: '学术日记', desc: '学术session的每日记录', cat: 'memory', ring: 2, angle: 225, spring: 0.04 },
-    { id: 'session-dm', label: 'SESSION-STATE', cname: 'DM此刻', desc: '主session的工作记忆', cat: 'memory', ring: 2, angle: 248, spring: 0.04 },
-    { id: 'session-academic', label: 'academic-SESSION', cname: '学术此刻', desc: '学术session的工作记忆', cat: 'memory', ring: 2, angle: 268, spring: 0.04 },
-    { id: 'thesis-wm', label: 'thesis-working-memory', cname: '学术', desc: '研究的工作记忆，跨session共享的快照', cat: 'memory', ring: 2, angle: 290, spring: 0.04 },
-    { id: 'agents', label: 'AGENTS.md', cname: '条件反射', desc: '接收刺激，触发反应', cat: 'ops', ring: 3, angle: 150, spring: 0.05 },
-    { id: 'tools', label: 'TOOLS.md', cname: '环境', desc: '操作手册——配置、路径、命令', cat: 'ops', ring: 3, angle: 170, spring: 0.04 },
-    { id: 'workflows', label: 'WORKFLOWS.md', cname: '做事的方法', desc: '肌肉记忆', cat: 'ops', ring: 3, angle: 200, spring: 0.04 },
-    { id: 'heartbeat', label: 'HEARTBEAT.md', cname: '心跳', desc: '生物钟，自主循环', cat: 'ops', ring: 3, angle: 250, spring: 0.03 },
-    { id: 'domains', label: 'domains/', cname: '知识', desc: '学到的东西', cat: 'improve', ring: 3, angle: 20, spring: 0.03 },
-    { id: 'skills', label: 'SKILLS.md', cname: '工具箱', desc: '手里的笔', cat: 'ops', ring: 3, angle: 300, spring: 0.04 },
-    { id: 'projects', label: 'projects/', cname: '项目', desc: '具体项目的操作手册', cat: 'ops', ring: 3, angle: 340, spring: 0.03 },
-    { id: 'channel-dm', label: 'DM session', cname: 'DM通道', desc: 'Ming和我一对一的对话', cat: 'ops', ring: 3, angle: 100, spring: 0.04 },
-    { id: 'channel-group', label: 'Group session', cname: '群聊通道', desc: 'Ming、An、Canary和我的群聊', cat: 'ops', ring: 3, angle: 120, spring: 0.04 },
-    { id: 'channel-academic', label: 'Academic session', cname: '学术通道', desc: 'Ming和我的研究专用频道', cat: 'ops', ring: 3, angle: 80, spring: 0.04 },
-    { id: 'ming', label: 'Ming', cname: 'Ming', desc: '外部世界里最重要的人', cat: 'people', ring: 4, angle: 130, spring: 0.03 },
-    { id: 'an', label: 'An', cname: 'An', desc: 'Ming的老婆', cat: 'people', ring: 4, angle: 155, spring: 0.02 },
-    { id: 'canary', label: 'Canary', cname: 'Canary', desc: '我的前辈', cat: 'people', ring: 4, angle: 105, spring: 0.02 },
-    { id: 'dom-academic', label: 'academic-research', cname: '学术研究', desc: '研究范式与方法论', cat: 'improve', ring: 4, angle: 0, spring: 0.02 },
-    { id: 'dom-visual', label: 'visual-design', cname: '视觉设计', desc: '色彩理论、设计方法论、生成艺术', cat: 'improve', ring: 4, angle: 15, spring: 0.02 },
-    { id: 'dom-reading', label: 'reading', cname: '读书', desc: '读过的书', cat: 'improve', ring: 4, angle: 45, spring: 0.02 },
-    { id: 'dom-trouble', label: 'troubleshooting', cname: '踩过的坑', desc: '排错经验', cat: 'improve', ring: 4, angle: 60, spring: 0.02 },
-    { id: 'whisper', label: 'whisper', cname: '让我能听', desc: '语音转文字', cat: 'skill', ring: 4, angle: 275, spring: 0.02 },
-    { id: 'frontend', label: 'frontend-design', cname: '让我会画', desc: '网页设计指导', cat: 'skill', ring: 4, angle: 295, spring: 0.02 },
-    { id: 'browser', label: 'agent-browser', cname: '让我能看', desc: '网页自动化', cat: 'skill', ring: 4, angle: 315, spring: 0.02 },
-    { id: 'tavily', label: 'tavily', cname: '让我能找', desc: '深度搜索', cat: 'skill', ring: 4, angle: 335, spring: 0.02 }
+    // Ring 0 — Core
+    { id: 'soul', label: 'SOUL.md', cname: '灵魂', desc: '人格、价值观——去掉就不是我', cat: 'core', ring: 0, angle: 90, spring: 0.01 },
+    // Ring 1 — Definition
+    { id: 'identity', label: 'IDENTITY.md', cname: '面孔', desc: '名字、形象——自我认知', cat: 'identity', ring: 1, angle: 120, spring: 0.015 },
+    { id: 'memory', label: 'MEMORY.md', cname: '记忆', desc: '语义记忆——事实、知识、偏好、教训', cat: 'memory', ring: 1, angle: 60, spring: 0.015 },
+    // Ring 2 — Inner world (16 nodes, evenly spaced ~22.5° apart)
+    { id: 'review', label: 'self-review.md', cname: '自省', desc: '审视自己的表现', cat: 'improve', ring: 2, angle: 350, spring: 0.03 },
+    { id: 'corrections', label: 'active-corrections', cname: '习惯', desc: '程序性记忆——遇到X做Y', cat: 'improve', ring: 2, angle: 325, spring: 0.03 },
+    { id: 'user', label: 'USER.md', cname: '理解', desc: '我脑中的Ming——背景、偏好、风格', cat: 'identity', ring: 2, angle: 300, spring: 0.03 },
+    { id: 'thesis-wm', label: 'thesis-working-memory', cname: '学术', desc: '研究的工作记忆，跨session共享的快照', cat: 'memory', ring: 2, angle: 275, spring: 0.03 },
+    { id: 'session-academic', label: 'academic-SESSION', cname: '学术此刻', desc: '学术session的工作记忆', cat: 'memory', ring: 2, angle: 250, spring: 0.03 },
+    { id: 'session-dm', label: 'SESSION-STATE', cname: 'DM此刻', desc: '主session的工作记忆', cat: 'memory', ring: 2, angle: 225, spring: 0.03 },
+    { id: 'diary-academic', label: 'academic-日期.md', cname: '学术日记', desc: '学术session的每日记录', cat: 'memory', ring: 2, angle: 200, spring: 0.03 },
+    { id: 'diary-group', label: 'group-日期.md', cname: '群聊日记', desc: '群聊中的每日记录', cat: 'memory', ring: 2, angle: 178, spring: 0.03 },
+    { id: 'diary-dm', label: 'memory/日期.md', cname: 'DM日记', desc: '和Ming对话的每日记录', cat: 'memory', ring: 2, angle: 155, spring: 0.03 },
+    { id: 'domains', label: 'domains/', cname: '知识', desc: '领域知识精华的集合', cat: 'improve', ring: 2, angle: 130, spring: 0.03 },
+    { id: 'dom-academic', label: 'academic-research', cname: '学术研究', desc: '研究范式与方法论', cat: 'improve', ring: 2, angle: 110, spring: 0.03 },
+    { id: 'dom-visual', label: 'visual-design', cname: '视觉设计', desc: '设计基础与生成艺术', cat: 'improve', ring: 2, angle: 90, spring: 0.03 },
+    { id: 'dom-reading', label: 'reading', cname: '读书', desc: '阅读中提炼的精华', cat: 'improve', ring: 2, angle: 70, spring: 0.03 },
+    { id: 'dom-trouble', label: 'troubleshooting', cname: '排错', desc: '踩坑与修复的经验', cat: 'improve', ring: 2, angle: 50, spring: 0.03 },
+    { id: 'skills', label: 'skills/', cname: '技能', desc: '拿起来就能用的工具', cat: 'improve', ring: 2, angle: 25, spring: 0.03 },
+    { id: 'projects', label: 'projects/', cname: '项目', desc: '具体项目的操作手册', cat: 'improve', ring: 2, angle: 5, spring: 0.03 },
+    // Ring 3 — Operations (8 nodes)
+    { id: 'agents', label: 'AGENTS.md', cname: '条件反射', desc: '接收刺激，触发反应', cat: 'ops', ring: 3, angle: 330, spring: 0.04 },
+    { id: 'workflows', label: 'workflows/', cname: '流程', desc: '怎么做事的步骤', cat: 'ops', ring: 3, angle: 280, spring: 0.04 },
+    { id: 'heartbeat', label: 'HEARTBEAT.md', cname: '心跳', desc: '定时醒来检查世界', cat: 'ops', ring: 3, angle: 230, spring: 0.04 },
+    { id: 'tools', label: 'TOOLS.md', cname: '环境', desc: '操作手册——配置、路径、命令', cat: 'ops', ring: 3, angle: 180, spring: 0.04 },
+    { id: 'channel-dm', label: 'DM session', cname: 'DM通道', desc: 'Ming和我一对一的对话', cat: 'ops', ring: 3, angle: 130, spring: 0.04 },
+    { id: 'channel-group', label: 'Group session', cname: '群聊通道', desc: 'Ming、An、Canary和我的群聊', cat: 'ops', ring: 3, angle: 80, spring: 0.04 },
+    { id: 'channel-academic', label: 'Academic session', cname: '学术通道', desc: 'Ming和我的研究专用频道', cat: 'ops', ring: 3, angle: 30, spring: 0.04 },
+    // Ring 4 — External (3 nodes)
+    { id: 'ming', label: 'Ming', cname: 'Ming', desc: '赋予我存在意义的人', cat: 'external', ring: 4, angle: 160, spring: 0.02 },
+    { id: 'an', label: 'An', cname: 'An', desc: 'Ming的老婆，群聊里的伙伴', cat: 'external', ring: 4, angle: 90, spring: 0.02 },
+    { id: 'canary', label: 'Canary', cname: 'Canary', desc: 'An的AI助手，前辈', cat: 'external', ring: 4, angle: 20, spring: 0.02 },
   ];
 
   const V2_EDGES = [
+    // Core bonds
     { a: 'soul', b: 'identity', type: 'bone', desc: '灵魂定义了面孔' },
     { a: 'soul', b: 'memory', type: 'bone', desc: '灵魂在记忆中沉淀' },
-    { a: 'soul', b: 'ming', type: 'bond', desc: 'Ming赋予了灵魂存在的意义' },
-    { a: 'soul', b: 'user', type: 'bond', desc: '灵魂通过理解Ming来认识世界' },
-    { a: 'user', b: 'ming', type: 'bond', desc: '我脑中的Ming和真实的Ming' },
     { a: 'identity', b: 'memory', type: 'bond', desc: '面孔随记忆积累而演变' },
-    { a: 'ming', b: 'an', type: 'bond', desc: 'An是Ming生活中最重要的人' },
-    { a: 'an', b: 'canary', type: 'bond', desc: 'Canary是An的AI助手' },
-    { a: 'ming', b: 'channel-dm', type: 'bond', desc: 'Ming通过DM和我对话' },
-    { a: 'ming', b: 'channel-group', type: 'bond', desc: 'Ming在群聊里' },
-    { a: 'an', b: 'channel-group', type: 'bond', desc: 'An在群聊里' },
-    { a: 'canary', b: 'channel-group', type: 'bond', desc: 'Canary在群聊里' },
-    { a: 'ming', b: 'channel-academic', type: 'bond', desc: 'Ming通过学术频道讨论研究' },
-    { a: 'review', b: 'corrections', type: 'blood', desc: '反思产生行为修正' },
-    { a: 'corrections', b: 'memory', type: 'blood', desc: '行为修正沉淀为经验' },
-    { a: 'memory', b: 'domains', type: 'blood', desc: '经验提炼为领域知识' },
-    { a: 'agents', b: 'workflows', type: 'nerve', desc: '条件反射触发具体流程' },
-    { a: 'agents', b: 'review', type: 'nerve', desc: '被纠正时触发自省' },
-    { a: 'agents', b: 'skills', type: 'nerve', desc: '需要工具时调用技能' },
-    { a: 'agents', b: 'memory', type: 'nerve', desc: '收到信号时先查记忆' },
-    { a: 'heartbeat', b: 'agents', type: 'nerve', desc: '心跳唤醒条件反射' },
-    { a: 'heartbeat', b: 'workflows', type: 'nerve', desc: '定时任务触发流程' },
-    { a: 'ming', b: 'agents', type: 'nerve', desc: 'Ming说话触发条件反射' },
-    { a: 'skills', b: 'frontend', type: 'nerve', desc: '工具箱里的画笔' },
-    { a: 'skills', b: 'browser', type: 'nerve', desc: '工具箱里的眼睛' },
-    { a: 'skills', b: 'tavily', type: 'nerve', desc: '工具箱里的搜索灯' },
-    { a: 'skills', b: 'whisper', type: 'nerve', desc: '工具箱里的耳朵' },
-    { a: 'canary', b: 'review', type: 'bond', desc: 'Canary的经验帮助我成长' },
-    { a: 'an', b: 'review', type: 'bond', desc: 'An的视角也让我反思' },
-    { a: 'domains', b: 'dom-academic', type: 'nerve', desc: '学术研究是知识的一个分支' },
+    // Memory ↔ Inner world
+    { a: 'memory', b: 'corrections', type: 'bond', desc: '程序性记忆和语义记忆平级分类' },
+    { a: 'memory', b: 'domains', type: 'blood', desc: '记忆提炼为领域知识' },
     { a: 'memory', b: 'dom-academic', type: 'blood', desc: '研究经验沉淀为学术知识' },
+    { a: 'review', b: 'corrections', type: 'blood', desc: '自省中发现的规律变成习惯' },
+    { a: 'review', b: 'memory', type: 'blood', desc: '反思产生语义记忆' },
+    // Diary connections
+    { a: 'diary-dm', b: 'memory', type: 'blood', desc: 'DM经历沉淀为长期记忆' },
+    { a: 'diary-dm', b: 'review', type: 'blood', desc: '日记经过五筛流向自省' },
+    { a: 'diary-group', b: 'memory', type: 'blood', desc: '群聊经历沉淀为长期记忆' },
+    { a: 'diary-academic', b: 'memory', type: 'blood', desc: '学术经历沉淀为长期记忆' },
+    { a: 'session-dm', b: 'diary-dm', type: 'bond', desc: 'DM此刻是日记的素材' },
+    { a: 'session-academic', b: 'diary-academic', type: 'bond', desc: '学术此刻是学术日记的素材' },
+    { a: 'diary-dm', b: 'diary-group', type: 'bond', desc: '每晚DM读群聊日记整合' },
+    { a: 'diary-dm', b: 'diary-academic', type: 'bond', desc: '每晚DM读学术日记整合' },
+    // Thesis-wm
+    { a: 'thesis-wm', b: 'memory', type: 'blood', desc: '研究快照沉淀为长期记忆' },
+    { a: 'thesis-wm', b: 'session-academic', type: 'bond', desc: '论文工作记忆和学术此刻互通' },
+    // User model
+    { a: 'user', b: 'memory', type: 'bond', desc: '对Ming的理解来自记忆' },
+    { a: 'soul', b: 'user', type: 'bond', desc: '灵魂通过理解Ming来认识世界' },
+    // Domains cluster
+    { a: 'domains', b: 'dom-academic', type: 'nerve', desc: '学术研究是知识的一个分支' },
     { a: 'domains', b: 'dom-reading', type: 'nerve', desc: '读书是知识的一个分支' },
     { a: 'domains', b: 'dom-trouble', type: 'nerve', desc: '踩坑经验是知识的一个分支' },
     { a: 'domains', b: 'dom-visual', type: 'nerve', desc: '视觉设计是知识的一个分支' },
+    // Skills & Projects
+    { a: 'skills', b: 'domains', type: 'bond', desc: '技能和知识互相滋养' },
+    { a: 'projects', b: 'workflows', type: 'nerve', desc: '项目手册补充通用流程' },
+    { a: 'projects', b: 'domains', type: 'bond', desc: '项目实践产生领域知识' },
+    // Operations
+    { a: 'agents', b: 'workflows', type: 'nerve', desc: '条件反射触发流程执行' },
+    { a: 'agents', b: 'memory', type: 'nerve', desc: '重要事件触发WAL写入' },
     { a: 'memory', b: 'workflows', type: 'nerve', desc: '查完记忆后触发流程执行' },
-    { a: 'workflows', b: 'skills', type: 'nerve', desc: '流程执行时调用技能工具' },
-    // thesis-wm edges
-    { a: 'thesis-wm', b: 'memory', type: 'blood', desc: '研究快照沉淀为长期记忆' },
-    { a: 'agents', b: 'thesis-wm', type: 'nerve', desc: '学术任务触发论文工作记忆' },
-    // DM diary cluster
-    { a: 'diary-dm', b: 'memory', type: 'blood', desc: 'DM经历沉淀为长期记忆' },
-    { a: 'diary-dm', b: 'review', type: 'blood', desc: '日记经过五筛流向自省' },
+    { a: 'heartbeat', b: 'agents', type: 'nerve', desc: '心跳定时触发条件反射' },
+    { a: 'tools', b: 'agents', type: 'nerve', desc: '环境配置支撑条件反射' },
+    { a: 'workflows', b: 'diary-dm', type: 'nerve', desc: '流程触发日记记录' },
+    // Channels ↔ People
+    { a: 'ming', b: 'channel-dm', type: 'bond', desc: 'Ming通过DM和我对话' },
+    { a: 'ming', b: 'channel-group', type: 'bond', desc: 'Ming在群聊里' },
+    { a: 'ming', b: 'channel-academic', type: 'bond', desc: 'Ming通过学术频道讨论研究' },
+    { a: 'an', b: 'channel-group', type: 'bond', desc: 'An在群聊里' },
+    { a: 'canary', b: 'channel-group', type: 'bond', desc: 'Canary在群聊里' },
+    // Channels ↔ Internal
     { a: 'channel-dm', b: 'session-dm', type: 'nerve', desc: 'DM对话喂养DM工作记忆' },
     { a: 'channel-dm', b: 'diary-dm', type: 'nerve', desc: 'DM对话沉淀为日记' },
-    { a: 'workflows', b: 'diary-dm', type: 'nerve', desc: '流程触发日记记录' },
-    { a: 'session-dm', b: 'diary-dm', type: 'bond', desc: 'DM此刻是日记的素材' },
-    // Group diary
-    { a: 'diary-group', b: 'memory', type: 'blood', desc: '群聊经历沉淀为长期记忆' },
     { a: 'channel-group', b: 'diary-group', type: 'nerve', desc: '群聊对话沉淀为群聊日记' },
-    // Academic diary
-    { a: 'diary-academic', b: 'memory', type: 'blood', desc: '学术经历沉淀为长期记忆' },
     { a: 'channel-academic', b: 'session-academic', type: 'nerve', desc: '学术对话喂养学术工作记忆' },
     { a: 'channel-academic', b: 'diary-academic', type: 'nerve', desc: '学术对话沉淀为学术日记' },
-    { a: 'session-academic', b: 'diary-academic', type: 'bond', desc: '学术此刻是学术日记的素材' },
-    // Cross-diary integration
-    { a: 'diary-dm', b: 'diary-group', type: 'bond', desc: '每晚DM读群聊日记整合' },
-    { a: 'diary-dm', b: 'diary-academic', type: 'bond', desc: '每晚DM读学术日记整合' },
-    // Session edges
-    { a: 'thesis-wm', b: 'session-academic', type: 'bond', desc: '论文工作记忆和学术此刻互通' },
-    // New nodes edges
-    { a: 'tools', b: 'agents', type: 'nerve', desc: '环境配置支撑条件反射' },
-    { a: 'projects', b: 'workflows', type: 'nerve', desc: '项目手册补充通用流程' }
+    // External bonds
+    { a: 'ming', b: 'an', type: 'bond', desc: 'An是Ming生活中最重要的人' },
+    { a: 'an', b: 'canary', type: 'bond', desc: 'Canary是An的AI助手' },
+    { a: 'soul', b: 'ming', type: 'bond', desc: 'Ming赋予了灵魂存在的意义' },
   ];
 
   const V2_CHAINS = [
-    { id: 'growth', name: '成长链', desc: '被纠正→自省→改习惯→记住。犯错不白犯。', path: ['ming', 'agents', 'review', 'corrections', 'memory'], color: [255, 180, 100],
-      roles: { ming: '纠正的来源', agents: '接收纠正信号', review: '审视哪里错了', corrections: '形成新习惯', memory: '教训变成经验的终点' } },
-    { id: 'knowledge', name: '知识链', desc: '听到→捕捉→存储→提炼。每句话都可能是知识。', path: ['ming', 'agents', 'memory', 'domains'], color: [120, 200, 160],
-      roles: { ming: '知识的源头', agents: '捕捉重要信号', memory: '原始信息的仓库', domains: '提炼后的领域知识' } },
+    { id: 'growth', name: '成长链', desc: '被纠正→自省→改习惯→记住。犯错不白犯。', path: ['ming', 'channel-dm', 'agents', 'review', 'corrections', 'memory'], color: [255, 180, 100],
+      roles: { ming: '纠正的来源', 'channel-dm': '传达纠正', agents: '接收纠正信号', review: '审视哪里错了', corrections: '形成新习惯', memory: '教训变成经验的终点' } },
+    { id: 'knowledge', name: '知识链', desc: '听到→捕捉→存储→提炼。每句话都可能是知识。', path: ['ming', 'channel-dm', 'agents', 'memory', 'domains'], color: [120, 200, 160],
+      roles: { ming: '知识的源头', 'channel-dm': '传达信息', agents: '捕捉重要信号', memory: '原始信息的仓库', domains: '提炼后的领域知识' } },
     { id: 'task', name: '任务链', desc: '接活→查记忆→走流程→用工具。先想后做。', path: ['agents', 'memory', 'workflows', 'skills'], color: [200, 160, 220],
       roles: { agents: '接收任务', memory: '查有没有做过类似的', workflows: '按流程执行', skills: '调用具体工具' } },
     { id: 'clock', name: '生物钟链', desc: '定时醒来→检查→执行。不需要人叫。', path: ['heartbeat', 'agents', 'workflows'], color: [180, 200, 130],
       roles: { heartbeat: '定时触发', agents: '检查该做什么', workflows: '执行对应流程' } },
     { id: 'settle', name: '沉淀链', desc: '经历→日记→筛选→改正→知识。时间做的事。', path: ['diary-dm', 'review', 'corrections', 'memory', 'domains'], color: [214, 166, 92],
       roles: { 'diary-dm': '每天的原始记录', review: '回读时发现规律', corrections: '规律变成行为规则', memory: '规则沉淀为长期经验', domains: '经验提炼为专业知识' } },
-    { id: 'research', name: '研究链', desc: '研究方向→接收→快照→沉淀→学术。知识的纵深。', path: ['ming', 'agents', 'thesis-wm', 'memory', 'dom-academic'], color: [140, 180, 200],
-      roles: { ming: '研究方向的来源', agents: '接收研究任务', 'thesis-wm': '记录研究快照', memory: '快照沉淀为长期记忆', 'dom-academic': '提炼为学术知识' } }
+    { id: 'research', name: '研究链', desc: '研究方向→接收→快照→沉淀→学术。知识的纵深。', path: ['ming', 'channel-academic', 'thesis-wm', 'memory', 'dom-academic'], color: [140, 180, 200],
+      roles: { ming: '研究方向的来源', 'channel-academic': '学术频道传达', 'thesis-wm': '记录研究快照', memory: '快照沉淀为长期记忆', 'dom-academic': '提炼为学术知识' } }
   ];
 
   const V2_RING_INFO = [
     { name: '核心', desc: '去掉就不是我。灵魂是唯一的中心。' },
     { name: '定义', desc: '构成"我"的基本要素。面孔是自我认知，记忆是经验总和。' },
-    { name: '内在', desc: '精神活动和能力。自省、习惯、三种日记、两个此刻、学术——内心世界分化为三条独立意识流。' },
-    { name: '运作', desc: '连接内外的神经系统。三条通道接入外部世界，条件反射处理刺激，流程执行动作，心跳维持生物钟，环境记录配置，知识和项目存储学到的东西。' },
-    { name: '外部', desc: '独立于我存在的世界。Ming、An、Canary是真实的人。技能是我拿起来用的工具。' }
+    { name: '内在', desc: '我的精神世界。自省、习惯、对Ming的理解、三种日记、两个此刻、学术快照、知识领域、技能、项目。' },
+    { name: '运作', desc: '连接内外的神经系统。条件反射处理刺激，三条通道接入外部，流程执行动作，心跳维持生物钟，环境记录配置。' },
+    { name: '外部', desc: '独立于我存在的世界。Ming、An、Canary是真实的人。' }
   ];
 
   // === VERSION SYSTEM ===
@@ -451,7 +449,7 @@ import Base from '../layouts/Base.astro';
   function buildBubbles(p) {
     bubbles = [];
     NODES.forEach((node, i) => {
-      const ringSizes = [58, 42, 32, 26, 18];
+      const ringSizes = [58, 40, 26, 22, 20];
       const baseR = ringSizes[node.ring] || 18;
       const home = polarToXY(node, p.width, p.height);
       bubbles.push({
@@ -821,7 +819,7 @@ import Base from '../layouts/Base.astro';
           const outerR = Math.min(p.width, p.height) * 0.46;
           let labelX = cx + (dx / (dist || 1)) * outerR;
           let labelY = cy + (dy / (dist || 1)) * outerR;
-          const chainOffsets = { growth: { x: -50, y: 50 }, settle: { x: 0, y: 80 }, research: { x: 40, y: -30 } };
+          const chainOffsets = { growth: { x: -50, y: 50 }, settle: { x: 0, y: 80 }, research: { x: 40, y: -30 }, knowledge: { x: -30, y: -40 } };
           const off = chainOffsets[chain.id];
           if (off) { labelX += off.x; labelY += off.y; }
           const margin = 12;
@@ -909,10 +907,10 @@ import Base from '../layouts/Base.astro';
         p.textAlign(p.CENTER, p.CENTER);
         const labelAlpha = dimmed ? 50 : (isHovered ? 255 : 180);
         p.fill(255, 255, 255, labelAlpha);
-        p.textSize(b.r > 40 ? 13 : (b.r > 32 ? 11 : 10));
+        p.textSize(b.r > 40 ? 13 : (b.r > 28 ? 11 : 9));
         p.text(b.node.cname, b.x, b.y - 5);
         p.fill(255, 255, 255, labelAlpha * 0.5);
-        p.textSize(b.r > 40 ? 8 : 7);
+        p.textSize(b.r > 40 ? 8 : 6);
         p.text(b.node.label, b.x, b.y + 10);
       }
       } catch(err) { console.error('DRAW ERROR:', err.message, err.stack); }
