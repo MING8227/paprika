@@ -13,12 +13,12 @@ import Base from '../../layouts/Base.astro';
         sampleSize: 72,
         displaySize: 18,
         color: [74, 69, 64],
-        pointDensity: 0.08
+        pointDensity: 0.12
       },
       paper: {
         bg: [250, 250, 252],
-        lineColor: [180, 210, 200, 22],
-        lineWeight: 0.4
+        lineColor: [160, 195, 190, 35],
+        lineWeight: 0.5
       },
       damage: {
         driftMax: 12,
@@ -51,9 +51,9 @@ import Base from '../../layouts/Base.astro';
       },
       // C: visual weight layers
       visualWeight: {
-        pristine:  { size: 1.8, alpha: 220 },
-        eroding:   { sizeMin: 1.8, sizeMax: 2.5, alphaMin: 100, alphaMax: 220, driftRange: [0.01, 0.5] },
-        eroded:    { sizeMin: 2.5, sizeMax: 3.5, alphaMin: 40,  alphaMax: 100, driftThreshold: 0.5 }
+        pristine:  { size: 2.0, alpha: 230 },
+        eroding:   { sizeMin: 2.0, sizeMax: 2.8, alphaMin: 110, alphaMax: 230, driftRange: [0.01, 0.5] },
+        eroded:    { sizeMin: 2.8, sizeMax: 3.8, alphaMin: 45,  alphaMax: 110, driftThreshold: 0.5 }
       }
     };
 
