@@ -29,9 +29,9 @@ import Base from '../../layouts/Base.astro';
         rustCount: 0
       },
       rain: {
-        initialInterval: 30,    // frames between first drops
-        minInterval: 15,        // fastest drop interval
-        rampDrops: 4,           // after this many drops, interval reaches min
+        initialInterval: 18,
+        minInterval: 8,
+        rampDrops: 3,
         wetnessPerDrop: 0.8,
         diffusionRate: 0.002,
         maxWetCells: 15
@@ -269,10 +269,10 @@ import Base from '../../layouts/Base.astro';
       drawWaterStains();
       drawGrid();
 
-      // Chars drift where wet
+      // Chars drift only where directly hit
       for (let cd of charData) {
         const w = wetGrid[cd.row] ? wetGrid[cd.row][cd.col] : 0;
-        if (w > 0.05) {
+        if (w > 0.35) {
           for (let pt of cd.points) {
             pt.drift = min(1, pt.drift + w * 0.025);
           }
