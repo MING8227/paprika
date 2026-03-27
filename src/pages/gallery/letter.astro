@@ -33,7 +33,7 @@ import Base from '../../layouts/Base.astro';
         minInterval: 45,
         rampDrops: 6,
         wetnessPerDrop: 0.7,
-        diffusionRate: 0.0015,
+        diffusionRate: 0.0005,
         maxWetCells: 10
       },
       colorInherit: {
@@ -282,12 +282,12 @@ import Base from '../../layouts/Base.astro';
       drawWaterStains();
       drawGrid();
 
-      // Chars drift where wet
+      // Chars drift only where directly hit (high wetness)
       for (let cd of charData) {
         const w = wetGrid[cd.row] ? wetGrid[cd.row][cd.col] : 0;
-        if (w > 0.05) {
+        if (w > 0.3) {
           for (let pt of cd.points) {
-            pt.drift = min(1, pt.drift + w * 0.025);
+            pt.drift = min(1, pt.drift + w * 0.02);
           }
         }
       }
