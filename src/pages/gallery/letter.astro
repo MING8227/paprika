@@ -343,38 +343,34 @@ import Base from '../../layouts/Base.astro';
     }
 
     function drawWaterStains() {
-      // Draw water stains in areas where curveHistory is dense
-      if (curveHistory.length < 10) return;
-      const stainColor = [180, 210, 230, 40];
+      // Draw water stains around chars that are being eroded
+      const stainColor = [180, 210, 230];
       noStroke();
 
-      // Build density clusters from curveHistory
-      const gridSize = 60;
-      const densityMap = {};
-      for (let trail of curveHistory) {
-        const key = Math.floor(trail.x / gridSize) + ',' + Math.floor(trail.y / gridSize);
-        densityMap[key] = (densityMap[key] || 0) + 1;
-      }
-
       randomSeed(42);
-      for (let key in densityMap) {
-        if (densityMap[key] < 8) continue; // only dense areas
-        const parts = key.split(',');
-        const bx = parseInt(parts[0]) * gridSize + gridSize / 2;
-        const by = parseInt(parts[1]) * gridSize + gridSize / 2;
-        const intensity = min(densityMap[key] / 40, 1);
+      for (let cd of charData) {
+        // compute max drift for this char
+        let maxDrift = 0;
+        for (let pt of cd.points) {
+          if (pt.drift > maxDrift) maxDrift = pt.drift;
+        }
+        if (maxDrift < 0.05) continue; // only stain eroding chars
 
-        // Draw 3-5 overlapping irregular ellipses per cluster
-        const count = 3 + Math.floor(intensity * 3);
+        const intensity = constrain(maxDrift, 0, 1);
+        // Draw 2-4 overlapping irregular ellipses around this char
+        const count = 2 + Math.floor(intensity * 2);
+        const cellW = (width - CONFIG.grid.marginX * 2) / CONFIG.grid.cols;
+        const cellH = (height - CONFIG.grid.marginY * 2) / CONFIG.grid.rows;
+
         for (let i = 0; i < count; i++) {
-          const ox = (random() - 0.5) * gridSize * 0.6;
-          const oy = (random() - 0.5) * gridSize * 0.6;
-          const w = random(15, 40) * (0.5 + intensity * 0.5);
-          const h = random(10, 30) * (0.5 + intensity * 0.5);
-          const a = stainColor[3] * (0.4 + intensity * 0.6);
+          const ox = (random() - 0.5) * cellW * 0.8;
+          const oy = (random() - 0.5) * cellH * 0.8;
+          const w = random(cellW * 0.5, cellW * 1.2) * (0.4 + intensity * 0.6);
+          const h = random(cellH * 0.4, cellH * 1.0) * (0.4 + intensity * 0.6);
+          const a = 25 * (0.3 + intensity * 0.7);
           fill(stainColor[0], stainColor[1], stainColor[2], a);
           push();
-          translate(bx + ox, by + oy);
+          translate(cd.cx + ox, cd.cy + oy);
           rotate(random(TWO_PI));
           ellipse(0, 0, w, h);
           pop();
