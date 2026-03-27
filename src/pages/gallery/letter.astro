@@ -156,6 +156,7 @@ import Base from '../../layouts/Base.astro';
     function draw() {
       background(CONFIG.paper.bg[0], CONFIG.paper.bg[1], CONFIG.paper.bg[2]);
 
+      drawPaperEdge(); // clip to irregular paper outline
       drawWaterStains();
       drawGrid();
 
@@ -283,6 +284,77 @@ import Base from '../../layouts/Base.astro';
         }
       }
       noStroke();
+      restorePaperEdge(); // remove clip
+    }
+
+    function drawPaperEdge() {
+      // Draw irregular paper outline — noise-warped rectangle
+      // Everything outside is masked with background color
+      const bg = CONFIG.paper.bg;
+      const mx = CONFIG.grid.marginX;
+      const my = CONFIG.grid.marginY;
+      const pw = width - mx * 2;
+      const ph = height - my * 2;
+      const amp = 7; // edge irregularity amplitude
+      const noiseScale = 0.015;
+      const edgeSteps = 120; // vertices per edge
+
+      // Build the irregular paper contour
+      let paperVerts = [];
+
+      // Top edge (left to right)
+      for (let i = 0; i <= edgeSteps; i++) {
+        const t = i / edgeSteps;
+        const x = mx + t * pw;
+        const y = my + (noise(x * noiseScale, 0) - 0.5) * 2 * amp;
+        paperVerts.push({ x, y });
+      }
+      // Right edge (top to bottom)
+      for (let i = 1; i <= edgeSteps; i++) {
+        const t = i / edgeSteps;
+        const x = mx + pw + (noise(1000, t * ph * noiseScale) - 0.5) * 2 * amp;
+        const y = my + t * ph;
+        paperVerts.push({ x, y });
+      }
+      // Bottom edge (right to left)
+      for (let i = 1; i <= edgeSteps; i++) {
+        const t = i / edgeSteps;
+        const x = mx + pw - t * pw;
+        const y = my + ph + (noise(x * noiseScale, 2000) - 0.5) * 2 * amp;
+        paperVerts.push({ x, y });
+      }
+      // Left edge (bottom to top)
+      for (let i = 1; i < edgeSteps; i++) {
+        const t = i / edgeSteps;
+        const x = mx + (noise(3000, t * ph * noiseScale) - 0.5) * 2 * amp;
+        const y = my + ph - t * ph;
+        paperVerts.push({ x, y });
+      }
+
+      // Draw mask: fill the outside with background color
+      // Use 4 quads covering each side outside the paper
+      const pad = 50; // extra padding beyond canvas
+      noStroke();
+      fill(bg[0], bg[1], bg[2]);
+
+      // We use a trick: draw background over whole canvas, then draw paper shape
+      // Actually, easier: draw the paper contour as a filled shape first (before grid),
+      // then draw background rectangles around it. But that clips grid too.
+      // Best approach: use erase/noErase or drawingContext.clip
+
+      // Use canvas clip to restrict all subsequent drawing to paper shape
+      drawingContext.save();
+      drawingContext.beginPath();
+      drawingContext.moveTo(paperVerts[0].x, paperVerts[0].y);
+      for (let i = 1; i < paperVerts.length; i++) {
+        drawingContext.lineTo(paperVerts[i].x, paperVerts[i].y);
+      }
+      drawingContext.closePath();
+      drawingContext.clip();
+    }
+
+    function restorePaperEdge() {
+      drawingContext.restore();
     }
 
     function drawGrid() {
@@ -294,12 +366,12 @@ import Base from '../../layouts/Base.astro';
       stroke(CONFIG.paper.lineColor[0], CONFIG.paper.lineColor[1], CONFIG.paper.lineColor[2], CONFIG.paper.lineColor[3]);
       strokeWeight(CONFIG.paper.lineWeight);
 
-      // B: draw vertical lines with damage
+      // vertical lines with global warp + curve damage
       for (let i = 0; i <= cols; i++) {
         const x = marginX + i * cellW;
         drawDamagedLine(x, marginY, x, height - marginY, true, gd);
       }
-      // B: draw horizontal lines with damage
+      // horizontal lines with global warp + curve damage
       for (let j = 0; j <= rows; j++) {
         const y = marginY + j * cellH;
         drawDamagedLine(marginX, y, width - marginX, y, false, gd);
@@ -308,43 +380,47 @@ import Base from '../../layouts/Base.astro';
     }
 
     function drawDamagedLine(x1, y1, x2, y2, isVertical, gd) {
-      // Draw line as small segments with hand-drawn feel + damage bending
-      const steps = 60;
-      const maxBend = 8;
+      // Global perlin warp on all lines (3-5px base) + extra near curves (15-20px)
+      const steps = 80;
+      const baseWarpAmp = 4;    // global warp amplitude
+      const curveWarpAmp = 18;  // extra warp near curves
       const baseWeight = CONFIG.paper.lineWeight;
+      const warpScaleX = 0.012;
+      const warpScaleY = 0.012;
+      // Use line identity as noise seed offset
+      const lineId = x1 * 0.37 + y1 * 0.71;
       let prevX = x1, prevY = y1;
+
+      // Apply global warp to starting point too
+      {
+        const gw = globalWarp(x1, y1, isVertical, baseWarpAmp, warpScaleX, warpScaleY, lineId);
+        const inf = curveInfluenceAt(x1, y1, gd.radius);
+        const cw = inf > 0.05 ? curveWarp(x1, y1, isVertical, curveWarpAmp * inf, warpScaleX) : 0;
+        if (isVertical) { prevX = x1 + gw + cw; } else { prevY = y1 + gw + cw; }
+      }
 
       for (let s = 1; s <= steps; s++) {
         const t = s / steps;
         let sx = lerp(x1, x2, t);
         let sy = lerp(y1, y2, t);
 
-        const mx = (prevX + sx) / 2;
-        const my = (prevY + sy) / 2;
-        const inf = curveInfluenceAt(mx, my, gd.radius);
+        // Global warp: all lines bend with perlin noise
+        const gw = globalWarp(sx, sy, isVertical, baseWarpAmp, warpScaleX, warpScaleY, lineId);
 
-        // hand-drawn: vary stroke weight per segment
-        const handNoise = noise(mx * 0.1, my * 0.1);
-        const sw = baseWeight * (0.6 + handNoise * 0.8); // 0.6x to 1.4x
+        // Curve proximity: extra warp near curve trails
+        const inf = curveInfluenceAt(sx, sy, gd.radius);
+        const cw = inf > 0.05 ? curveWarp(sx, sy, isVertical, curveWarpAmp * inf, warpScaleX) : 0;
+
+        // Hand-drawn weight variation
+        const handNoise = noise(sx * 0.1 + lineId, sy * 0.1);
+        const sw = baseWeight * (0.6 + handNoise * 0.8);
         strokeWeight(sw);
 
-        // hand-drawn: slight perpendicular wobble even on undamaged lines
-        const wobble = (noise(mx * 0.05 + 100, my * 0.05 + 100) - 0.5) * 1.2;
+        // Apply perpendicular displacement
         if (isVertical) {
-          sx += wobble;
+          sx += gw + cw;
         } else {
-          sy += wobble;
-        }
-
-        // damage: additional bending
-        if (inf > 0.05) {
-          const bendAmount = inf * maxBend;
-          const n = (noise(mx * 0.03, my * 0.03) - 0.5) * 2;
-          if (isVertical) {
-            sx += n * bendAmount;
-          } else {
-            sy += n * bendAmount;
-          }
+          sy += gw + cw;
         }
 
         line(prevX, prevY, sx, sy);
@@ -353,12 +429,22 @@ import Base from '../../layouts/Base.astro';
       }
     }
 
-    function drawWaterStains() {
-      // Draw water stains around chars that are being eroded
-      // Use deterministic per-char seeds so stains don't jump between frames
-      const stainColor = [140, 180, 210];
-      noStroke();
+    function globalWarp(x, y, isVertical, amp, scaleX, scaleY, lineId) {
+      // Smooth perlin-based perpendicular displacement for every line
+      const n = (noise(x * scaleX + lineId * 0.1, y * scaleY + lineId * 0.2) - 0.5) * 2;
+      return n * amp;
+    }
 
+    function curveWarp(x, y, isVertical, amp, scale) {
+      // Extra warp displacement near curves — different noise octave
+      const n = (noise(x * scale * 2.5 + 500, y * scale * 2.5 + 500) - 0.5) * 2;
+      return n * amp;
+    }
+
+    function drawWaterStains() {
+      // Organic irregular water stains around eroding chars
+      // Uses beginShape + noise-displaced vertices for organic contours
+      const stainColor = [140, 180, 210];
       const cellW = (width - CONFIG.grid.marginX * 2) / CONFIG.grid.cols;
       const cellH = (height - CONFIG.grid.marginY * 2) / CONFIG.grid.rows;
 
@@ -370,22 +456,50 @@ import Base from '../../layouts/Base.astro';
         }
         if (maxDrift < 0.05) continue;
 
-        // Smooth intensity to avoid jumps — use max drift as stable measure
         const intensity = constrain(maxDrift, 0, 1);
 
-        // Scattered raindrops around eroding chars
+        // Deterministic seed per char
         randomSeed(ci * 137 + 42);
-        const count = 12 + Math.floor(intensity * 8); // 12-20 small drops
+        noiseSeed(ci * 251 + 73);
+
+        const count = 3 + Math.floor(intensity * 2); // 3-5 stains per char
         for (let i = 0; i < count; i++) {
-          const ox = (random() - 0.5) * cellW * 2.5;
-          const oy = (random() - 0.5) * cellH * 2.5;
-          const r = random(cellW * 0.4, cellW * 0.8); // roughly cell-sized
-          const a = 80 + random(60); // strong enough to see on light paper
-          fill(stainColor[0], stainColor[1], stainColor[2], a);
-          ellipse(cd.cx + ox, cd.cy + oy, r, r * random(1.0, 1.5));
+          const ox = (random() - 0.5) * cellW * 2.0;
+          const oy = (random() - 0.5) * cellH * 2.0;
+          const baseR = random(cellW * 0.4, cellW * 0.9); // 1-2 cells size
+          const alpha = 60 + random(40); // 60-100
+          const numVerts = 12 + Math.floor(random(5)); // 12-16 vertices
+          const nOff = random(1000); // noise offset for this stain
+
+          noStroke();
+          fill(stainColor[0], stainColor[1], stainColor[2], alpha * intensity);
+          beginShape();
+          for (let v = 0; v <= numVerts; v++) {
+            const angle = (v % numVerts) / numVerts * TWO_PI;
+            // Radius varies with noise for organic shape
+            const rNoise = noise(nOff + cos(angle) * 1.5 + 10, nOff + sin(angle) * 1.5 + 10);
+            const r = baseR * (0.4 + rNoise * 0.8); // 0.4x to 1.2x base radius
+            const vx = cd.cx + ox + cos(angle) * r;
+            const vy = cd.cy + oy + sin(angle) * r;
+            curveVertex(vx, vy);
+          }
+          // Extra control points for smooth closure
+          {
+            const angle0 = 0;
+            const rN0 = noise(nOff + cos(angle0) * 1.5 + 10, nOff + sin(angle0) * 1.5 + 10);
+            const r0 = baseR * (0.4 + rN0 * 0.8);
+            curveVertex(cd.cx + ox + cos(angle0) * r0, cd.cy + oy + sin(angle0) * r0);
+            const angle1 = TWO_PI / numVerts;
+            const rN1 = noise(nOff + cos(angle1) * 1.5 + 10, nOff + sin(angle1) * 1.5 + 10);
+            const r1 = baseR * (0.4 + rN1 * 0.8);
+            curveVertex(cd.cx + ox + cos(angle1) * r1, cd.cy + oy + sin(angle1) * r1);
+          }
+          endShape(CLOSE);
         }
       }
+      // Restore default seeds
       randomSeed(millis());
+      noiseSeed(millis());
     }
 
     function mousePressed() {
