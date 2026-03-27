@@ -17,8 +17,8 @@ import Base from '../../layouts/Base.astro';
       },
       paper: {
         bg: [250, 250, 252],
-        lineColor: [100, 110, 105, 200],
-        lineWeight: 0.7
+        lineColor: [80, 90, 85, 210],
+        lineWeight: 1.2
       },
       damage: {
         driftMax: 12,
@@ -297,9 +297,10 @@ import Base from '../../layouts/Base.astro';
     }
 
     function drawDamagedLine(x1, y1, x2, y2, isVertical, gd) {
-      // Draw line as small segments; damaged areas bend via perlin noise (no breaks)
+      // Draw line as small segments with hand-drawn feel + damage bending
       const steps = 60;
-      const maxBend = 4.5; // max bend in px
+      const maxBend = 5;
+      const baseWeight = CONFIG.paper.lineWeight;
       let prevX = x1, prevY = y1;
 
       for (let s = 1; s <= steps; s++) {
@@ -311,10 +312,23 @@ import Base from '../../layouts/Base.astro';
         const my = (prevY + sy) / 2;
         const inf = curveInfluenceAt(mx, my, gd.radius);
 
-        // Apply continuous bend based on influence
+        // hand-drawn: vary stroke weight per segment
+        const handNoise = noise(mx * 0.1, my * 0.1);
+        const sw = baseWeight * (0.6 + handNoise * 0.8); // 0.6x to 1.4x
+        strokeWeight(sw);
+
+        // hand-drawn: slight perpendicular wobble even on undamaged lines
+        const wobble = (noise(mx * 0.05 + 100, my * 0.05 + 100) - 0.5) * 1.2;
+        if (isVertical) {
+          sx += wobble;
+        } else {
+          sy += wobble;
+        }
+
+        // damage: additional bending
         if (inf > 0.05) {
           const bendAmount = inf * maxBend;
-          const n = (noise(mx * 0.03, my * 0.03) - 0.5) * 2; // -1 to 1
+          const n = (noise(mx * 0.03, my * 0.03) - 0.5) * 2;
           if (isVertical) {
             sx += n * bendAmount;
           } else {
