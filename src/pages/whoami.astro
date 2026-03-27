@@ -36,8 +36,7 @@ import Base from '../layouts/Base.astro';
   #whoami-title {
     position: fixed;
     top: 24px;
-    left: 50%;
-    transform: translateX(-50%);
+    right: 32px;
     font-family: 'Space Mono', monospace;
     font-size: 14px;
     color: rgba(255,255,255,0.25);
@@ -149,7 +148,7 @@ import Base from '../layouts/Base.astro';
   };
 
   // 5-ring polar layout. Soul = single center. Ring by relationship to self.
-  const CX = 0.48, CY = 0.45;
+  const CX = 0.45, CY = 0.48;
   const RINGS = [0, 0.09, 0.20, 0.30, 0.37, 0.43];
 
   // === V1 DATA (2026-03-13, original) ===
