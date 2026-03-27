@@ -490,9 +490,11 @@ import Base from '../layouts/Base.astro';
 
   function buildBubbles(p) {
     bubbles = [];
+    const mobile = p.width < 768;
+    const scale = mobile ? 0.55 : 1;
     NODES.forEach((node, i) => {
       const ringSizes = [56, 36, 22, 16, 17, 17];
-      const baseR = ringSizes[node.ring] || 18;
+      const baseR = Math.max(6, Math.round(ringSizes[node.ring] * scale)) || 18;
       const home = polarToXY(node, p.width, p.height);
       bubbles.push({
         x: home.x + p.random(-10, 10),
@@ -573,8 +575,8 @@ import Base from '../layouts/Base.astro';
         p.noStroke();
         p.fill(255, 255, 255, isRingHovered ? 80 : 30);
         p.textAlign(p.CENTER, p.BOTTOM);
-        p.textSize(10);
-        p.text(ringLabels[i], cx, cy - rBase * r - 4);
+        p.textSize(p.width < 768 ? 7 : 10);
+        p.text(ringLabels[i], cx, cy - rBase * r - (p.width < 768 ? 2 : 4));
       });
 
       // Physics
@@ -889,11 +891,12 @@ import Base from '../layouts/Base.astro';
           p.line(lastB.x, lastB.y, labelX, labelY);
           p.drawingContext.setLineDash([]);
           p.noStroke();
-          p.textSize(12);
+          const mobC = p.width < 768;
+          p.textSize(mobC ? 9 : 12);
           p.textAlign(alignLeft ? p.LEFT : p.RIGHT, p.BOTTOM);
           p.fill(cr, cg, cb, 220);
           p.text(chain.name, labelX + (alignLeft ? 6 : -6), labelY - 2);
-          p.textSize(9);
+          p.textSize(mobC ? 7 : 9);
           p.fill(cr, cg, cb, 140);
           p.textAlign(alignLeft ? p.LEFT : p.RIGHT, p.TOP);
           const descChars = chain.desc.split('');
@@ -949,11 +952,12 @@ import Base from '../layouts/Base.astro';
         p.textAlign(p.CENTER, p.CENTER);
         const labelAlpha = dimmed ? 50 : (isHovered ? 255 : 180);
         p.fill(255, 255, 255, labelAlpha);
-        p.textSize(b.r > 38 ? 13 : (b.r > 22 ? 10 : 8));
-        p.text(b.node.cname, b.x, b.y - 5);
+        const mob = p.width < 768;
+        p.textSize(b.r > 38 ? 13 : (b.r > 22 ? 10 : (mob ? 6 : 8)));
+        p.text(b.node.cname, b.x, b.y - (mob ? 3 : 5));
         p.fill(255, 255, 255, labelAlpha * 0.5);
-        p.textSize(b.r > 38 ? 8 : (b.r > 22 ? 7 : 5));
-        p.text(b.node.label, b.x, b.y + 10);
+        p.textSize(b.r > 38 ? 8 : (b.r > 22 ? 7 : (mob ? 4 : 5)));
+        p.text(b.node.label, b.x, b.y + (mob ? 5 : 10));
       }
       } catch(err) { console.error('DRAW ERROR:', err.message, err.stack); }
     };
