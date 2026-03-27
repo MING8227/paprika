@@ -35,12 +35,32 @@ import Base from '../../layouts/Base.astro';
         spawnInterval: 200,
         maxCurves: 4,
         startYRange: [-30, 0]
+      },
+      // A: color inheritance along curve trail
+      colorInherit: {
+        baseColor: [74, 69, 64],
+        warmColor: [180, 75, 55],
+        // drift threshold where color starts shifting
+        driftStart: 0.05
+      },
+      // B: grid damage
+      gridDamage: {
+        radius: 40,         // influence radius from curve center
+        breakGap: 6,        // gap size when line breaks
+        offsetMax: 3         // max pixel offset for damaged segments
+      },
+      // C: visual weight layers
+      visualWeight: {
+        pristine:  { size: 2.2, alpha: 240 },
+        eroding:   { sizeMin: 2.2, sizeMax: 3.5, alphaMin: 140, alphaMax: 240, driftRange: [0.01, 0.5] },
+        eroded:    { sizeMin: 3.5, sizeMax: 5.0, alphaMin: 60,  alphaMax: 140, driftThreshold: 0.5 }
       }
     };
 
     let sanShengFont;
     let charData = [];
     let curves = [];
+    let curveHistory = []; // stored trail points for grid damage + color
     let lastSpawnFrame = -150;
 
     function preload() {
@@ -83,7 +103,6 @@ import Base from '../../layouts/Base.astro';
 
           if (rawPoints.length === 0) continue;
 
-          // center the points
           let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
           for (let p of rawPoints) {
             if (p.x < minX) minX = p.x;
@@ -119,6 +138,21 @@ import Base from '../../layouts/Base.astro';
       });
     }
 
+    // Check if a point is near any curve trail
+    function curveInfluenceAt(px, py, radius) {
+      let maxInf = 0;
+      for (let trail of curveHistory) {
+        const dx = px - trail.x;
+        const dy = py - trail.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < radius) {
+          const inf = 1 - dist / radius;
+          if (inf > maxInf) maxInf = inf;
+        }
+      }
+      return maxInf;
+    }
+
     function draw() {
       background(CONFIG.paper.bg[0], CONFIG.paper.bg[1], CONFIG.paper.bg[2]);
 
@@ -134,7 +168,6 @@ import Base from '../../layouts/Base.astro';
       const halfW = CONFIG.curve.weight / 2;
       for (let cv of curves) {
         if (!cv.active) continue;
-        const prevY = cv.y;
         cv.y += CONFIG.curve.growSpeed;
         cv.x += (noise(cv.noiseOff) - 0.5) * 2 * 8;
         cv.noiseOff += CONFIG.curve.xDriftScale * 60;
@@ -143,6 +176,9 @@ import Base from '../../layouts/Base.astro';
           cv.active = false;
           continue;
         }
+
+        // record trail for grid damage + color inheritance
+        curveHistory.push({ x: cv.x, y: cv.y });
 
         // affect chars near this curve segment
         for (let cd of charData) {
@@ -158,56 +194,126 @@ import Base from '../../layouts/Base.astro';
         }
       }
 
-      // draw rust spots (subtle, behind text)
+      // cap trail history to avoid memory bloat
+      if (curveHistory.length > 3000) {
+        curveHistory = curveHistory.slice(-2000);
+      }
+
+      // draw rust spots
       drawRust();
 
-      // draw all char points
-      const tc = CONFIG.text.color;
+      // draw all char points with visual weight layers + color inheritance
+      const base = CONFIG.colorInherit.baseColor;
+      const warm = CONFIG.colorInherit.warmColor;
       const dm = CONFIG.damage;
+      const vw = CONFIG.visualWeight;
+
       for (let cd of charData) {
         for (let pt of cd.points) {
-          if (pt.drift > 0.01) {
-            // drifting point
-            const d = pt.drift;
+          const d = pt.drift;
+
+          if (d > 0.01) {
+            // drifting point - update position
             const nx = noise(pt.noiseOff, frameCount * dm.driftSpeed);
             const ny = noise(pt.noiseOff + 500, frameCount * dm.driftSpeed);
             pt.x = pt.homeX + (nx - 0.5) * 2 * dm.driftMax * d;
             pt.y = pt.homeY + (ny - 0.5) * 2 * dm.driftMax * d;
 
-            const alpha = map(d, 0, 1, 255, dm.fadeAlpha);
-            fill(tc[0], tc[1], tc[2], alpha);
-            const sz = map(d, 0, 1, 2.2, 1.2);
-            ellipse(pt.x, pt.y, sz, sz);
+            // A: color interpolation based on drift
+            const colorT = constrain(map(d, CONFIG.colorInherit.driftStart, 1, 0, 1), 0, 1);
+            const cr = lerp(base[0], warm[0], colorT);
+            const cg = lerp(base[1], warm[1], colorT);
+            const cb = lerp(base[2], warm[2], colorT);
+
+            if (d > vw.eroded.driftThreshold) {
+              // C: eroded layer - sparse large points, warm, low alpha
+              const t = constrain(map(d, 0.5, 1, 0, 1), 0, 1);
+              const sz = lerp(vw.eroded.sizeMin, vw.eroded.sizeMax, t);
+              const alpha = lerp(vw.eroded.alphaMax, vw.eroded.alphaMin, t);
+              // skip some points to make it sparse
+              if (random() < 0.7) {
+                fill(cr, cg, cb, alpha);
+                ellipse(pt.x, pt.y, sz, sz);
+              }
+            } else {
+              // C: eroding layer - spreading, growing
+              const t = constrain(map(d, vw.eroding.driftRange[0], vw.eroding.driftRange[1], 0, 1), 0, 1);
+              const sz = lerp(vw.eroding.sizeMin, vw.eroding.sizeMax, t);
+              const alpha = lerp(vw.eroding.alphaMax, vw.eroding.alphaMin, t);
+              fill(cr, cg, cb, alpha);
+              ellipse(pt.x, pt.y, sz, sz);
+            }
           } else {
-            // solid point
-            fill(tc[0], tc[1], tc[2], 240);
-            ellipse(pt.x, pt.y, 2.2, 2.2);
+            // C: pristine layer - crisp small dots
+            fill(base[0], base[1], base[2], vw.pristine.alpha);
+            ellipse(pt.x, pt.y, vw.pristine.size, vw.pristine.size);
           }
         }
       }
     }
 
     function drawGrid() {
-      const { cols, rows, marginX, marginY, lineColor, lineWeight } = Object.assign({}, CONFIG.grid, CONFIG.paper);
+      const { cols, rows, marginX, marginY } = CONFIG.grid;
       const cellW = (width - marginX * 2) / cols;
       const cellH = (height - marginY * 2) / rows;
+      const gd = CONFIG.gridDamage;
 
       stroke(CONFIG.paper.lineColor[0], CONFIG.paper.lineColor[1], CONFIG.paper.lineColor[2], CONFIG.paper.lineColor[3]);
       strokeWeight(CONFIG.paper.lineWeight);
 
+      // B: draw vertical lines with damage
       for (let i = 0; i <= cols; i++) {
         const x = marginX + i * cellW;
-        line(x, marginY, x, height - marginY);
+        drawDamagedLine(x, marginY, x, height - marginY, true, gd);
       }
+      // B: draw horizontal lines with damage
       for (let j = 0; j <= rows; j++) {
         const y = marginY + j * cellH;
-        line(marginX, y, width - marginX, y);
+        drawDamagedLine(marginX, y, width - marginX, y, false, gd);
       }
       noStroke();
     }
 
+    function drawDamagedLine(x1, y1, x2, y2, isVertical, gd) {
+      // Break line into small segments, check each against curve trail
+      const steps = 40;
+      let drawing = true;
+      let prevX = x1, prevY = y1;
+
+      for (let s = 1; s <= steps; s++) {
+        const t = s / steps;
+        let sx = lerp(x1, x2, t);
+        let sy = lerp(y1, y2, t);
+
+        // check midpoint of this segment
+        const mx = (prevX + sx) / 2;
+        const my = (prevY + sy) / 2;
+        const inf = curveInfluenceAt(mx, my, gd.radius);
+
+        if (inf > 0.3) {
+          // damaged: skip (break) this segment
+          prevX = sx;
+          prevY = sy;
+          continue;
+        } else if (inf > 0.1) {
+          // slightly damaged: offset
+          const off = (inf - 0.1) / 0.2 * gd.offsetMax;
+          const offDir = noise(mx * 0.05, my * 0.05) - 0.5;
+          if (isVertical) {
+            line(prevX + offDir * off, prevY, sx + offDir * off, sy);
+          } else {
+            line(prevX, prevY + offDir * off, sx, sy + offDir * off);
+          }
+        } else {
+          // intact
+          line(prevX, prevY, sx, sy);
+        }
+        prevX = sx;
+        prevY = sy;
+      }
+    }
+
     function drawRust() {
-      // static rust drawn with noise seed so consistent
       randomSeed(42);
       const rc = CONFIG.damage.rustColor;
       noStroke();
