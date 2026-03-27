@@ -123,7 +123,7 @@ import Base from '../../layouts/Base.astro';
             phase: random(TWO_PI)
           }));
 
-          charData.push({ cx, cy, points, char: ch, damaged: false });
+          charData.push({ cx, cy, points, char: ch, damaged: false, wetness: 0 });
         }
       }
     }
@@ -184,16 +184,14 @@ import Base from '../../layouts/Base.astro';
         // record trail for grid damage + color inheritance
         curveHistory.push({ x: cv.x, y: cv.y });
 
-        // affect chars near this curve segment
+        // affect chars near this curve segment — increase wetness, not drift directly
         for (let cd of charData) {
           const dy = cv.y - cd.cy;
           const dx = cv.x - cd.cx;
           const dist = Math.sqrt(dx * dx + dy * dy);
           if (dist < halfW) {
             const influence = 1 - dist / halfW;
-            for (let pt of cd.points) {
-              pt.drift = min(1, pt.drift + influence * 0.08);
-            }
+            cd.wetness = min(1, cd.wetness + influence * 0.08);
           }
         }
       }
@@ -201,6 +199,15 @@ import Base from '../../layouts/Base.astro';
       // cap trail history to avoid memory bloat
       if (curveHistory.length > 3000) {
         curveHistory = curveHistory.slice(-2000);
+      }
+
+      // chars drift only where wet (water stain coverage)
+      for (let cd of charData) {
+        if (cd.wetness > 0.02) {
+          for (let pt of cd.points) {
+            pt.drift = min(1, pt.drift + cd.wetness * 0.003);
+          }
+        }
       }
 
       // draw all chars: pristine = text(), eroding/eroded = stroke lines
@@ -446,13 +453,9 @@ import Base from '../../layouts/Base.astro';
 
       for (let ci = 0; ci < charData.length; ci++) {
         const cd = charData[ci];
-        let maxDrift = 0;
-        for (let pt of cd.points) {
-          if (pt.drift > maxDrift) maxDrift = pt.drift;
-        }
-        if (maxDrift < 0.05) continue;
+        if (cd.wetness < 0.05) continue;
 
-        const intensity = constrain(maxDrift, 0, 1);
+        const intensity = constrain(cd.wetness, 0, 1);
 
         // Deterministic seed per char
         randomSeed(ci * 137 + 42);
@@ -506,6 +509,7 @@ import Base from '../../layouts/Base.astro';
       if (mouseX >= 0 && mouseX <= width && mouseY >= 0 && mouseY <= height) {
         // Reset: clear all drift, curves, and history
         for (let cd of charData) {
+          cd.wetness = 0;
           for (let pt of cd.points) {
             pt.drift = 0;
             pt.x = pt.homeX;
