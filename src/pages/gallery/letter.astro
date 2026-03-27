@@ -230,8 +230,8 @@ import Base from '../../layouts/Base.astro';
               const t = constrain(map(d, 0.5, 1, 0, 1), 0, 1);
               const sz = lerp(vw.eroded.sizeMin, vw.eroded.sizeMax, t);
               const alpha = lerp(vw.eroded.alphaMax, vw.eroded.alphaMin, t);
-              // skip some points to make it sparse
-              if (random() < 0.7) {
+              // deterministic sparse: use noise offset as stable hash
+              if ((pt.noiseOff * 7) % 1 < 0.7) {
                 fill(cr, cg, cb, alpha);
                 ellipse(pt.x, pt.y, sz, sz);
               }
