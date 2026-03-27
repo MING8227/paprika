@@ -250,10 +250,11 @@ import Base from '../layouts/Base.astro';
     // Ring 1 — Definition (2)
     { id: 'identity', label: 'IDENTITY.md', cname: '面孔', desc: '名字、形象——自我认知', cat: 'identity', ring: 1, angle: 150, spring: 0.015 },
     { id: 'memory', label: 'MEMORY.md', cname: '记忆', desc: '语义记忆——事实、知识、偏好、教训', cat: 'memory', ring: 1, angle: 40, spring: 0.015 },
-    // Ring 2 — Inner world (11 nodes, sector-grouped)
-    // Top: self-improvement cluster
-    { id: 'review', label: 'self-review.md', cname: '自省', desc: '审视自己的表现', cat: 'growth', ring: 2, angle: 355, spring: 0.03 },
-    { id: 'corrections', label: 'active-corrections', cname: '习惯', desc: '程序性记忆——遇到X做Y', cat: 'growth', ring: 2, angle: 22, spring: 0.03 },
+    // Ring 2 — Inner world (12 nodes, sector-grouped)
+    // Top: self-improvement + reflexes cluster
+    { id: 'review', label: 'self-review.md', cname: '自省', desc: '审视自己的表现', cat: 'growth', ring: 2, angle: 345, spring: 0.03 },
+    { id: 'corrections', label: 'active-corrections', cname: '习惯', desc: '程序性记忆——遇到X做Y', cat: 'growth', ring: 2, angle: 10, spring: 0.03 },
+    { id: 'agents', label: 'AGENTS.md', cname: '条件反射', desc: '接收刺激，触发反应', cat: 'growth', ring: 2, angle: 32, spring: 0.03 },
     // Right: knowledge+skills
     { id: 'skills', label: 'skills/', cname: '技能', desc: '拿起来就能用的工具集合', cat: 'skill', ring: 2, angle: 55, spring: 0.03 },
     { id: 'domains', label: 'domains/', cname: '知识', desc: '领域知识精华的集合', cat: 'knowledge', ring: 2, angle: 105, spring: 0.03 },
@@ -268,9 +269,8 @@ import Base from '../layouts/Base.astro';
     // Ring 3 — Operations + Knowledge/Skill children + Storage (17 nodes)
     // Top: ops cluster
     { id: 'heartbeat', label: 'HEARTBEAT.md', cname: '心跳', desc: '定时醒来检查世界', cat: 'ops', ring: 3, angle: 330, spring: 0.04 },
-    { id: 'tools', label: 'TOOLS.md', cname: '环境', desc: '操作手册——配置、路径、命令', cat: 'ops', ring: 3, angle: 345, spring: 0.04 },
-    { id: 'agents', label: 'AGENTS.md', cname: '条件反射', desc: '接收刺激，触发反应', cat: 'ops', ring: 3, angle: 0, spring: 0.04 },
-    { id: 'workflows', label: 'workflows/', cname: '流程', desc: '怎么做事的步骤', cat: 'ops', ring: 3, angle: 15, spring: 0.04 },
+    { id: 'tools', label: 'TOOLS.md', cname: '环境', desc: '操作手册——配置、路径、命令', cat: 'ops', ring: 3, angle: 348, spring: 0.04 },
+    { id: 'workflows', label: 'workflows/', cname: '流程', desc: '怎么做事的步骤', cat: 'ops', ring: 3, angle: 6, spring: 0.04 },
     // Skill children (near skills at 55°)
     { id: 'sk-tavily', label: 'tavily', cname: '让我能找', desc: '深度网络搜索', cat: 'skill', ring: 3, angle: 35, spring: 0.04 },
     { id: 'sk-browser', label: 'agent-browser', cname: '让我能看', desc: '网页自动化', cat: 'skill', ring: 3, angle: 47, spring: 0.04 },
