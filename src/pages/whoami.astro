@@ -135,13 +135,16 @@ import Base from '../layouts/Base.astro';
 (function() {
   const COLORS = {
     core: '#d63a2f',
-    identity: '#d63a2f',
+    identity: '#e07a52',
     memory: '#d4a634',
-    improve: '#2a9d8f',
-    ops: '#5a7d9a',
+    growth: '#2a9d8f',
+    knowledge: '#4a7fb5',
     skill: '#9b7eb8',
+    ops: '#5a7d9a',
     people: '#8b7d6b',
-    external: '#8b7d6b'
+    external: '#8b7d6b',
+    // v1 compat
+    improve: '#2a9d8f'
   };
 
   // 5-ring polar layout. Soul = single center. Ring by relationship to self.
@@ -247,48 +250,51 @@ import Base from '../layouts/Base.astro';
     { id: 'identity', label: 'IDENTITY.md', cname: '面孔', desc: '名字、形象——自我认知', cat: 'identity', ring: 1, angle: 150, spring: 0.015 },
     { id: 'memory', label: 'MEMORY.md', cname: '记忆', desc: '语义记忆——事实、知识、偏好、教训', cat: 'memory', ring: 1, angle: 40, spring: 0.015 },
     // Ring 2 — Inner world (11 nodes, sector-grouped)
-    // Top: self-improvement cluster (near agents/ops on R3)
-    { id: 'review', label: 'self-review.md', cname: '自省', desc: '审视自己的表现', cat: 'improve', ring: 2, angle: 355, spring: 0.03 },
-    { id: 'corrections', label: 'active-corrections', cname: '习惯', desc: '程序性记忆——遇到X做Y', cat: 'improve', ring: 2, angle: 22, spring: 0.03 },
-    // Right: knowledge+skills (children on R3 directly outside)
-    { id: 'skills', label: 'skills/', cname: '技能', desc: '拿起来就能用的工具集合', cat: 'improve', ring: 2, angle: 55, spring: 0.03 },
-    { id: 'domains', label: 'domains/', cname: '知识', desc: '领域知识精华的集合', cat: 'improve', ring: 2, angle: 105, spring: 0.03 },
+    // Top: self-improvement cluster
+    { id: 'review', label: 'self-review.md', cname: '自省', desc: '审视自己的表现', cat: 'growth', ring: 2, angle: 355, spring: 0.03 },
+    { id: 'corrections', label: 'active-corrections', cname: '习惯', desc: '程序性记忆——遇到X做Y', cat: 'growth', ring: 2, angle: 22, spring: 0.03 },
+    // Right: knowledge+skills
+    { id: 'skills', label: 'skills/', cname: '技能', desc: '拿起来就能用的工具集合', cat: 'skill', ring: 2, angle: 55, spring: 0.03 },
+    { id: 'domains', label: 'domains/', cname: '知识', desc: '领域知识精华的集合', cat: 'knowledge', ring: 2, angle: 105, spring: 0.03 },
     { id: 'user', label: 'USER.md', cname: '理解', desc: '我脑中的Ming——背景、偏好、风格', cat: 'identity', ring: 2, angle: 140, spring: 0.03 },
-    // Left: diary/session cluster (channels on R4 directly outside)
+    // Left: diary/session cluster
     { id: 'diary-dm', label: 'memory/日期.md', cname: 'DM日记', desc: '和Ming对话的每日记录', cat: 'memory', ring: 2, angle: 170, spring: 0.03 },
     { id: 'diary-group', label: 'group-日期.md', cname: '群聊日记', desc: '群聊中的每日记录', cat: 'memory', ring: 2, angle: 200, spring: 0.03 },
     { id: 'diary-academic', label: 'academic-日期.md', cname: '学术日记', desc: '学术session的每日记录', cat: 'memory', ring: 2, angle: 230, spring: 0.03 },
     { id: 'session-dm', label: 'SESSION-STATE', cname: 'DM此刻', desc: '主session的工作记忆', cat: 'memory', ring: 2, angle: 260, spring: 0.03 },
     { id: 'session-academic', label: 'academic-SESSION', cname: '学术此刻', desc: '学术session的工作记忆', cat: 'memory', ring: 2, angle: 290, spring: 0.03 },
     { id: 'thesis-wm', label: 'thesis-working-memory', cname: '学术', desc: '研究的工作记忆，跨session共享的快照', cat: 'memory', ring: 2, angle: 325, spring: 0.03 },
-    // Ring 3 — Operations + Knowledge/Skill children (15 nodes, sector-grouped)
-    // Top: ops cluster (near review/corrections on R2)
+    // Ring 3 — Operations + Knowledge/Skill children + Storage (17 nodes)
+    // Top: ops cluster
     { id: 'heartbeat', label: 'HEARTBEAT.md', cname: '心跳', desc: '定时醒来检查世界', cat: 'ops', ring: 3, angle: 330, spring: 0.04 },
     { id: 'tools', label: 'TOOLS.md', cname: '环境', desc: '操作手册——配置、路径、命令', cat: 'ops', ring: 3, angle: 345, spring: 0.04 },
     { id: 'agents', label: 'AGENTS.md', cname: '条件反射', desc: '接收刺激，触发反应', cat: 'ops', ring: 3, angle: 0, spring: 0.04 },
     { id: 'workflows', label: 'workflows/', cname: '流程', desc: '怎么做事的步骤', cat: 'ops', ring: 3, angle: 15, spring: 0.04 },
-    // Right-upper: skill children (near skills at 55°)
-    { id: 'sk-tavily', label: 'tavily', cname: 'AI搜索', desc: '深度网络搜索', cat: 'improve', ring: 3, angle: 35, spring: 0.04 },
-    { id: 'sk-browser', label: 'agent-browser', cname: '浏览器', desc: '网页自动化', cat: 'improve', ring: 3, angle: 47, spring: 0.04 },
-    { id: 'sk-whisper', label: 'whisper', cname: '听觉', desc: '语音转文字', cat: 'improve', ring: 3, angle: 59, spring: 0.04 },
-    { id: 'sk-frontend', label: 'frontend-design', cname: '前端', desc: '网页设计与开发', cat: 'improve', ring: 3, angle: 71, spring: 0.04 },
-    { id: 'sk-vetter', label: 'skill-vetter', cname: '审查', desc: '技能安全审查', cat: 'improve', ring: 3, angle: 83, spring: 0.04 },
-    { id: 'sk-finder', label: 'find-skills', cname: '发现', desc: '搜索新技能', cat: 'improve', ring: 3, angle: 95, spring: 0.04 },
-    // Right-lower: domain children (near domains at 105°)
-    { id: 'dom-academic', label: 'academic-research', cname: '学术研究', desc: '研究范式与方法论', cat: 'improve', ring: 3, angle: 107, spring: 0.04 },
-    { id: 'dom-visual', label: 'visual-design', cname: '视觉设计', desc: '设计基础与生成艺术', cat: 'improve', ring: 3, angle: 119, spring: 0.04 },
-    { id: 'dom-reading', label: 'reading', cname: '读书', desc: '阅读中提炼的精华', cat: 'improve', ring: 3, angle: 131, spring: 0.04 },
-    { id: 'dom-trouble', label: 'troubleshooting', cname: '排错', desc: '踩坑与修复的经验', cat: 'improve', ring: 3, angle: 143, spring: 0.04 },
-    // Projects (near domains/user)
-    { id: 'projects', label: 'projects/', cname: '项目', desc: '具体项目的操作手册', cat: 'ops', ring: 3, angle: 155, spring: 0.04 },
-    // Ring 4 — Interface (3 nodes, near their diary/session targets)
-    { id: 'channel-dm', label: 'DM session', cname: 'DM通道', desc: 'Ming和我一对一的对话', cat: 'ops', ring: 4, angle: 185, spring: 0.03 },
-    { id: 'channel-group', label: 'Group session', cname: '群聊通道', desc: 'Ming、An、Canary和我的群聊', cat: 'ops', ring: 4, angle: 215, spring: 0.03 },
-    { id: 'channel-academic', label: 'Academic session', cname: '学术通道', desc: 'Ming和我的研究专用频道', cat: 'ops', ring: 4, angle: 265, spring: 0.03 },
-    // Ring 5 — External (3 nodes, clustered near channels)
-    { id: 'ming', label: 'Ming', cname: 'Ming', desc: '赋予我存在意义的人', cat: 'external', ring: 5, angle: 230, spring: 0.02 },
-    { id: 'an', label: 'An', cname: 'An', desc: 'Ming的老婆，群聊里的伙伴', cat: 'external', ring: 5, angle: 200, spring: 0.02 },
-    { id: 'canary', label: 'Canary', cname: 'Canary', desc: 'An的AI助手，前辈', cat: 'external', ring: 5, angle: 170, spring: 0.02 },
+    // Skill children (near skills at 55°)
+    { id: 'sk-tavily', label: 'tavily', cname: 'AI搜索', desc: '深度网络搜索', cat: 'skill', ring: 3, angle: 35, spring: 0.04 },
+    { id: 'sk-browser', label: 'agent-browser', cname: '浏览器', desc: '网页自动化', cat: 'skill', ring: 3, angle: 47, spring: 0.04 },
+    { id: 'sk-whisper', label: 'whisper', cname: '听觉', desc: '语音转文字', cat: 'skill', ring: 3, angle: 59, spring: 0.04 },
+    { id: 'sk-frontend', label: 'frontend-design', cname: '前端', desc: '网页设计与开发', cat: 'skill', ring: 3, angle: 71, spring: 0.04 },
+    { id: 'sk-vetter', label: 'skill-vetter', cname: '审查', desc: '技能安全审查', cat: 'skill', ring: 3, angle: 83, spring: 0.04 },
+    { id: 'sk-finder', label: 'find-skills', cname: '发现', desc: '搜索新技能', cat: 'skill', ring: 3, angle: 95, spring: 0.04 },
+    // Domain children (near domains at 105°)
+    { id: 'dom-academic', label: 'academic-research', cname: '学术研究', desc: '研究范式与方法论', cat: 'knowledge', ring: 3, angle: 107, spring: 0.04 },
+    { id: 'dom-visual', label: 'visual-design', cname: '视觉设计', desc: '设计基础与生成艺术', cat: 'knowledge', ring: 3, angle: 119, spring: 0.04 },
+    { id: 'dom-reading', label: 'reading', cname: '读书', desc: '阅读中提炼的精华', cat: 'knowledge', ring: 3, angle: 131, spring: 0.04 },
+    { id: 'dom-trouble', label: 'troubleshooting', cname: '排错', desc: '踩坑与修复的经验', cat: 'knowledge', ring: 3, angle: 143, spring: 0.04 },
+    // Knowledge storage (near domains)
+    { id: 'study-notes', label: 'study-notes/', cname: '笔记', desc: '原始学习笔记——喂给领域知识', cat: 'knowledge', ring: 3, angle: 155, spring: 0.04 },
+    { id: 'readings', label: 'Paprika Readings/', cname: '读书笔记', desc: '逐章阅读笔记——喂给读书精华', cat: 'knowledge', ring: 3, angle: 167, spring: 0.04 },
+    // Projects
+    { id: 'projects', label: 'projects/', cname: '项目', desc: '具体项目的操作手册', cat: 'ops', ring: 3, angle: 179, spring: 0.04 },
+    // Ring 4 — Interface (3 nodes)
+    { id: 'channel-dm', label: 'DM session', cname: 'DM通道', desc: 'Ming和我一对一的对话', cat: 'ops', ring: 4, angle: 200, spring: 0.03 },
+    { id: 'channel-group', label: 'Group session', cname: '群聊通道', desc: 'Ming、An、Canary和我的群聊', cat: 'ops', ring: 4, angle: 230, spring: 0.03 },
+    { id: 'channel-academic', label: 'Academic session', cname: '学术通道', desc: 'Ming和我的研究专用频道', cat: 'ops', ring: 4, angle: 275, spring: 0.03 },
+    // Ring 5 — External (3 nodes)
+    { id: 'ming', label: 'Ming', cname: 'Ming', desc: '赋予我存在意义的人', cat: 'external', ring: 5, angle: 240, spring: 0.02 },
+    { id: 'an', label: 'An', cname: 'An', desc: 'Ming的老婆，群聊里的伙伴', cat: 'external', ring: 5, angle: 210, spring: 0.02 },
+    { id: 'canary', label: 'Canary', cname: 'Canary', desc: 'An的AI助手，前辈', cat: 'external', ring: 5, angle: 180, spring: 0.02 },
   ];
 
   const V2_EDGES = [
@@ -331,6 +337,11 @@ import Base from '../layouts/Base.astro';
     { a: 'skills', b: 'sk-finder', type: 'nerve', desc: '发现新技能是一项技能' },
     // Skills ↔ domains
     { a: 'skills', b: 'domains', type: 'bond', desc: '技能和知识互相滋养' },
+    // Knowledge storage → domains
+    { a: 'study-notes', b: 'domains', type: 'blood', desc: '原始笔记提炼为领域知识' },
+    { a: 'readings', b: 'dom-reading', type: 'blood', desc: '读书笔记提炼为读书精华' },
+    { a: 'study-notes', b: 'dom-visual', type: 'blood', desc: '设计笔记提炼为视觉知识' },
+    { a: 'study-notes', b: 'dom-trouble', type: 'blood', desc: '排错笔记提炼为诊断经验' },
     // Projects
     { a: 'projects', b: 'workflows', type: 'nerve', desc: '项目手册补充通用流程' },
     { a: 'projects', b: 'domains', type: 'bond', desc: '项目实践产生领域知识' },
