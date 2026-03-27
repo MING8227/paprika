@@ -58,7 +58,8 @@ import Base from '../../layouts/Base.astro';
     let charData = [];
     // Raindrop matrix: wetGrid[row][col] = 0..1
     let wetGrid = [];
-    let wetAge = []; // frames since cell became wet
+    let wetAge = [];
+    let directHit = []; // true = raindrop landed here directly
     let dropCount = 0;
     let lastDropFrame = -100;
 
@@ -79,10 +80,12 @@ import Base from '../../layouts/Base.astro';
     function initWetGrid() {
       const { rows, cols } = CONFIG.grid;
       wetGrid = [];
-      wetAge = []; // frames since this cell got wet
+      wetAge = [];
+      directHit = [];
       for (let r = 0; r < rows; r++) {
         wetGrid[r] = new Float32Array(cols);
         wetAge[r] = new Float32Array(cols);
+        directHit[r] = new Uint8Array(cols); // 0 = not directly hit
       }
       dropCount = 0;
       lastDropFrame = -100;
@@ -183,7 +186,8 @@ import Base from '../../layouts/Base.astro';
 
       const pick = candidates[Math.floor(random(candidates.length))];
       wetGrid[pick[0]][pick[1]] = min(1, wetGrid[pick[0]][pick[1]] + CONFIG.rain.wetnessPerDrop);
-      wetAge[pick[0]][pick[1]] = 0; // just dropped — fresh
+      wetAge[pick[0]][pick[1]] = 0;
+      directHit[pick[0]][pick[1]] = 1; // mark as directly hit
       dropCount++;
     }
 
@@ -268,10 +272,11 @@ import Base from '../../layouts/Base.astro';
       drawWaterStains();
       drawGrid();
 
-      // Chars drift only where directly hit
+      // Chars drift ONLY where directly hit by raindrop (not diffused neighbors)
       for (let cd of charData) {
-        const w = wetGrid[cd.row] ? wetGrid[cd.row][cd.col] : 0;
-        if (w > 0.35) {
+        const hit = directHit[cd.row] ? directHit[cd.row][cd.col] : 0;
+        if (hit) {
+          const w = wetGrid[cd.row][cd.col];
           for (let pt of cd.points) {
             pt.drift = min(1, pt.drift + w * 0.025);
           }
