@@ -462,12 +462,17 @@ import Base from '../../layouts/Base.astro';
           const ox = (random() - 0.5) * cellW * 2.0;
           const oy = (random() - 0.5) * cellH * 2.0;
           const baseR = random(cellW * 0.4, cellW * 0.9); // 1-2 cells size
-          const alpha = 60 + random(40); // 60-100
+          const alpha = (54 + random(36)) * intensity; // ~10% lower transparency
           const numVerts = 12 + Math.floor(random(5)); // 12-16 vertices
           const nOff = random(1000); // noise offset for this stain
+          // Hue variation: some purplish, some greenish
+          const hueShift = random(-1, 1);
+          const sr = constrain(stainColor[0] + hueShift * 15, 0, 255);
+          const sg = constrain(stainColor[1] - hueShift * 8, 0, 255);
+          const sb = constrain(stainColor[2] + (hueShift > 0 ? 10 : -10), 0, 255);
 
           noStroke();
-          fill(stainColor[0], stainColor[1], stainColor[2], alpha * intensity);
+          fill(sr, sg, sb, alpha);
           beginShape();
           for (let v = 0; v <= numVerts; v++) {
             const angle = (v % numVerts) / numVerts * TWO_PI;
