@@ -391,12 +391,11 @@ import Base from '../../layouts/Base.astro';
       const lineId = x1 * 0.37 + y1 * 0.71;
       let prevX = x1, prevY = y1;
 
-      // Apply global warp to starting point too
+      // Apply curve warp to starting point (no global warp — grid only bends near water)
       {
-        const gw = globalWarp(x1, y1, isVertical, baseWarpAmp, warpScaleX, warpScaleY, lineId);
         const inf = curveInfluenceAt(x1, y1, gd.radius);
         const cw = inf > 0.05 ? curveWarp(x1, y1, isVertical, curveWarpAmp * inf, warpScaleX) : 0;
-        if (isVertical) { prevX = x1 + gw + cw; } else { prevY = y1 + gw + cw; }
+        if (isVertical) { prevX = x1 + cw; } else { prevY = y1 + cw; }
       }
 
       for (let s = 1; s <= steps; s++) {
@@ -404,9 +403,7 @@ import Base from '../../layouts/Base.astro';
         let sx = lerp(x1, x2, t);
         let sy = lerp(y1, y2, t);
 
-        // Global warp: all lines bend with perlin noise
-        const gw = globalWarp(sx, sy, isVertical, baseWarpAmp, warpScaleX, warpScaleY, lineId);
-
+        // No global warp — grid only bends near curve trails (water drops)
         // Curve proximity: extra warp near curve trails
         const inf = curveInfluenceAt(sx, sy, gd.radius);
         const cw = inf > 0.05 ? curveWarp(sx, sy, isVertical, curveWarpAmp * inf, warpScaleX) : 0;
@@ -416,11 +413,10 @@ import Base from '../../layouts/Base.astro';
         const sw = baseWeight * (0.6 + handNoise * 0.8);
         strokeWeight(sw);
 
-        // Apply perpendicular displacement
         if (isVertical) {
-          sx += gw + cw;
+          sx += cw;
         } else {
-          sy += gw + cw;
+          sy += cw;
         }
 
         line(prevX, prevY, sx, sy);
@@ -460,9 +456,8 @@ import Base from '../../layouts/Base.astro';
 
         // Deterministic seed per char
         randomSeed(ci * 137 + 42);
-        noiseSeed(ci * 251 + 73);
 
-        const count = 3 + Math.floor(intensity * 2); // 3-5 stains per char
+        const count = 1 + Math.floor(intensity); // 1-2 stains per char
         for (let i = 0; i < count; i++) {
           const ox = (random() - 0.5) * cellW * 2.0;
           const oy = (random() - 0.5) * cellH * 2.0;
@@ -499,7 +494,7 @@ import Base from '../../layouts/Base.astro';
       }
       // Restore default seeds
       randomSeed(millis());
-      noiseSeed(millis());
+      // Do NOT call noiseSeed here — it would change grid noise every frame
     }
 
     function mousePressed() {
