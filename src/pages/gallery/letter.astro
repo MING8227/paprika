@@ -405,6 +405,8 @@ import Base from '../../layouts/Base.astro';
         }
         curves = [];
         curveHistory = [];
+        // Immediately spawn a new curve so animation restarts
+        spawnCurve();
         lastSpawnFrame = frameCount;
       }
     }
