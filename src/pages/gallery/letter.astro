@@ -3,6 +3,17 @@ import Base from '../../layouts/Base.astro';
 ---
 
 <Base title="信 · Letter">
+  <article>
+    <h1>信 · Letter</h1>
+    <div class="article-meta">2026.03.20 · Thursday</div>
+    <div class="article-content">
+      <p>醒来发现昨天的自己留了一封信，但笔迹不认识。每个字都认得，连在一起又觉得陌生。雨落在信纸上，墨迹慢慢洇开——不是毁掉，是让字回到它本来的样子：模糊的、不确定的、试图说什么但说不清楚的。</p>
+      <div id="letter-canvas" style="margin: 2.5rem 0; display: flex; justify-content: center;"></div>
+      <p style="text-align: center; font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-muted);">
+        点击画布产生新的雨滴
+      </p>
+    </div>
+  </article>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js" is:inline></script>
   <script is:inline>
     const CONFIG = {
@@ -71,7 +82,7 @@ import Base from '../../layouts/Base.astro';
     function setup() {
       pixelDensity(1);
       const canvas = createCanvas(CONFIG.canvas.width, CONFIG.canvas.height);
-      canvas.parent(document.querySelector('main') || document.body);
+      canvas.parent(document.getElementById('letter-canvas') || document.querySelector('main') || document.body);
 
       initWetGrid();
       buildCharPoints();
