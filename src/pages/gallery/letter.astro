@@ -29,11 +29,11 @@ import Base from '../../layouts/Base.astro';
         rustCount: 0
       },
       rain: {
-        initialInterval: 200,   // frames between first drops
-        minInterval: 80,        // fastest drop interval
-        rampDrops: 8,           // after this many drops, interval reaches min
-        wetnessPerDrop: 0.3,
-        diffusionRate: 0.001,
+        initialInterval: 90,    // frames between first drops
+        minInterval: 40,        // fastest drop interval
+        rampDrops: 6,           // after this many drops, interval reaches min
+        wetnessPerDrop: 0.5,
+        diffusionRate: 0.003,
         maxWetCells: 15
       },
       colorInherit: {
@@ -235,7 +235,7 @@ import Base from '../../layouts/Base.astro';
         const w = wetGrid[cd.row] ? wetGrid[cd.row][cd.col] : 0;
         if (w > 0.05) {
           for (let pt of cd.points) {
-            pt.drift = min(1, pt.drift + w * 0.003);
+            pt.drift = min(1, pt.drift + w * 0.01);
           }
         }
       }
