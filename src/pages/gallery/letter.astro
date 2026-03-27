@@ -259,9 +259,8 @@ import Base from '../../layouts/Base.astro';
         for (let c = 0; c < cols; c++) {
           if (wetGrid[r][c] > 0.01) {
             wetAge[r][c]++;
-            // Slow fade: lose 0.0005 per frame (~0.03/sec at 60fps)
-            // So a drop at 0.6 takes ~20sec to fully fade
-            wetGrid[r][c] = max(0.05, wetGrid[r][c] - 0.0005);
+            // Slow fade to zero: stain eventually disappears, but char drift is permanent
+            wetGrid[r][c] = max(0, wetGrid[r][c] - 0.0008);
           }
         }
       }
