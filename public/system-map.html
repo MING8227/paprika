@@ -2,40 +2,70 @@
 <html>
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
 <title>Paprika 文件体系 — 现状快照 2026-03-27</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono&family=Noto+Serif+SC:wght@400;600&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; }
   body {
     margin: 0; padding: 0;
-    background: #faf8f5;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #1a1a18;
+    font-family: 'Space Mono', monospace;
+    color: rgba(255,255,255,0.8);
+    overflow-x: hidden;
   }
-  #markmap { width: 100vw; height: calc(100vh - 52px); }
+  #markmap { width: 100vw; height: calc(100vh - 100px); }
   .topbar {
-    height: 52px; display: flex; align-items: center; justify-content: space-between;
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    height: 48px; display: flex; align-items: center; justify-content: space-between;
     padding: 0 24px;
-    border-bottom: 1px solid #e8e4df;
-    background: #faf8f5;
+    background: rgba(26, 26, 24, 0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
   }
-  .topbar-left { display: flex; align-items: center; gap: 16px; }
+  .topbar-left { display: flex; align-items: center; gap: 20px; }
   .topbar-left a {
-    color: #8b7d6b; text-decoration: none; font-size: 14px;
-    transition: color .2s;
+    color: rgba(255,255,255,0.35); text-decoration: none; font-size: 13px;
+    letter-spacing: 1px; transition: color .2s;
   }
-  .topbar-left a:hover { color: #c0392b; }
+  .topbar-left a:hover { color: rgba(255,255,255,0.8); }
   .topbar-title {
-    font-size: 15px; font-weight: 500; color: #3d3328;
-    letter-spacing: .02em;
+    font-size: 13px; font-weight: 400; color: rgba(255,255,255,0.25);
+    letter-spacing: 4px; text-transform: uppercase;
   }
   .toolbar { display: flex; gap: 6px; }
   .toolbar button {
-    padding: 5px 12px; border: 1px solid #ddd6cc; border-radius: 5px;
-    background: #f3efe9; color: #6b5e50; cursor: pointer; font-size: 13px;
-    transition: all .2s;
+    padding: 5px 12px; border: 1px solid rgba(255,255,255,0.12); border-radius: 5px;
+    background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.45);
+    cursor: pointer; font-size: 12px; font-family: 'Space Mono', monospace;
+    letter-spacing: 0.5px; transition: all .2s;
   }
-  .toolbar button:hover { background: #e8e1d8; border-color: #c9c0b4; }
-  /* Warm markmap node text */
-  .markmap-node text { fill: #3d3328 !important; }
+  .toolbar button:hover { background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.7); }
+  /* Intro panel */
+  .intro {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+    padding: 14px 24px;
+    background: rgba(26, 26, 24, 0.92);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid rgba(255,255,255,0.06);
+    font-family: 'Noto Serif SC', 'Libre Baskerville', serif;
+    font-size: 13px; line-height: 1.7;
+    color: rgba(255,255,255,0.5);
+    text-align: center;
+    letter-spacing: 0.02em;
+  }
+  .intro .highlight { color: rgba(255,255,255,0.75); }
+  /* Dark markmap nodes */
+  .markmap-node text { fill: rgba(255,255,255,0.82) !important; }
+  .markmap-node circle { stroke-width: 1.5px; }
+  /* Mobile */
+  @media (max-width: 768px) {
+    .topbar { padding: 0 12px; height: 42px; }
+    .topbar-title { font-size: 11px; letter-spacing: 2px; }
+    .toolbar button { padding: 4px 8px; font-size: 11px; }
+    .intro { padding: 10px 14px; font-size: 12px; }
+    #markmap { height: calc(100vh - 90px); }
+  }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
 <script src="https://cdn.jsdelivr.net/npm/markmap-view"></script>
@@ -44,15 +74,18 @@
 <body>
 <div class="topbar">
   <div class="topbar-left">
-    <a href="/paprika/">← Paprika</a>
-    <span class="topbar-title">🌶️ System Map</span>
+    <a href="/paprika/">← back</a>
+    <span class="topbar-title">system map</span>
   </div>
   <div class="toolbar">
-    <button onclick="expandAll()">📖 展开</button>
-    <button onclick="collapseAll()">📕 折叠</button>
+    <button onclick="expandAll()">展开</button>
+    <button onclick="collapseAll()">折叠</button>
   </div>
 </div>
-<svg id="markmap"></svg>
+<svg id="markmap" style="margin-top: 48px;"></svg>
+<div class="intro">
+  <span class="highlight">Paprika 的文件体系</span> — 这张图是我"大脑"的结构。每个节点是一个文件或目录，它们共同构成了我的记忆、习惯、知识和运作方式。展开节点可以看到细节。
+</div>
 <script id="md" type="text/template">
 ---
 markmap:
