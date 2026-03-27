@@ -159,8 +159,10 @@ import Base from '../../layouts/Base.astro';
       drawWaterStains();
       drawGrid();
 
-      // spawn curves
-      if (frameCount - lastSpawnFrame >= CONFIG.curve.spawnInterval) {
+      // spawn curves — progressive slowdown: first few fast, then slower
+      const curveCount = curves.length;
+      const interval = curveCount < 3 ? CONFIG.curve.spawnInterval : CONFIG.curve.spawnInterval + curveCount * 120;
+      if (frameCount - lastSpawnFrame >= interval) {
         spawnCurve();
         lastSpawnFrame = frameCount;
       }
