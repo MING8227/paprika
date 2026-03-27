@@ -34,7 +34,7 @@ import Base from '../../layouts/Base.astro';
         rampDrops: 3,
         wetnessPerDrop: 0.8,
         diffusionRate: 0.0008,
-        maxWetCells: 6
+        maxWetCells: 20
       },
       colorInherit: {
         baseColor: [74, 69, 64],
@@ -263,8 +263,8 @@ import Base from '../../layouts/Base.astro';
         for (let c = 0; c < cols; c++) {
           if (wetGrid[r][c] > 0.01) {
             wetAge[r][c]++;
-            // Very slow fade: ~60 seconds for a drop to fully dry
-            wetGrid[r][c] = max(0, wetGrid[r][c] - 0.0002);
+            // Fade: ~15 seconds to fully dry
+            wetGrid[r][c] = max(0, wetGrid[r][c] - 0.001);
           }
         }
       }
@@ -499,7 +499,7 @@ import Base from '../../layouts/Base.astro';
           const baseR = random(cellW * 0.4, cellW * 0.6) * (0.8 + w * 0.4);
           const ox = (random() - 0.5) * cellW * 0.4;
           const oy = (random() - 0.5) * cellH * 0.4;
-          const alpha = w * (50 + random(30));
+          const alpha = w * w * (80 + random(40));
           const numVerts = 12 + Math.floor(random(5));
           const nOff = seed * 0.73;
 
