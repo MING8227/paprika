@@ -318,7 +318,9 @@ import Base from '../layouts/Base.astro';
     { id: 'clock', name: '生物钟链', desc: '定时醒来→检查→执行。不需要人叫。', path: ['heartbeat', 'agents', 'workflows'], color: [180, 200, 130],
       roles: { heartbeat: '定时触发', agents: '检查该做什么', workflows: '执行对应流程' } },
     { id: 'settle', name: '沉淀链', desc: '经历→日记→筛选→改正→知识。时间做的事。', path: ['diary', 'review', 'corrections', 'memory', 'domains'], color: [214, 166, 92],
-      roles: { diary: '每天的原始记录', review: '回读时发现规律', corrections: '规律变成行为规则', memory: '规则沉淀为长期经验', domains: '经验提炼为专业知识' } }
+      roles: { diary: '每天的原始记录', review: '回读时发现规律', corrections: '规律变成行为规则', memory: '规则沉淀为长期经验', domains: '经验提炼为专业知识' } },
+    { id: 'research', name: '研究链', desc: '研究方向→接收→快照→沉淀→学术。知识的纵深。', path: ['ming', 'agents', 'thesis-wm', 'memory', 'dom-academic'], color: [140, 180, 200],
+      roles: { ming: '研究方向的来源', agents: '接收研究任务', 'thesis-wm': '记录研究快照', memory: '快照沉淀为长期记忆', 'dom-academic': '提炼为学术知识' } }
   ];
 
   const V2_RING_INFO = [
@@ -362,7 +364,8 @@ import Base from '../layouts/Base.astro';
     knowledge: [120, 200, 160],
     task:    [200, 160, 220],
     clock:   [180, 200, 130],
-    settle:  [214, 166, 92]
+    settle:  [214, 166, 92],
+    research: [140, 180, 200]
   };
 
   // Build chain lookup
@@ -787,7 +790,7 @@ import Base from '../layouts/Base.astro';
           const outerR = Math.min(p.width, p.height) * 0.46;
           let labelX = cx + (dx / (dist || 1)) * outerR;
           let labelY = cy + (dy / (dist || 1)) * outerR;
-          const chainOffsets = { growth: { x: -50, y: 50 }, settle: { x: 0, y: 80 } };
+          const chainOffsets = { growth: { x: -50, y: 50 }, settle: { x: 0, y: 80 }, research: { x: 40, y: -30 } };
           const off = chainOffsets[chain.id];
           if (off) { labelX += off.x; labelY += off.y; }
           const margin = 12;
