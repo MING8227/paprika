@@ -354,7 +354,7 @@ import Base from '../../layouts/Base.astro';
     function drawWaterStains() {
       // Draw water stains around chars that are being eroded
       // Use deterministic per-char seeds so stains don't jump between frames
-      const stainColor = [180, 210, 230];
+      const stainColor = [140, 180, 210];
       noStroke();
 
       const cellW = (width - CONFIG.grid.marginX * 2) / CONFIG.grid.cols;
@@ -377,8 +377,8 @@ import Base from '../../layouts/Base.astro';
         for (let i = 0; i < count; i++) {
           const ox = (random() - 0.5) * cellW * 2.5;
           const oy = (random() - 0.5) * cellH * 2.5;
-          const r = random(1.5, 4); // small raindrop size
-          const a = (35 + random(30)) * (0.3 + intensity * 0.7);
+          const r = random(2, 5); // raindrop size
+          const a = 80 + random(60); // strong enough to see on light paper
           fill(stainColor[0], stainColor[1], stainColor[2], a);
           ellipse(cd.cx + ox, cd.cy + oy, r, r * random(1.0, 1.5));
         }
