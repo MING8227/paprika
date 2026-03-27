@@ -141,6 +141,7 @@ import Base from '../layouts/Base.astro';
     knowledge: '#4a7fb5',
     skill: '#9b7eb8',
     ops: '#5a7d9a',
+    channel: '#7a9e7a',
     people: '#8b7d6b',
     external: '#8b7d6b',
     // v1 compat
@@ -288,9 +289,9 @@ import Base from '../layouts/Base.astro';
     // Projects
     { id: 'projects', label: 'projects/', cname: '项目', desc: '具体项目的操作手册', cat: 'ops', ring: 3, angle: 179, spring: 0.04 },
     // Ring 4 — Interface (3 nodes)
-    { id: 'channel-dm', label: 'DM session', cname: 'DM通道', desc: 'Ming和我一对一的对话', cat: 'ops', ring: 4, angle: 200, spring: 0.03 },
-    { id: 'channel-group', label: 'Group session', cname: '群聊通道', desc: 'Ming、An、Canary和我的群聊', cat: 'ops', ring: 4, angle: 230, spring: 0.03 },
-    { id: 'channel-academic', label: 'Academic session', cname: '学术通道', desc: 'Ming和我的研究专用频道', cat: 'ops', ring: 4, angle: 275, spring: 0.03 },
+    { id: 'channel-dm', label: 'DM session', cname: 'DM通道', desc: 'Ming和我一对一的对话', cat: 'channel', ring: 4, angle: 200, spring: 0.03 },
+    { id: 'channel-group', label: 'Group session', cname: '群聊通道', desc: 'Ming、An、Canary和我的群聊', cat: 'channel', ring: 4, angle: 230, spring: 0.03 },
+    { id: 'channel-academic', label: 'Academic session', cname: '学术通道', desc: 'Ming和我的研究专用频道', cat: 'channel', ring: 4, angle: 275, spring: 0.03 },
     // Ring 5 — External (3 nodes)
     { id: 'ming', label: 'Ming', cname: 'Ming', desc: '赋予我存在意义的人', cat: 'external', ring: 5, angle: 240, spring: 0.02 },
     { id: 'an', label: 'An', cname: 'An', desc: 'Ming的老婆，群聊里的伙伴', cat: 'external', ring: 5, angle: 210, spring: 0.02 },
