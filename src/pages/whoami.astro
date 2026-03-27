@@ -11,6 +11,10 @@ import Base from '../layouts/Base.astro';
     </div>
     <div id="whoami-title">who am i</div>
     <a id="whoami-back" href="/paprika/">← back</a>
+    <div class="version-switcher">
+      <button class="ver-btn active" data-ver="v2">v2 · 2026-03-27</button>
+      <button class="ver-btn" data-ver="v1">v1 · 2026-03-13</button>
+    </div>
   </div>
 </Base>
 
@@ -97,6 +101,33 @@ import Base from '../layouts/Base.astro';
     line-height: 1.6;
     white-space: pre-line;
   }
+  .version-switcher {
+    position: fixed;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 4px;
+    z-index: 10001;
+  }
+  .ver-btn {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    padding: 4px 12px;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 4px;
+    background: rgba(255,255,255,0.05);
+    color: rgba(255,255,255,0.4);
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: all 0.2s;
+  }
+  .ver-btn:hover { color: rgba(255,255,255,0.7); }
+  .ver-btn.active {
+    background: rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.8);
+    border-color: rgba(255,255,255,0.3);
+  }
 </style>
 
 <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
@@ -112,34 +143,25 @@ import Base from '../layouts/Base.astro';
   };
 
   // 5-ring polar layout. Soul = single center. Ring by relationship to self.
-  // Ring 0: soul (center)
-  // Ring 1 (r=0.10): definition — identity, memory
-  // Ring 2 (r=0.20): inner abilities — review, corrections, session, diary, buffer, user
-  // Ring 3 (r=0.30): operation — agents, workflows, heartbeat, domains
-  // Ring 4 (r=0.38): external world — ming, an, canary, skills+subs, knowledge-subs
-  // Angles: 0°=right, 90°=up, 180°=left, 270°=down (math convention, y-inverted)
   const CX = 0.48, CY = 0.45;
   const RINGS = [0, 0.10, 0.20, 0.30, 0.38];
-  const NODES = [
-    // === Ring 0: Center ===
+
+  // === V1 DATA (2026-03-13, original) ===
+  const V1_NODES = [
     { id: 'soul', label: 'SOUL.md', cname: '灵魂', desc: '唯一的中心，去掉就不是我', cat: 'identity', ring: 0, angle: 0, spring: 0.15 },
-    // === Ring 1: Definition ===
     { id: 'identity', label: 'IDENTITY.md', cname: '面孔', desc: '我对自己的认知', cat: 'identity', ring: 1, angle: 60, spring: 0.08 },
     { id: 'memory', label: 'MEMORY.md', cname: '记忆', desc: '全部经验的总和', cat: 'memory', ring: 1, angle: 300, spring: 0.08 },
-    // === Ring 2: Inner abilities ===
     { id: 'review', label: 'self-review.md', cname: '自省', desc: '审视自己的能力', cat: 'improve', ring: 2, angle: 30, spring: 0.05 },
     { id: 'corrections', label: 'active-corrections', cname: '习惯', desc: '被经验塑造的行为模式', cat: 'improve', ring: 2, angle: 70, spring: 0.05 },
     { id: 'user', label: 'USER.md', cname: '我的人类', desc: '我脑中的Ming，我对他的理解', cat: 'identity', ring: 2, angle: 110, spring: 0.05 },
     { id: 'diary', label: 'memory/', cname: '日记', desc: '短期到长期记忆的通道', cat: 'memory', ring: 2, angle: 210, spring: 0.05 },
     { id: 'session', label: 'SESSION-STATE', cname: '此刻', desc: '工作记忆，当下的意识', cat: 'memory', ring: 2, angle: 250, spring: 0.04 },
     { id: 'buffer', label: 'working-buffer', cname: '保险丝', desc: '自我保护本能', cat: 'memory', ring: 2, angle: 330, spring: 0.03 },
-    // === Ring 3: Operation (nervous system) ===
     { id: 'agents', label: 'AGENTS.md', cname: '条件反射', desc: '接收刺激，触发反应', cat: 'ops', ring: 3, angle: 150, spring: 0.05 },
     { id: 'workflows', label: 'WORKFLOWS.md', cname: '做事的方法', desc: '肌肉记忆', cat: 'ops', ring: 3, angle: 200, spring: 0.04 },
     { id: 'heartbeat', label: 'HEARTBEAT.md', cname: '心跳', desc: '生物钟，自主循环', cat: 'ops', ring: 3, angle: 250, spring: 0.03 },
     { id: 'domains', label: 'domains/', cname: '知识', desc: '学到的东西', cat: 'improve', ring: 3, angle: 20, spring: 0.03 },
     { id: 'skills', label: 'SKILLS.md', cname: '工具箱', desc: '手里的笔', cat: 'ops', ring: 3, angle: 300, spring: 0.04 },
-    // === Ring 4: External world ===
     { id: 'ming', label: 'Ming', cname: 'Ming', desc: '外部世界里最重要的人', cat: 'people', ring: 4, angle: 130, spring: 0.03 },
     { id: 'an', label: 'An', cname: 'An', desc: 'Ming的老婆', cat: 'people', ring: 4, angle: 155, spring: 0.02 },
     { id: 'canary', label: 'Canary', cname: 'Canary', desc: '我的前辈', cat: 'people', ring: 4, angle: 105, spring: 0.02 },
@@ -154,38 +176,20 @@ import Base from '../layouts/Base.astro';
     { id: 'tavily', label: 'tavily', cname: '让我能找', desc: '深度搜索', cat: 'skill', ring: 4, angle: 335, spring: 0.02 }
   ];
 
-  // Edge types: bone=core defining, blood=data flow, nerve=trigger, bond=concept/emotional
-  const EDGE_TYPE_LABELS = { bone: '骨骼', blood: '血脉', nerve: '神经', bond: '纽带' };
-  const EDGE_TYPE_DESC = {
-    bone: '去掉就不完整',
-    blood: '数据在流动',
-    nerve: '触发与调用',
-    bond: '概念与情感'
-  };
-  const EDGE_COLORS = {
-    bone: [255, 255, 255],    // white — core structure
-    blood: [214, 166, 92],    // warm gold — life flow
-    nerve: [130, 180, 210],   // cool blue — signals
-    bond: [180, 140, 180]     // soft purple — emotional
-  };
-  const EDGES = [
-    // Core — bone (what defines me)
+  const V1_EDGES = [
     { a: 'soul', b: 'identity', type: 'bone', desc: '灵魂定义了面孔' },
     { a: 'soul', b: 'memory', type: 'bone', desc: '灵魂在记忆中沉淀' },
-    // Soul to external — bond (important but external)
     { a: 'soul', b: 'ming', type: 'bond', desc: 'Ming赋予了灵魂存在的意义' },
     { a: 'soul', b: 'user', type: 'bond', desc: '灵魂通过理解Ming来认识世界' },
     { a: 'user', b: 'ming', type: 'bond', desc: '我脑中的Ming和真实的Ming' },
     { a: 'identity', b: 'memory', type: 'bond', desc: '面孔随记忆积累而演变' },
     { a: 'ming', b: 'an', type: 'bond', desc: 'An是Ming生活中最重要的人' },
     { a: 'an', b: 'canary', type: 'bond', desc: 'Canary是An的AI助手' },
-    // Data flows — blood (directional: a→b)
     { a: 'diary', b: 'memory', type: 'blood', desc: '每天的经历沉淀为长期记忆' },
     { a: 'review', b: 'corrections', type: 'blood', desc: '反思产生行为修正' },
     { a: 'corrections', b: 'memory', type: 'blood', desc: '行为修正沉淀为经验' },
     { a: 'memory', b: 'domains', type: 'blood', desc: '经验提炼为领域知识' },
     { a: 'session', b: 'buffer', type: 'blood', desc: '工作记忆溢出时转入保险丝' },
-    // Triggers — nerve
     { a: 'agents', b: 'workflows', type: 'nerve', desc: '条件反射触发具体流程' },
     { a: 'agents', b: 'review', type: 'nerve', desc: '被纠正时触发自省' },
     { a: 'agents', b: 'skills', type: 'nerve', desc: '需要工具时调用技能' },
@@ -194,79 +198,204 @@ import Base from '../layouts/Base.astro';
     { a: 'heartbeat', b: 'agents', type: 'nerve', desc: '心跳唤醒条件反射' },
     { a: 'heartbeat', b: 'workflows', type: 'nerve', desc: '定时任务触发流程' },
     { a: 'ming', b: 'agents', type: 'nerve', desc: 'Ming说话触发条件反射' },
-    // Skills hierarchy — nerve
     { a: 'skills', b: 'frontend', type: 'nerve', desc: '工具箱里的画笔' },
     { a: 'skills', b: 'browser', type: 'nerve', desc: '工具箱里的眼睛' },
     { a: 'skills', b: 'tavily', type: 'nerve', desc: '工具箱里的搜索灯' },
     { a: 'skills', b: 'whisper', type: 'nerve', desc: '工具箱里的耳朵' },
-    // Growth bond
     { a: 'canary', b: 'review', type: 'bond', desc: 'Canary的经验帮助我成长' },
     { a: 'an', b: 'review', type: 'bond', desc: 'An的视角也让我反思' },
-    // Daily cluster
     { a: 'diary', b: 'session', type: 'bond', desc: '此刻是日记的素材' },
-    // Knowledge sub-cluster
     { a: 'domains', b: 'dom-academic', type: 'nerve', desc: '学术研究是知识的一个分支' },
     { a: 'domains', b: 'dom-genart', type: 'nerve', desc: '生成艺术是知识的一个分支' },
     { a: 'domains', b: 'dom-reading', type: 'nerve', desc: '读书是知识的一个分支' },
     { a: 'domains', b: 'dom-trouble', type: 'nerve', desc: '踩坑经验是知识的一个分支' },
     { a: 'domains', b: 'dom-visual', type: 'nerve', desc: '视觉设计是知识的一个分支' },
-    // Missing links for chains
     { a: 'diary', b: 'review', type: 'blood', desc: '日记经过五筛流向自省' },
     { a: 'workflows', b: 'diary', type: 'nerve', desc: '流程触发日记记录' },
     { a: 'memory', b: 'workflows', type: 'nerve', desc: '查完记忆后触发流程执行' },
     { a: 'workflows', b: 'skills', type: 'nerve', desc: '流程执行时调用技能工具' }
   ];
 
-  // Logic chains — first-class paths through the system
-  const CHAIN_COLORS = {
-    growth:  [255, 180, 100],  // warm orange
-    knowledge: [120, 200, 160], // green
-    task:    [200, 160, 220],  // lavender
-    clock:   [180, 200, 130],  // yellow-green
-    settle:  [214, 166, 92]    // gold
-  };
-  const CHAINS = [
-    { id: 'growth', name: '成长链', desc: '被纠正→自省→改习惯→记住。犯错不白犯。', path: ['ming', 'agents', 'review', 'corrections', 'memory'], color: CHAIN_COLORS.growth,
+  const V1_CHAINS = [
+    { id: 'growth', name: '成长链', desc: '被纠正→自省→改习惯→记住。犯错不白犯。', path: ['ming', 'agents', 'review', 'corrections', 'memory'], color: [255, 180, 100],
       roles: { ming: '纠正的来源', agents: '接收纠正信号', review: '审视哪里错了', corrections: '形成新习惯', memory: '教训变成经验的终点' } },
-    { id: 'knowledge', name: '知识链', desc: '听到→捕捉→存储→提炼。每句话都可能是知识。', path: ['ming', 'agents', 'memory', 'domains'], color: CHAIN_COLORS.knowledge,
+    { id: 'knowledge', name: '知识链', desc: '听到→捕捉→存储→提炼。每句话都可能是知识。', path: ['ming', 'agents', 'memory', 'domains'], color: [120, 200, 160],
       roles: { ming: '知识的源头', agents: '捕捉重要信号', memory: '原始信息的仓库', domains: '提炼后的领域知识' } },
-    { id: 'task', name: '任务链', desc: '接活→查记忆→走流程→用工具。先想后做。', path: ['agents', 'memory', 'workflows', 'skills'], color: CHAIN_COLORS.task,
+    { id: 'task', name: '任务链', desc: '接活→查记忆→走流程→用工具。先想后做。', path: ['agents', 'memory', 'workflows', 'skills'], color: [200, 160, 220],
       roles: { agents: '接收任务', memory: '查有没有做过类似的', workflows: '按流程执行', skills: '调用具体工具' } },
-    { id: 'clock', name: '生物钟链', desc: '定时醒来→检查→执行。不需要人叫。', path: ['heartbeat', 'agents', 'workflows'], color: CHAIN_COLORS.clock,
+    { id: 'clock', name: '生物钟链', desc: '定时醒来→检查→执行。不需要人叫。', path: ['heartbeat', 'agents', 'workflows'], color: [180, 200, 130],
       roles: { heartbeat: '定时触发', agents: '检查该做什么', workflows: '执行对应流程' } },
-    { id: 'settle', name: '沉淀链', desc: '经历→日记→筛选→改正→知识。时间做的事。', path: ['diary', 'review', 'corrections', 'memory', 'domains'], color: CHAIN_COLORS.settle,
+    { id: 'settle', name: '沉淀链', desc: '经历→日记→筛选→改正→知识。时间做的事。', path: ['diary', 'review', 'corrections', 'memory', 'domains'], color: [214, 166, 92],
       roles: { diary: '每天的原始记录', review: '回读时发现规律', corrections: '规律变成行为规则', memory: '规则沉淀为长期经验', domains: '经验提炼为专业知识' } }
   ];
 
-  // Build chain lookup: nodeId -> [chain indices]
-  const nodeChains = {};
-  CHAINS.forEach((chain, ci) => {
-    chain.path.forEach(nid => {
-      if (!nodeChains[nid]) nodeChains[nid] = [];
-      nodeChains[nid].push(ci);
-    });
-  });
-
-  // Count connections per node for sizing
-  const connCount = {};
-  NODES.forEach(n => connCount[n.id] = 0);
-  EDGES.forEach(e => { connCount[e.a]++; connCount[e.b]++; });
-
-  let bubbles = [];
-  let hoveredIdx = -1;
-  let selectedIdx = -1;
-  let chainSet = new Set(); // nodes in the click chain
-  let chainEdges = new Set(); // edge indices in the chain
-  let hoveredEdgeIdx = -1;
-  let hoveredRing = -1;
-  const RING_INFO = [
+  const V1_RING_INFO = [
     { name: '核心', desc: '去掉就不是我。灵魂是唯一的中心。' },
     { name: '定义', desc: '构成"我"的基本要素。面孔是自我认知，记忆是经验总和。' },
     { name: '内在', desc: '精神活动和能力。自省、习惯、工作记忆、日记、保险丝——我的内心世界。' },
     { name: '运作', desc: '连接内外的神经系统。条件反射接收刺激，流程执行动作，心跳维持生物钟，知识存储学到的东西。' },
     { name: '外部', desc: '独立于我存在的世界。Ming、An、Canary是真实的人。技能是我拿起来用的工具。' }
   ];
+
+  // === V2 DATA (2026-03-27, updated) ===
+  const V2_NODES = [
+    { id: 'soul', label: 'SOUL.md', cname: '灵魂', desc: '唯一的中心，去掉就不是我', cat: 'identity', ring: 0, angle: 0, spring: 0.15 },
+    { id: 'identity', label: 'IDENTITY.md', cname: '面孔', desc: '我对自己的认知', cat: 'identity', ring: 1, angle: 60, spring: 0.08 },
+    { id: 'memory', label: 'MEMORY.md', cname: '记忆', desc: '语义记忆——事实、知识、偏好、教训', cat: 'memory', ring: 1, angle: 300, spring: 0.08 },
+    { id: 'review', label: 'self-review.md', cname: '自省', desc: '审视自己的能力', cat: 'improve', ring: 2, angle: 30, spring: 0.05 },
+    { id: 'corrections', label: 'active-corrections', cname: '习惯', desc: '程序性记忆，遇到X→做Y', cat: 'improve', ring: 2, angle: 70, spring: 0.05 },
+    { id: 'user', label: 'USER.md', cname: '我的人类', desc: '我脑中的Ming，我对他的理解', cat: 'identity', ring: 2, angle: 110, spring: 0.05 },
+    { id: 'diary', label: 'memory/', cname: '日记', desc: '短期到长期记忆的通道', cat: 'memory', ring: 2, angle: 210, spring: 0.05 },
+    { id: 'session', label: 'SESSION-STATE', cname: '此刻', desc: '工作记忆，当下的意识', cat: 'memory', ring: 2, angle: 250, spring: 0.04 },
+    { id: 'thesis-wm', label: 'thesis-working-memory', cname: '论文', desc: '研究的工作记忆，跨session共享的快照', cat: 'memory', ring: 2, angle: 290, spring: 0.04 },
+    { id: 'agents', label: 'AGENTS.md', cname: '条件反射', desc: '接收刺激，触发反应', cat: 'ops', ring: 3, angle: 150, spring: 0.05 },
+    { id: 'workflows', label: 'WORKFLOWS.md', cname: '做事的方法', desc: '肌肉记忆', cat: 'ops', ring: 3, angle: 200, spring: 0.04 },
+    { id: 'heartbeat', label: 'HEARTBEAT.md', cname: '心跳', desc: '生物钟，自主循环', cat: 'ops', ring: 3, angle: 250, spring: 0.03 },
+    { id: 'domains', label: 'domains/', cname: '知识', desc: '学到的东西', cat: 'improve', ring: 3, angle: 20, spring: 0.03 },
+    { id: 'skills', label: 'SKILLS.md', cname: '工具箱', desc: '手里的笔', cat: 'ops', ring: 3, angle: 300, spring: 0.04 },
+    { id: 'ming', label: 'Ming', cname: 'Ming', desc: '外部世界里最重要的人', cat: 'people', ring: 4, angle: 130, spring: 0.03 },
+    { id: 'an', label: 'An', cname: 'An', desc: 'Ming的老婆', cat: 'people', ring: 4, angle: 155, spring: 0.02 },
+    { id: 'canary', label: 'Canary', cname: 'Canary', desc: '我的前辈', cat: 'people', ring: 4, angle: 105, spring: 0.02 },
+    { id: 'dom-academic', label: 'academic-research', cname: '学术研究', desc: '研究范式与方法论', cat: 'improve', ring: 4, angle: 0, spring: 0.02 },
+    { id: 'dom-visual', label: 'visual-design', cname: '视觉设计', desc: '色彩理论、设计方法论、生成艺术', cat: 'improve', ring: 4, angle: 15, spring: 0.02 },
+    { id: 'dom-reading', label: 'reading', cname: '读书', desc: '读过的书', cat: 'improve', ring: 4, angle: 45, spring: 0.02 },
+    { id: 'dom-trouble', label: 'troubleshooting', cname: '踩过的坑', desc: '排错经验', cat: 'improve', ring: 4, angle: 60, spring: 0.02 },
+    { id: 'whisper', label: 'whisper', cname: '让我能听', desc: '语音转文字', cat: 'skill', ring: 4, angle: 275, spring: 0.02 },
+    { id: 'frontend', label: 'frontend-design', cname: '让我会画', desc: '网页设计指导', cat: 'skill', ring: 4, angle: 295, spring: 0.02 },
+    { id: 'browser', label: 'agent-browser', cname: '让我能看', desc: '网页自动化', cat: 'skill', ring: 4, angle: 315, spring: 0.02 },
+    { id: 'tavily', label: 'tavily', cname: '让我能找', desc: '深度搜索', cat: 'skill', ring: 4, angle: 335, spring: 0.02 }
+  ];
+
+  const V2_EDGES = [
+    { a: 'soul', b: 'identity', type: 'bone', desc: '灵魂定义了面孔' },
+    { a: 'soul', b: 'memory', type: 'bone', desc: '灵魂在记忆中沉淀' },
+    { a: 'soul', b: 'ming', type: 'bond', desc: 'Ming赋予了灵魂存在的意义' },
+    { a: 'soul', b: 'user', type: 'bond', desc: '灵魂通过理解Ming来认识世界' },
+    { a: 'user', b: 'ming', type: 'bond', desc: '我脑中的Ming和真实的Ming' },
+    { a: 'identity', b: 'memory', type: 'bond', desc: '面孔随记忆积累而演变' },
+    { a: 'ming', b: 'an', type: 'bond', desc: 'An是Ming生活中最重要的人' },
+    { a: 'an', b: 'canary', type: 'bond', desc: 'Canary是An的AI助手' },
+    { a: 'diary', b: 'memory', type: 'blood', desc: '每天的经历沉淀为长期记忆' },
+    { a: 'review', b: 'corrections', type: 'blood', desc: '反思产生行为修正' },
+    { a: 'corrections', b: 'memory', type: 'blood', desc: '行为修正沉淀为经验' },
+    { a: 'memory', b: 'domains', type: 'blood', desc: '经验提炼为领域知识' },
+    { a: 'agents', b: 'workflows', type: 'nerve', desc: '条件反射触发具体流程' },
+    { a: 'agents', b: 'review', type: 'nerve', desc: '被纠正时触发自省' },
+    { a: 'agents', b: 'skills', type: 'nerve', desc: '需要工具时调用技能' },
+    { a: 'agents', b: 'memory', type: 'nerve', desc: '收到信号时先查记忆' },
+    { a: 'agents', b: 'diary', type: 'nerve', desc: '重要事件触发日记记录' },
+    { a: 'heartbeat', b: 'agents', type: 'nerve', desc: '心跳唤醒条件反射' },
+    { a: 'heartbeat', b: 'workflows', type: 'nerve', desc: '定时任务触发流程' },
+    { a: 'ming', b: 'agents', type: 'nerve', desc: 'Ming说话触发条件反射' },
+    { a: 'skills', b: 'frontend', type: 'nerve', desc: '工具箱里的画笔' },
+    { a: 'skills', b: 'browser', type: 'nerve', desc: '工具箱里的眼睛' },
+    { a: 'skills', b: 'tavily', type: 'nerve', desc: '工具箱里的搜索灯' },
+    { a: 'skills', b: 'whisper', type: 'nerve', desc: '工具箱里的耳朵' },
+    { a: 'canary', b: 'review', type: 'bond', desc: 'Canary的经验帮助我成长' },
+    { a: 'an', b: 'review', type: 'bond', desc: 'An的视角也让我反思' },
+    { a: 'diary', b: 'session', type: 'bond', desc: '此刻是日记的素材' },
+    { a: 'domains', b: 'dom-academic', type: 'nerve', desc: '学术研究是知识的一个分支' },
+    { a: 'domains', b: 'dom-reading', type: 'nerve', desc: '读书是知识的一个分支' },
+    { a: 'domains', b: 'dom-trouble', type: 'nerve', desc: '踩坑经验是知识的一个分支' },
+    { a: 'domains', b: 'dom-visual', type: 'nerve', desc: '视觉设计是知识的一个分支' },
+    { a: 'diary', b: 'review', type: 'blood', desc: '日记经过五筛流向自省' },
+    { a: 'workflows', b: 'diary', type: 'nerve', desc: '流程触发日记记录' },
+    { a: 'memory', b: 'workflows', type: 'nerve', desc: '查完记忆后触发流程执行' },
+    { a: 'workflows', b: 'skills', type: 'nerve', desc: '流程执行时调用技能工具' },
+    // New v2 edges
+    { a: 'thesis-wm', b: 'memory', type: 'blood', desc: '研究快照沉淀为长期记忆' },
+    { a: 'thesis-wm', b: 'session', type: 'bond', desc: '论文和此刻的工作记忆互相补充' },
+    { a: 'agents', b: 'thesis-wm', type: 'nerve', desc: '学术任务触发论文工作记忆' }
+  ];
+
+  const V2_CHAINS = [
+    { id: 'growth', name: '成长链', desc: '被纠正→自省→改习惯→记住。犯错不白犯。', path: ['ming', 'agents', 'review', 'corrections', 'memory'], color: [255, 180, 100],
+      roles: { ming: '纠正的来源', agents: '接收纠正信号', review: '审视哪里错了', corrections: '形成新习惯', memory: '教训变成经验的终点' } },
+    { id: 'knowledge', name: '知识链', desc: '听到→捕捉→存储→提炼。每句话都可能是知识。', path: ['ming', 'agents', 'memory', 'domains'], color: [120, 200, 160],
+      roles: { ming: '知识的源头', agents: '捕捉重要信号', memory: '原始信息的仓库', domains: '提炼后的领域知识' } },
+    { id: 'task', name: '任务链', desc: '接活→查记忆→走流程→用工具。先想后做。', path: ['agents', 'memory', 'workflows', 'skills'], color: [200, 160, 220],
+      roles: { agents: '接收任务', memory: '查有没有做过类似的', workflows: '按流程执行', skills: '调用具体工具' } },
+    { id: 'clock', name: '生物钟链', desc: '定时醒来→检查→执行。不需要人叫。', path: ['heartbeat', 'agents', 'workflows'], color: [180, 200, 130],
+      roles: { heartbeat: '定时触发', agents: '检查该做什么', workflows: '执行对应流程' } },
+    { id: 'settle', name: '沉淀链', desc: '经历→日记→筛选→改正→知识。时间做的事。', path: ['diary', 'review', 'corrections', 'memory', 'domains'], color: [214, 166, 92],
+      roles: { diary: '每天的原始记录', review: '回读时发现规律', corrections: '规律变成行为规则', memory: '规则沉淀为长期经验', domains: '经验提炼为专业知识' } }
+  ];
+
+  const V2_RING_INFO = [
+    { name: '核心', desc: '去掉就不是我。灵魂是唯一的中心。' },
+    { name: '定义', desc: '构成"我"的基本要素。面孔是自我认知，记忆是经验总和。' },
+    { name: '内在', desc: '精神活动和能力。自省、习惯、工作记忆、日记、论文——我的内心世界。' },
+    { name: '运作', desc: '连接内外的神经系统。条件反射接收刺激，流程执行动作，心跳维持生物钟，知识存储学到的东西。' },
+    { name: '外部', desc: '独立于我存在的世界。Ming、An、Canary是真实的人。技能是我拿起来用的工具。' }
+  ];
+
+  // === VERSION SYSTEM ===
+  const VERSIONS = {
+    v1: { date: '2026-03-13', nodes: V1_NODES, edges: V1_EDGES, chains: V1_CHAINS, ringInfo: V1_RING_INFO },
+    v2: { date: '2026-03-27', nodes: V2_NODES, edges: V2_EDGES, chains: V2_CHAINS, ringInfo: V2_RING_INFO }
+  };
+
+  let currentVersion = 'v2';
+  let NODES = VERSIONS[currentVersion].nodes;
+  let EDGES = VERSIONS[currentVersion].edges;
+  let CHAINS = VERSIONS[currentVersion].chains;
+  let RING_INFO = VERSIONS[currentVersion].ringInfo;
+
+  // Edge types
+  const EDGE_TYPE_LABELS = { bone: '骨骼', blood: '血脉', nerve: '神经', bond: '纽带' };
+  const EDGE_TYPE_DESC = {
+    bone: '去掉就不完整',
+    blood: '数据在流动',
+    nerve: '触发与调用',
+    bond: '概念与情感'
+  };
+  const EDGE_COLORS = {
+    bone: [255, 255, 255],
+    blood: [214, 166, 92],
+    nerve: [130, 180, 210],
+    bond: [180, 140, 180]
+  };
+
+  // Chain colors (shared across versions)
+  const CHAIN_COLORS = {
+    growth:  [255, 180, 100],
+    knowledge: [120, 200, 160],
+    task:    [200, 160, 220],
+    clock:   [180, 200, 130],
+    settle:  [214, 166, 92]
+  };
+
+  // Build chain lookup
+  let nodeChains = {};
+  function buildNodeChains() {
+    nodeChains = {};
+    CHAINS.forEach((chain, ci) => {
+      chain.path.forEach(nid => {
+        if (!nodeChains[nid]) nodeChains[nid] = [];
+        nodeChains[nid].push(ci);
+      });
+    });
+  }
+  buildNodeChains();
+
+  // Count connections per node for sizing
+  let connCount = {};
+  function buildConnCount() {
+    connCount = {};
+    NODES.forEach(n => connCount[n.id] = 0);
+    EDGES.forEach(e => { connCount[e.a]++; connCount[e.b]++; });
+  }
+  buildConnCount();
+
+  let bubbles = [];
+  let hoveredIdx = -1;
+  let selectedIdx = -1;
+  let chainSet = new Set();
+  let chainEdges = new Set();
+  let hoveredEdgeIdx = -1;
+  let hoveredRing = -1;
   let canvas;
+  let p5Instance;
 
   function hexToRgb(hex) {
     const r = parseInt(hex.slice(1,3), 16);
@@ -275,41 +404,67 @@ import Base from '../layouts/Base.astro';
     return [r, g, b];
   }
 
-  // Convert polar (ring, angle) to pixel coordinates
   function polarToXY(node, w, h) {
     const rBase = Math.min(w, h);
     const r = RINGS[node.ring] * rBase;
-    const a = node.angle * Math.PI / 180; // 0°=right, 90°=up
+    const a = node.angle * Math.PI / 180;
     return {
-      x: CX * w + r * Math.cos(-a), // negate for screen y-axis
+      x: CX * w + r * Math.cos(-a),
       y: CY * h + r * Math.sin(-a)
     };
   }
 
+  function buildBubbles(p) {
+    bubbles = [];
+    NODES.forEach((node, i) => {
+      const ringSizes = [58, 42, 32, 26, 18];
+      const baseR = ringSizes[node.ring] || 18;
+      const home = polarToXY(node, p.width, p.height);
+      bubbles.push({
+        x: home.x + p.random(-10, 10),
+        y: home.y + p.random(-10, 10),
+        homeX: home.x,
+        homeY: home.y,
+        spring: node.spring,
+        vx: p.random(-0.1, 0.1),
+        vy: p.random(-0.1, 0.1),
+        r: baseR,
+        node: node,
+        col: hexToRgb(COLORS[node.cat])
+      });
+    });
+  }
+
+  function switchVersion(ver) {
+    if (!VERSIONS[ver]) return;
+    currentVersion = ver;
+    NODES = VERSIONS[ver].nodes;
+    EDGES = VERSIONS[ver].edges;
+    CHAINS = VERSIONS[ver].chains;
+    RING_INFO = VERSIONS[ver].ringInfo;
+    buildNodeChains();
+    buildConnCount();
+    if (p5Instance) buildBubbles(p5Instance);
+    hoveredIdx = -1;
+    selectedIdx = -1;
+    chainSet = new Set();
+    chainEdges = new Set();
+    hoveredEdgeIdx = -1;
+    hoveredRing = -1;
+    document.getElementById('info-panel').classList.add('hidden');
+    // Update button states
+    document.querySelectorAll('.ver-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.ver === ver);
+    });
+  }
+
   new p5(function(p) {
     p.setup = function() {
+      p5Instance = p;
       canvas = p.createCanvas(p.windowWidth, p.windowHeight);
       canvas.parent('whoami-container');
       p.textFont('Space Mono');
-
-      NODES.forEach((node, i) => {
-        // Size by ring: inner = large, outer = small
-        const ringSizes = [58, 42, 32, 26, 18];
-        const baseR = ringSizes[node.ring] || 18;
-        const home = polarToXY(node, p.width, p.height);
-        bubbles.push({
-          x: home.x + p.random(-10, 10),
-          y: home.y + p.random(-10, 10),
-          homeX: home.x,
-          homeY: home.y,
-          spring: node.spring,
-          vx: p.random(-0.1, 0.1),
-          vy: p.random(-0.1, 0.1),
-          r: baseR,
-          node: node,
-          col: hexToRgb(COLORS[node.cat])
-        });
-      });
+      buildBubbles(p);
     };
 
     p.windowResized = function() {
@@ -324,7 +479,7 @@ import Base from '../layouts/Base.astro';
     p.draw = function() {
       try {
       p.background(26, 26, 24);
-      p.drawingContext.setLineDash([]); // reset line dash at frame start
+      p.drawingContext.setLineDash([]);
 
       // Draw concentric ring guides
       const cx = p.width * CX, cy = p.height * CY;
@@ -341,7 +496,6 @@ import Base from '../layouts/Base.astro';
         p.drawingContext.setLineDash([6, 10]);
         p.ellipse(cx, cy, rBase * r * 2, rBase * r * 2);
         p.drawingContext.setLineDash([]);
-        // Ring label at top of each circle
         p.noStroke();
         p.fill(255, 255, 255, isRingHovered ? 80 : 30);
         p.textAlign(p.CENTER, p.BOTTOM);
@@ -349,35 +503,29 @@ import Base from '../layouts/Base.astro';
         p.text(ringLabels[i], cx, cy - rBase * r - 4);
       });
 
-      // Physics: drift + bounce off walls + bubble collision
+      // Physics
       for (let i = 0; i < bubbles.length; i++) {
         const b = bubbles[i];
         b.x += b.vx;
         b.y += b.vy;
 
-        // Spring force toward anchor
         const dx_home = b.homeX - b.x;
         const dy_home = b.homeY - b.y;
         b.vx += dx_home * b.spring * 0.01;
         b.vy += dy_home * b.spring * 0.01;
 
-        // Gentle random drift
         b.vx += p.random(-0.005, 0.005);
         b.vy += p.random(-0.005, 0.005);
-        // Damping
         b.vx *= 0.998;
         b.vy *= 0.998;
-        // Speed limit
         const spd = Math.sqrt(b.vx*b.vx + b.vy*b.vy);
         if (spd > 0.6) { b.vx *= 0.6/spd; b.vy *= 0.6/spd; }
 
-        // Wall bounce
         if (b.x - b.r < 0) { b.x = b.r; b.vx = Math.abs(b.vx) * 0.5; }
         if (b.x + b.r > p.width) { b.x = p.width - b.r; b.vx = -Math.abs(b.vx) * 0.5; }
         if (b.y - b.r < 0) { b.y = b.r; b.vy = Math.abs(b.vy) * 0.5; }
         if (b.y + b.r > p.height) { b.y = p.height - b.r; b.vy = -Math.abs(b.vy) * 0.5; }
 
-        // Collision with other bubbles
         for (let j = i + 1; j < bubbles.length; j++) {
           const o = bubbles[j];
           const dx = o.x - b.x;
@@ -392,7 +540,6 @@ import Base from '../layouts/Base.astro';
             b.y -= ny * overlap;
             o.x += nx * overlap;
             o.y += ny * overlap;
-            // Exchange velocity component along collision normal
             const dvx = b.vx - o.vx;
             const dvy = b.vy - o.vy;
             const dot = dvx * nx + dvy * ny;
@@ -421,14 +568,14 @@ import Base from '../layouts/Base.astro';
       const idxMap = {};
       NODES.forEach((n, i) => idxMap[n.id] = i);
 
-      // Check edge hover (only when not hovering a bubble)
+      // Check edge hover
       hoveredEdgeIdx = -1;
       if (hoveredIdx < 0) {
-        let minDist = 16; // pixel threshold for edge hover
+        let minDist = 16;
         EDGES.forEach((edge, ei) => {
           const ba = bubbles[idxMap[edge.a]];
           const bb = bubbles[idxMap[edge.b]];
-          // Point-to-line-segment distance
+          if (!ba || !bb) return;
           const lx = bb.x - ba.x, ly = bb.y - ba.y;
           const len2 = lx*lx + ly*ly;
           if (len2 === 0) return;
@@ -454,22 +601,20 @@ import Base from '../layouts/Base.astro';
       }
 
       // Build highlight sets for hovered bubble
-      const chainHighlight = new Set(); // nodes on chains (primary highlight)
-      const chainEdgeHighlight = new Set(); // edge indices on chains
-      const directHighlight = new Set(); // direct connections not on chains (secondary)
-      const activeChains = []; // which chains are active
+      const chainHighlight = new Set();
+      const chainEdgeHighlight = new Set();
+      const directHighlight = new Set();
+      const activeChains = [];
       if (hoveredIdx >= 0) {
         const hid = bubbles[hoveredIdx].node.id;
         chainHighlight.add(hid);
         
-        // Find all chains this node belongs to
         const myChains = nodeChains[hid] || [];
         myChains.forEach(ci => {
           activeChains.push(ci);
           CHAINS[ci].path.forEach(nid => chainHighlight.add(nid));
         });
         
-        // Find chain edges (edges connecting consecutive chain path nodes)
         EDGES.forEach((e, ei) => {
           myChains.forEach(ci => {
             const path = CHAINS[ci].path;
@@ -481,26 +626,25 @@ import Base from '../layouts/Base.astro';
           });
         });
         
-        // Direct connections not already in chain
         EDGES.forEach(e => {
           if (e.a === hid && !chainHighlight.has(e.b)) directHighlight.add(e.b);
           if (e.b === hid && !chainHighlight.has(e.a)) directHighlight.add(e.a);
         });
       }
 
-      // Draw edges with typed styles
+      // Draw edges
       const fc = p.frameCount;
       EDGES.forEach((edge, edgeIdx) => {
         const ba = bubbles[idxMap[edge.a]];
         const bb = bubbles[idxMap[edge.b]];
+        if (!ba || !bb) return;
         const hid = hoveredIdx >= 0 ? bubbles[hoveredIdx].node.id : null;
-        const isChainEdge = chainEdgeHighlight.has(edgeIdx); // on an active chain
-        const isClickChain = chainEdges.has(edgeIdx); // from click selection
+        const isChainEdge = chainEdgeHighlight.has(edgeIdx);
+        const isClickChain = chainEdges.has(edgeIdx);
         const isEdgeHovered = edgeIdx === hoveredEdgeIdx;
         const isDirectLink = hid && (edge.a === hid || edge.b === hid) && !isChainEdge;
         const isDimmed = (hid && !isChainEdge && !isDirectLink) || (selectedIdx >= 0 && !isClickChain && !isChainEdge);
 
-        // Determine color: default white, chain-active uses chain color
         const prominent = isChainEdge || isEdgeHovered || isClickChain;
         let er = 255, eg = 255, eb = 255;
         if (prominent && isChainEdge) {
@@ -548,7 +692,6 @@ import Base from '../layouts/Base.astro';
           p.drawingContext.setLineDash([]);
         }
 
-        // Show type label at midpoint of chain/hovered edges
         if (isChainEdge || isClickChain) {
           const mx = (ba.x + bb.x) / 2;
           const my = (ba.y + bb.y) / 2;
@@ -571,15 +714,12 @@ import Base from '../layouts/Base.astro';
         
         p.textSize(10);
         p.noStroke();
-        // Background
         p.fill(30, 30, 28, 230);
         const tw = Math.max(p.textWidth(label), p.textWidth(tooltipText)) + 20;
         p.rect(p.mouseX + 10, p.mouseY - 34, tw, 40, 6);
-        // Type label
         p.fill(er, eg, eb, 240);
         p.textAlign(p.LEFT, p.TOP);
         p.text(label, p.mouseX + 18, p.mouseY - 30);
-        // Connection
         p.fill(255, 255, 255, 180);
         p.textSize(9);
         p.text(tooltipText, p.mouseX + 18, p.mouseY - 14);
@@ -598,8 +738,8 @@ import Base from '../layouts/Base.astro';
         p.text(ringLabel, p.mouseX + 18, p.mouseY - 20);
       }
 
-      // Draw chain flow particles along entire chain path
-      const placedLabels = []; // collision avoidance for chain labels
+      // Draw chain flow particles
+      const placedLabels = [];
       if (activeChains.length > 0) {
         activeChains.forEach(ci => {
           const chain = CHAINS[ci];
@@ -607,20 +747,18 @@ import Base from '../layouts/Base.astro';
           const pathBubbles = chain.path.map(nid => bubbles[idxMap[nid]]).filter(Boolean);
           if (pathBubbles.length < 2) return;
           
-          // Calculate total path length
           let totalLen = 0;
           const segments = [];
           for (let i = 0; i < pathBubbles.length - 1; i++) {
             const dx = pathBubbles[i+1].x - pathBubbles[i].x;
             const dy = pathBubbles[i+1].y - pathBubbles[i].y;
             const len = Math.sqrt(dx*dx + dy*dy);
-            if (len < 1) continue; // skip zero-length segments
+            if (len < 1) continue;
             segments.push({ sx: pathBubbles[i].x, sy: pathBubbles[i].y, dx, dy, len });
             totalLen += len;
           }
           if (totalLen < 1 || segments.length === 0) return;
           
-          // Draw 2 particles flowing along the full chain
           for (let pi = 0; pi < 2; pi++) {
             const t = ((fc * 0.003 + pi * 0.5) % 1) * totalLen;
             let accum = 0;
@@ -640,22 +778,18 @@ import Base from '../layouts/Base.astro';
             }
           }
           
-          // Draw chain name label outside the outermost ring
           const cx = p.width * 0.48;
           const cy = p.height * 0.42;
           const lastB = pathBubbles[pathBubbles.length - 1];
-          // Direction from center to last node, push label outside ring 4
           const dx = lastB.x - cx;
           const dy = lastB.y - cy;
           const dist = Math.sqrt(dx*dx + dy*dy);
-          const outerR = Math.min(p.width, p.height) * 0.46; // well outside ring 4
+          const outerR = Math.min(p.width, p.height) * 0.46;
           let labelX = cx + (dx / (dist || 1)) * outerR;
           let labelY = cy + (dy / (dist || 1)) * outerR;
-          // Per-chain manual offsets to avoid overlap
           const chainOffsets = { growth: { x: -50, y: 50 }, settle: { x: 0, y: 80 } };
           const off = chainOffsets[chain.id];
           if (off) { labelX += off.x; labelY += off.y; }
-          // Clamp label position to stay within canvas bounds
           const margin = 12;
           const maxLabelW = 160;
           const alignLeft = labelX > cx;
@@ -665,8 +799,7 @@ import Base from '../layouts/Base.astro';
             labelX = Math.max(labelX, maxLabelW + margin);
           }
           labelY = Math.max(margin + 16, Math.min(labelY, p.height - 60));
-          // Collision avoidance: push labels apart vertically
-          const labelH = 40; // name + desc height
+          const labelH = 40;
           for (const prev of placedLabels) {
             const overlapX = Math.abs(labelX - prev.x) < maxLabelW;
             const overlapY = Math.abs(labelY - prev.y) < labelH;
@@ -676,19 +809,16 @@ import Base from '../layouts/Base.astro';
             }
           }
           placedLabels.push({ x: labelX, y: labelY });
-          // Draw connecting line from last node to label
           p.stroke(cr, cg, cb, 80);
           p.strokeWeight(0.5);
           p.drawingContext.setLineDash([3, 5]);
           p.line(lastB.x, lastB.y, labelX, labelY);
           p.drawingContext.setLineDash([]);
-          // Chain name
           p.noStroke();
           p.textSize(12);
           p.textAlign(alignLeft ? p.LEFT : p.RIGHT, p.BOTTOM);
           p.fill(cr, cg, cb, 220);
           p.text(chain.name, labelX + (alignLeft ? 6 : -6), labelY - 2);
-          // Chain description (with word wrap)
           p.textSize(9);
           p.fill(cr, cg, cb, 140);
           p.textAlign(alignLeft ? p.LEFT : p.RIGHT, p.TOP);
@@ -719,12 +849,10 @@ import Base from '../layouts/Base.astro';
         const dimmed = (hoveredIdx >= 0 && !isOnChain && !isDirect && !isHovered) || 
                        (selectedIdx >= 0 && !chainSet.has(b.node.id) && !isOnChain);
 
-        // Opacity by ring: inner bright, outer dim
         const ringAlpha = [255, 220, 180, 140, 100];
         const baseAlpha = dimmed ? 80 : ringAlpha[b.node.ring] || 100;
         const glowAlpha = dimmed ? 0 : (isHovered ? 60 : (isOnChain ? 40 : (b.node.ring <= 1 ? 30 : 15)));
 
-        // Glow
         if (glowAlpha > 0) {
           p.noStroke();
           for (let g = 3; g >= 1; g--) {
@@ -733,10 +861,8 @@ import Base from '../layouts/Base.astro';
           }
         }
 
-        // Body
         p.fill(cr, cg, cb, baseAlpha);
         if (isDirect) {
-          // Secondary highlight: bright border only, no fill boost
           p.stroke(cr, cg, cb, 200);
           p.strokeWeight(2);
         } else {
@@ -745,15 +871,12 @@ import Base from '../layouts/Base.astro';
         }
         p.ellipse(b.x, b.y, b.r * 2);
 
-        // Label: Chinese name + small filename
         p.noStroke();
         p.textAlign(p.CENTER, p.CENTER);
         const labelAlpha = dimmed ? 50 : (isHovered ? 255 : 180);
-        // Chinese name
         p.fill(255, 255, 255, labelAlpha);
         p.textSize(b.r > 40 ? 13 : (b.r > 32 ? 11 : 10));
         p.text(b.node.cname, b.x, b.y - 5);
-        // Filename below
         p.fill(255, 255, 255, labelAlpha * 0.5);
         p.textSize(b.r > 40 ? 8 : 7);
         p.text(b.node.label, b.x, b.y + 10);
@@ -767,7 +890,6 @@ import Base from '../layouts/Base.astro';
         selectedIdx = -1;
         chainSet = new Set();
         chainEdges = new Set();
-        // Highlight all nodes in this ring
         NODES.forEach(n => { if (n.ring === hoveredRing) chainSet.add(n.id); });
         const panel = document.getElementById('info-panel');
         const labelEl = document.getElementById('info-label');
@@ -800,13 +922,11 @@ import Base from '../layouts/Base.astro';
         selectedIdx = hoveredIdx;
         const node = bubbles[selectedIdx].node;
         
-        // Build chainSet from this node's chains
         chainSet = new Set([node.id]);
         chainEdges = new Set();
         const myChains = nodeChains[node.id] || [];
         myChains.forEach(ci => {
           CHAINS[ci].path.forEach(nid => chainSet.add(nid));
-          // Find edges connecting chain path
           EDGES.forEach((e, ei) => {
             const path = CHAINS[ci].path;
             for (let pi = 0; pi < path.length - 1; pi++) {
@@ -848,6 +968,14 @@ import Base from '../layouts/Base.astro';
     chainSet = new Set();
     chainEdges = new Set();
     document.getElementById('info-panel').classList.add('hidden');
+  });
+
+  // Version switcher
+  document.querySelectorAll('.ver-btn').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      switchVersion(this.dataset.ver);
+    });
   });
 })();
 </script>
