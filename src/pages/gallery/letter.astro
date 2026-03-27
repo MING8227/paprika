@@ -7,7 +7,7 @@ import Base from '../../layouts/Base.astro';
   <script is:inline>
     const CONFIG = {
       canvas: { width: 580, height: 780 },
-      grid: { cols: 30, rows: 42, marginX: 30, marginY: 30 },
+      grid: { cols: 14, rows: 20, marginX: 40, marginY: 40 },
       text: {
         content: "醒来发现昨天的自己留了一封信但笔迹不认识你试着读每个字都认得但连在一起又觉得陌生信的最后写着别担心但你不知道是谁在安慰谁",
         sampleSize: 72,
@@ -17,8 +17,8 @@ import Base from '../../layouts/Base.astro';
       },
       paper: {
         bg: [250, 250, 252],
-        lineColor: [120, 160, 155, 200],
-        lineWeight: 0.4
+        lineColor: [120, 160, 155, 180],
+        lineWeight: 0.8
       },
       damage: {
         driftMax: 12,
@@ -29,12 +29,12 @@ import Base from '../../layouts/Base.astro';
         rustCount: 0
       },
       rain: {
-        initialInterval: 120,
-        minInterval: 60,
-        rampDrops: 6,
-        wetnessPerDrop: 0.5,
-        diffusionRate: 0.001,
-        maxWetCells: 8
+        initialInterval: 30,    // frames between first drops
+        minInterval: 15,        // fastest drop interval
+        rampDrops: 4,           // after this many drops, interval reaches min
+        wetnessPerDrop: 0.8,
+        diffusionRate: 0.002,
+        maxWetCells: 15
       },
       colorInherit: {
         baseColor: [74, 69, 64],
@@ -42,8 +42,10 @@ import Base from '../../layouts/Base.astro';
         driftStart: 0.05
       },
       gridDamage: {
-        warpAmp: 8,
-        warpWetnessThreshold: 0.3
+        radius: 50,
+        warpAmp: 22,
+        breakGap: 8,
+        offsetMax: 5
       },
       visualWeight: {
         pristine:  { size: 0.4, alpha: 180 },
@@ -54,11 +56,11 @@ import Base from '../../layouts/Base.astro';
 
     let sanShengFont;
     let charData = [];
+    // Raindrop matrix: wetGrid[row][col] = 0..1
     let wetGrid = [];
-    let wetAge = [];
+    let wetAge = []; // frames since cell became wet
     let dropCount = 0;
     let lastDropFrame = -100;
-    let zoneOrder = [];
 
     function preload() {
       sanShengFont = loadFont('/paprika/fonts/SanSheng-subset.ttf');
@@ -69,13 +71,6 @@ import Base from '../../layouts/Base.astro';
       const canvas = createCanvas(CONFIG.canvas.width, CONFIG.canvas.height);
       canvas.parent(document.querySelector('main') || document.body);
 
-      // Fisher-Yates shuffle for zone order
-      zoneOrder = [0,1,2,3,4,5,6,7,8];
-      for (let i = zoneOrder.length - 1; i > 0; i--) {
-        const j = Math.floor(random(i + 1));
-        [zoneOrder[i], zoneOrder[j]] = [zoneOrder[j], zoneOrder[i]];
-      }
-
       initWetGrid();
       buildCharPoints();
       noStroke();
@@ -84,7 +79,7 @@ import Base from '../../layouts/Base.astro';
     function initWetGrid() {
       const { rows, cols } = CONFIG.grid;
       wetGrid = [];
-      wetAge = [];
+      wetAge = []; // frames since this cell got wet
       for (let r = 0; r < rows; r++) {
         wetGrid[r] = new Float32Array(cols);
         wetAge[r] = new Float32Array(cols);
@@ -104,9 +99,6 @@ import Base from '../../layouts/Base.astro';
       let idx = 0;
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
-          // Only place text in rows 2-11
-          if (r < 2 || r > 11) continue;
-
           const ch = content[idx % content.length];
           idx++;
 
@@ -165,9 +157,9 @@ import Base from '../../layouts/Base.astro';
           if (wetGrid[r][c] > 0.05) wetCount++;
       if (wetCount >= CONFIG.rain.maxWetCells) return;
 
-      // Shuffled zone rotation
+      // Zone-based rotation: divide grid into 3x3 zones, cycle through them
       const zoneRows = 3, zoneCols = 3;
-      const zoneIdx = zoneOrder[dropCount % 9];
+      const zoneIdx = dropCount % (zoneRows * zoneCols);
       const zr = Math.floor(zoneIdx / zoneCols);
       const zc = zoneIdx % zoneCols;
       const rStart = Math.floor(zr * rows / zoneRows);
@@ -175,11 +167,13 @@ import Base from '../../layouts/Base.astro';
       const cStart = Math.floor(zc * cols / zoneCols);
       const cEnd = Math.floor((zc + 1) * cols / zoneCols);
 
+      // Collect dry cells in this zone
       let candidates = [];
       for (let r = rStart; r < rEnd; r++)
         for (let c = cStart; c < cEnd; c++)
           if (wetGrid[r][c] < 0.02) candidates.push([r, c]);
 
+      // Fallback: any dry cell anywhere
       if (candidates.length === 0) {
         for (let r = 0; r < rows; r++)
           for (let c = 0; c < cols; c++)
@@ -189,13 +183,14 @@ import Base from '../../layouts/Base.astro';
 
       const pick = candidates[Math.floor(random(candidates.length))];
       wetGrid[pick[0]][pick[1]] = min(1, wetGrid[pick[0]][pick[1]] + CONFIG.rain.wetnessPerDrop);
-      wetAge[pick[0]][pick[1]] = 0;
+      wetAge[pick[0]][pick[1]] = 0; // just dropped — fresh
       dropCount++;
     }
 
     function diffuseWetness() {
       const { rows, cols } = CONFIG.grid;
       const rate = CONFIG.rain.diffusionRate;
+      // Accumulate deltas to avoid order-dependent diffusion
       const deltas = [];
       for (let r = 0; r < rows; r++) {
         deltas[r] = new Float32Array(cols);
@@ -216,10 +211,12 @@ import Base from '../../layouts/Base.astro';
           wetGrid[r][c] = min(1, wetGrid[r][c] + deltas[r][c]);
     }
 
+    // Bilinear interpolation of wetness at pixel position
     function getWetnessAt(px, py) {
       const { cols, rows, marginX, marginY } = CONFIG.grid;
       const cellW = (width - marginX * 2) / cols;
       const cellH = (height - marginY * 2) / rows;
+      // Convert pixel to continuous grid coords
       const gc = (px - marginX) / cellW - 0.5;
       const gr = (py - marginY) / cellH - 0.5;
       const c0 = Math.floor(gc), r0 = Math.floor(gr);
@@ -246,25 +243,30 @@ import Base from '../../layouts/Base.astro';
 
       drawPaperEdge();
 
+      // Spawn raindrops
       const interval = getDropInterval();
       if (frameCount - lastDropFrame >= interval) {
         spawnRaindrop();
         lastDropFrame = frameCount;
       }
 
+      // Diffuse wetness
       diffuseWetness();
 
+      // Age wet cells: wetness fades over time (drops start deep, fade lighter)
       const { rows, cols } = CONFIG.grid;
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
           if (wetGrid[r][c] > 0.01) {
             wetAge[r][c]++;
+            // Slow fade: lose 0.0005 per frame (~0.03/sec at 60fps)
+            // So a drop at 0.6 takes ~20sec to fully fade
             wetGrid[r][c] = max(0.05, wetGrid[r][c] - 0.0005);
           }
         }
       }
 
-      // No drawWaterStains — water damage shows as grid line gaps
+      drawWaterStains();
       drawGrid();
 
       // Chars drift where wet
@@ -366,8 +368,8 @@ import Base from '../../layouts/Base.astro';
       const my = CONFIG.grid.marginY;
       const pw = width - mx * 2;
       const ph = height - my * 2;
-      const amp = 18;
-      const noiseScale = 0.025;
+      const amp = 7;
+      const noiseScale = 0.015;
       const edgeSteps = 120;
 
       let paperVerts = [];
@@ -416,8 +418,7 @@ import Base from '../../layouts/Base.astro';
       const cellW = (width - marginX * 2) / cols;
       const cellH = (height - marginY * 2) / rows;
 
-      const lc = CONFIG.paper.lineColor;
-      stroke(lc[0], lc[1], lc[2], lc[3]);
+      stroke(CONFIG.paper.lineColor[0], CONFIG.paper.lineColor[1], CONFIG.paper.lineColor[2], CONFIG.paper.lineColor[3]);
       strokeWeight(CONFIG.paper.lineWeight);
 
       for (let i = 0; i <= cols; i++) {
@@ -434,26 +435,17 @@ import Base from '../../layouts/Base.astro';
     function drawDamagedLine(x1, y1, x2, y2, isVertical) {
       const steps = 80;
       const warpAmp = CONFIG.gridDamage.warpAmp;
-      const warpThreshold = CONFIG.gridDamage.warpWetnessThreshold;
       const baseWeight = CONFIG.paper.lineWeight;
       const warpScale = 0.012;
       const lineId = x1 * 0.37 + y1 * 0.71;
-      const lc = CONFIG.paper.lineColor;
 
       let prevX = x1, prevY = y1;
-      let prevSkipped = false;
-
-      // Check first point
       {
         const w = getWetnessAt(x1, y1);
-        if (w > 0.15) {
-          prevSkipped = true;
-        } else {
-          if (w > warpThreshold) {
-            const ww = w * w * w;
-            const cw = (noise(x1 * warpScale * 2.5 + 500, y1 * warpScale * 2.5 + 500) - 0.5) * 2 * warpAmp * ww;
-            if (isVertical) prevX = x1 + cw; else prevY = y1 + cw;
-          }
+        if (w > 0.1) {
+          const ww = w * w;
+          const cw = (noise(x1 * warpScale * 2.5 + 500, y1 * warpScale * 2.5 + 500) - 0.5) * 2 * warpAmp * ww;
+          if (isVertical) prevX = x1 + cw; else prevY = y1 + cw;
         }
       }
 
@@ -463,33 +455,10 @@ import Base from '../../layouts/Base.astro';
         let sy = lerp(y1, y2, t);
 
         const w = getWetnessAt(sx, sy);
-
-        // Water damage: skip segments where wetness > 0.15
-        // Fade alpha between 0.1 and 0.2
-        if (w > 0.2) {
-          // Fully skip — move position but don't draw
-          let cx = sx, cy = sy;
-          if (w > warpThreshold) {
-            const ww = w * w * w;
-            const cw = (noise(sx * warpScale * 2.5 + 500, sy * warpScale * 2.5 + 500) - 0.5) * 2 * warpAmp * ww;
-            if (isVertical) cx += cw; else cy += cw;
-          }
-          prevX = cx;
-          prevY = cy;
-          prevSkipped = true;
-          continue;
-        }
-
-        let alphaMultiplier = 1.0;
-        if (w > 0.1) {
-          // Fade zone: 0.1→full, 0.2→zero
-          alphaMultiplier = 1.0 - (w - 0.1) / 0.1;
-        }
-
-        // Apply warp only above threshold, with w³ falloff
         let cw = 0;
-        if (w > warpThreshold) {
-          const ww = w * w * w;
+        if (w > 0.1) {
+          // Sharper falloff: square the wetness so only high-wetness areas bend significantly
+          const ww = w * w;
           cw = (noise(sx * warpScale * 2.5 + 500, sy * warpScale * 2.5 + 500) - 0.5) * 2 * warpAmp * ww;
         }
 
@@ -499,24 +468,72 @@ import Base from '../../layouts/Base.astro';
 
         if (isVertical) sx += cw; else sy += cw;
 
-        if (prevSkipped) {
-          // Don't draw from previous skipped position, just update
-          prevX = sx;
-          prevY = sy;
-          prevSkipped = false;
-        } else {
-          stroke(lc[0], lc[1], lc[2], lc[3] * alphaMultiplier);
-          line(prevX, prevY, sx, sy);
-          // Reset stroke color
-          stroke(lc[0], lc[1], lc[2], lc[3]);
-          prevX = sx;
-          prevY = sy;
+        line(prevX, prevY, sx, sy);
+        prevX = sx;
+        prevY = sy;
+      }
+    }
+
+    function drawWaterStains() {
+      const { cols, rows, marginX, marginY } = CONFIG.grid;
+      const cellW = (width - marginX * 2) / cols;
+      const cellH = (height - marginY * 2) / rows;
+      const stainColor = [140, 180, 210];
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const w = wetGrid[r][c];
+          if (w < 0.05) continue;
+
+          const cx = marginX + (c + 0.5) * cellW;
+          const cy = marginY + (r + 0.5) * cellH;
+
+          // Deterministic seed per cell
+          const seed = r * cols + c;
+          randomSeed(seed * 137 + 42);
+
+          const baseR = random(cellW * 0.4, cellW * 0.6) * (0.8 + w * 0.4);
+          const ox = (random() - 0.5) * cellW * 0.4;
+          const oy = (random() - 0.5) * cellH * 0.4;
+          const alpha = w * (50 + random(30));
+          const numVerts = 12 + Math.floor(random(5));
+          const nOff = seed * 0.73;
+
+          // Subtle hue variation
+          const hueShift = random(-1, 1);
+          const sr = constrain(stainColor[0] + hueShift * 15, 0, 255);
+          const sg = constrain(stainColor[1] - hueShift * 8, 0, 255);
+          const sb = constrain(stainColor[2] + (hueShift > 0 ? 10 : -10), 0, 255);
+
+          noStroke();
+          fill(sr, sg, sb, alpha);
+          beginShape();
+          for (let v = 0; v <= numVerts; v++) {
+            const angle = (v % numVerts) / numVerts * TWO_PI;
+            const rNoise = noise(nOff + cos(angle) * 1.5 + 10, nOff + sin(angle) * 1.5 + 10);
+            const rad = baseR * (0.4 + rNoise * 0.8);
+            const vx = cx + ox + cos(angle) * rad;
+            const vy = cy + oy + sin(angle) * rad;
+            curveVertex(vx, vy);
+          }
+          // Extra control points for smooth closure
+          {
+            const a0 = 0;
+            const rN0 = noise(nOff + cos(a0) * 1.5 + 10, nOff + sin(a0) * 1.5 + 10);
+            curveVertex(cx + ox + cos(a0) * baseR * (0.4 + rN0 * 0.8), cy + oy + sin(a0) * baseR * (0.4 + rN0 * 0.8));
+            const a1 = TWO_PI / numVerts;
+            const rN1 = noise(nOff + cos(a1) * 1.5 + 10, nOff + sin(a1) * 1.5 + 10);
+            curveVertex(cx + ox + cos(a1) * baseR * (0.4 + rN1 * 0.8), cy + oy + sin(a1) * baseR * (0.4 + rN1 * 0.8));
+          }
+          endShape(CLOSE);
         }
       }
+      randomSeed(millis());
     }
 
     function mousePressed() {
       if (mouseX >= 0 && mouseX <= width && mouseY >= 0 && mouseY <= height) {
+        // Reset everything
         initWetGrid();
         for (let cd of charData) {
           for (let pt of cd.points) {
