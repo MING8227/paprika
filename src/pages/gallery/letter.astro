@@ -514,6 +514,8 @@ import Base from '../../layouts/Base.astro';
         for (let c = 0; c < cols; c++) {
           const w = wetGrid[r][c];
           if (w < 0.05) continue;
+          // Only draw stains on cells directly hit by raindrops
+          if (!directHit[r] || !directHit[r][c]) continue;
 
           const cx = marginX + (c + 0.5) * cellW;
           const cy = marginY + (r + 0.5) * cellH;
