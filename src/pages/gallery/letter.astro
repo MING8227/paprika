@@ -123,7 +123,7 @@ import Base from '../../layouts/Base.astro';
             phase: random(TWO_PI)
           }));
 
-          charData.push({ cx, cy, points, damaged: false });
+          charData.push({ cx, cy, points, char: ch, damaged: false });
         }
       }
     }
@@ -202,62 +202,74 @@ import Base from '../../layouts/Base.astro';
       // draw rust spots
       drawRust();
 
-      // draw all chars as connected stroke lines + color inheritance
+      // draw all chars: pristine = text(), eroding/eroded = stroke lines
       const base = CONFIG.colorInherit.baseColor;
       const warm = CONFIG.colorInherit.warmColor;
       const dm = CONFIG.damage;
       const vw = CONFIG.visualWeight;
-      noFill();
 
       for (let cd of charData) {
-        // update drifting positions first
+        // compute max drift for this char
+        let maxDrift = 0;
         for (let pt of cd.points) {
-          if (pt.drift > 0.01) {
-            const nx = noise(pt.noiseOff, frameCount * dm.driftSpeed);
-            const ny = noise(pt.noiseOff + 500, frameCount * dm.driftSpeed);
-            pt.x = pt.homeX + (nx - 0.5) * 2 * dm.driftMax * pt.drift;
-            pt.y = pt.homeY + (ny - 0.5) * 2 * dm.driftMax * pt.drift;
-          }
+          if (pt.drift > maxDrift) maxDrift = pt.drift;
         }
 
-        // draw as connected lines
-        const pts = cd.points;
-        if (pts.length < 2) continue;
+        if (maxDrift <= 0.01) {
+          // PRISTINE: draw as solid text
+          noStroke();
+          fill(base[0], base[1], base[2], vw.pristine.alpha);
+          textFont(sanShengFont);
+          textSize(CONFIG.text.displaySize);
+          textAlign(CENTER, CENTER);
+          text(cd.char, cd.cx, cd.cy);
+        } else {
+          // ERODING/ERODED: update positions and draw as lines
+          for (let pt of cd.points) {
+            if (pt.drift > 0.01) {
+              const nx = noise(pt.noiseOff, frameCount * dm.driftSpeed);
+              const ny = noise(pt.noiseOff + 500, frameCount * dm.driftSpeed);
+              pt.x = pt.homeX + (nx - 0.5) * 2 * dm.driftMax * pt.drift;
+              pt.y = pt.homeY + (ny - 0.5) * 2 * dm.driftMax * pt.drift;
+            }
+          }
 
-        for (let i = 0; i < pts.length - 1; i++) {
-          const pt = pts[i];
-          const pt2 = pts[i + 1];
-          const d = max(pt.drift, pt2.drift);
+          noFill();
+          const pts = cd.points;
+          for (let i = 0; i < pts.length - 1; i++) {
+            const pt = pts[i];
+            const pt2 = pts[i + 1];
+            const d = max(pt.drift, pt2.drift);
 
-          // skip if points too far apart (different strokes of the char)
-          const gap = dist(pt.x, pt.y, pt2.x, pt2.y);
-          if (gap > 8) continue;
+            const gap = dist(pt.x, pt.y, pt2.x, pt2.y);
+            if (gap > 8) continue;
 
-          const colorT = constrain(map(d, CONFIG.colorInherit.driftStart, 1, 0, 1), 0, 1);
-          const cr = lerp(base[0], warm[0], colorT);
-          const cg = lerp(base[1], warm[1], colorT);
-          const cb = lerp(base[2], warm[2], colorT);
+            const colorT = constrain(map(d, CONFIG.colorInherit.driftStart, 1, 0, 1), 0, 1);
+            const cr = lerp(base[0], warm[0], colorT);
+            const cg = lerp(base[1], warm[1], colorT);
+            const cb = lerp(base[2], warm[2], colorT);
 
-          if (d > vw.eroded.driftThreshold) {
-            const t = constrain(map(d, 0.5, 1, 0, 1), 0, 1);
-            const alpha = lerp(vw.eroded.alphaMax, vw.eroded.alphaMin, t);
-            const sw = lerp(vw.eroded.sizeMin, vw.eroded.sizeMax, t);
-            if ((pt.noiseOff * 7) % 1 < 0.7) {
+            if (d > vw.eroded.driftThreshold) {
+              const t = constrain(map(d, 0.5, 1, 0, 1), 0, 1);
+              const alpha = lerp(vw.eroded.alphaMax, vw.eroded.alphaMin, t);
+              const sw = lerp(vw.eroded.sizeMin, vw.eroded.sizeMax, t);
+              if ((pt.noiseOff * 7) % 1 < 0.7) {
+                stroke(cr, cg, cb, alpha);
+                strokeWeight(sw);
+                line(pt.x, pt.y, pt2.x, pt2.y);
+              }
+            } else if (d > 0.01) {
+              const t = constrain(map(d, vw.eroding.driftRange[0], vw.eroding.driftRange[1], 0, 1), 0, 1);
+              const alpha = lerp(vw.eroding.alphaMax, vw.eroding.alphaMin, t);
+              const sw = lerp(vw.eroding.sizeMin, vw.eroding.sizeMax, t);
               stroke(cr, cg, cb, alpha);
               strokeWeight(sw);
               line(pt.x, pt.y, pt2.x, pt2.y);
+            } else {
+              stroke(base[0], base[1], base[2], vw.pristine.alpha);
+              strokeWeight(vw.pristine.size);
+              line(pt.x, pt.y, pt2.x, pt2.y);
             }
-          } else if (d > 0.01) {
-            const t = constrain(map(d, vw.eroding.driftRange[0], vw.eroding.driftRange[1], 0, 1), 0, 1);
-            const alpha = lerp(vw.eroding.alphaMax, vw.eroding.alphaMin, t);
-            const sw = lerp(vw.eroding.sizeMin, vw.eroding.sizeMax, t);
-            stroke(cr, cg, cb, alpha);
-            strokeWeight(sw);
-            line(pt.x, pt.y, pt2.x, pt2.y);
-          } else {
-            stroke(base[0], base[1], base[2], vw.pristine.alpha);
-            strokeWeight(vw.pristine.size);
-            line(pt.x, pt.y, pt2.x, pt2.y);
           }
         }
       }
