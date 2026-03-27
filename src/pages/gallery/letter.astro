@@ -214,13 +214,22 @@ import Base from '../../layouts/Base.astro';
         }
 
         if (maxDrift <= 0.01) {
-          // PRISTINE: draw as solid text
+          // PRISTINE: draw as solid text, but apply grid-like warp if near curve
+          const inf = curveInfluenceAt(cd.cx, cd.cy, CONFIG.gridDamage.radius);
+          let drawX = cd.cx;
+          let drawY = cd.cy;
+          if (inf > 0.05) {
+            const warpX = (noise(cd.cx * 0.03, cd.cy * 0.03) - 0.5) * 2 * inf * 8;
+            const warpY = (noise(cd.cx * 0.03 + 200, cd.cy * 0.03 + 200) - 0.5) * 2 * inf * 8;
+            drawX += warpX;
+            drawY += warpY;
+          }
           noStroke();
           fill(base[0], base[1], base[2], vw.pristine.alpha);
           textFont(sanShengFont);
           textSize(CONFIG.text.displaySize);
           textAlign(CENTER, CENTER);
-          text(cd.char, cd.cx, cd.cy);
+          text(cd.char, drawX, drawY);
         } else {
           // ERODING/ERODED: update positions and draw as lines
           for (let pt of cd.points) {
@@ -299,7 +308,7 @@ import Base from '../../layouts/Base.astro';
     function drawDamagedLine(x1, y1, x2, y2, isVertical, gd) {
       // Draw line as small segments with hand-drawn feel + damage bending
       const steps = 60;
-      const maxBend = 5;
+      const maxBend = 8;
       const baseWeight = CONFIG.paper.lineWeight;
       let prevX = x1, prevY = y1;
 
@@ -366,13 +375,13 @@ import Base from '../../layouts/Base.astro';
         randomSeed(ci * 137 + 42);
         const count = 4;
         for (let i = 0; i < count; i++) {
-          const ox = (random() - 0.5) * cellW * 0.8;
-          const oy = (random() - 0.5) * cellH * 0.8;
+          const ox = (random() - 0.5) * cellW * 1.6;
+          const oy = (random() - 0.5) * cellH * 1.6;
           const w = random(cellW * 0.5, cellW * 1.2);
           const h = random(cellH * 0.4, cellH * 1.0);
           const rot = random(TWO_PI);
           // Alpha smoothly scales with intensity
-          const a = 20 * intensity;
+          const a = 40 * intensity;
           fill(stainColor[0], stainColor[1], stainColor[2], a);
           push();
           translate(cd.cx + ox, cd.cy + oy);
@@ -386,7 +395,17 @@ import Base from '../../layouts/Base.astro';
 
     function mousePressed() {
       if (mouseX >= 0 && mouseX <= width && mouseY >= 0 && mouseY <= height) {
-        spawnCurve(mouseX, mouseY);
+        // Reset: clear all drift, curves, and history
+        for (let cd of charData) {
+          for (let pt of cd.points) {
+            pt.drift = 0;
+            pt.x = pt.homeX;
+            pt.y = pt.homeY;
+          }
+        }
+        curves = [];
+        curveHistory = [];
+        lastSpawnFrame = frameCount;
       }
     }
   </script>
