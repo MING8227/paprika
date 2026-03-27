@@ -32,7 +32,7 @@ import Base from '../../layouts/Base.astro';
         growSpeed: 1.5,
         xDriftScale: 0.004,
         weight: 60,
-        spawnInterval: 200,
+        spawnInterval: 350,
         maxCurves: 4,
         startYRange: [-30, 0]
       },
@@ -378,7 +378,7 @@ import Base from '../../layouts/Base.astro';
           const ox = (random() - 0.5) * cellW * 2.5;
           const oy = (random() - 0.5) * cellH * 2.5;
           const r = random(1.5, 4); // small raindrop size
-          const a = (20 + random(25)) * intensity;
+          const a = (35 + random(30)) * (0.3 + intensity * 0.7);
           fill(stainColor[0], stainColor[1], stainColor[2], a);
           ellipse(cd.cx + ox, cd.cy + oy, r, r * random(1.0, 1.5));
         }
