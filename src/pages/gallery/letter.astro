@@ -43,7 +43,7 @@ import Base from '../../layouts/Base.astro';
       },
       gridDamage: {
         radius: 50,
-        warpAmp: 15,
+        warpAmp: 22,
         breakGap: 8,
         offsetMax: 5
       },
@@ -423,8 +423,9 @@ import Base from '../../layouts/Base.astro';
       let prevX = x1, prevY = y1;
       {
         const w = getWetnessAt(x1, y1);
-        if (w > 0.05) {
-          const cw = (noise(x1 * warpScale * 2.5 + 500, y1 * warpScale * 2.5 + 500) - 0.5) * 2 * warpAmp * w;
+        if (w > 0.1) {
+          const ww = w * w;
+          const cw = (noise(x1 * warpScale * 2.5 + 500, y1 * warpScale * 2.5 + 500) - 0.5) * 2 * warpAmp * ww;
           if (isVertical) prevX = x1 + cw; else prevY = y1 + cw;
         }
       }
@@ -436,8 +437,10 @@ import Base from '../../layouts/Base.astro';
 
         const w = getWetnessAt(sx, sy);
         let cw = 0;
-        if (w > 0.05) {
-          cw = (noise(sx * warpScale * 2.5 + 500, sy * warpScale * 2.5 + 500) - 0.5) * 2 * warpAmp * w;
+        if (w > 0.1) {
+          // Sharper falloff: square the wetness so only high-wetness areas bend significantly
+          const ww = w * w;
+          cw = (noise(sx * warpScale * 2.5 + 500, sy * warpScale * 2.5 + 500) - 0.5) * 2 * warpAmp * ww;
         }
 
         const handNoise = noise(sx * 0.1 + lineId, sy * 0.1);
