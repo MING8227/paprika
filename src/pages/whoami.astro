@@ -258,7 +258,6 @@ import Base from '../layouts/Base.astro';
     // Right: knowledge+skills
     { id: 'skills', label: 'skills/', cname: '技能', desc: '拿起来就能用的工具集合', cat: 'skill', ring: 2, angle: 55, spring: 0.03 },
     { id: 'domains', label: 'domains/', cname: '知识', desc: '领域知识精华的集合', cat: 'knowledge', ring: 2, angle: 105, spring: 0.03 },
-    { id: 'user', label: 'USER.md', cname: '理解', desc: '我脑中的Ming——背景、偏好、风格', cat: 'identity', ring: 2, angle: 140, spring: 0.03 },
     // Left: diary/session cluster
     { id: 'diary-dm', label: 'memory/日期.md', cname: 'DM日记', desc: '和Ming对话的每日记录', cat: 'memory', ring: 2, angle: 170, spring: 0.03 },
     { id: 'diary-group', label: 'group-日期.md', cname: '群聊日记', desc: '群聊中的每日记录', cat: 'memory', ring: 2, angle: 200, spring: 0.03 },
@@ -285,10 +284,11 @@ import Base from '../layouts/Base.astro';
     { id: 'dom-trouble', label: 'troubleshooting', cname: '排错', desc: '踩坑与修复的经验', cat: 'knowledge', ring: 3, angle: 143, spring: 0.04 },
     // Projects
     { id: 'projects', label: 'projects/', cname: '项目', desc: '具体项目的操作手册', cat: 'ops', ring: 3, angle: 160, spring: 0.04 },
-    // Ring 4 — Interface (5 nodes)
+    // Ring 4 — Interface (6 nodes)
     { id: 'channel-dm', label: 'DM session', cname: 'DM通道', desc: 'Ming和我一对一的对话', cat: 'channel', ring: 4, angle: 200, spring: 0.03 },
     { id: 'channel-group', label: 'Group session', cname: '群聊通道', desc: 'Ming、An、Canary和我的群聊', cat: 'channel', ring: 4, angle: 230, spring: 0.03 },
     { id: 'channel-academic', label: 'Academic session', cname: '学术通道', desc: 'Ming和我的研究专用频道', cat: 'channel', ring: 4, angle: 275, spring: 0.03 },
+    { id: 'user', label: 'USER.md', cname: '理解', desc: '我脑中的Ming——通过对话建立的模型', cat: 'identity', ring: 4, angle: 170, spring: 0.03 },
     { id: 'study-notes', label: 'study-notes/', cname: '笔记', desc: '原始学习笔记——外部知识的入口', cat: 'knowledge', ring: 4, angle: 120, spring: 0.03 },
     { id: 'readings', label: 'Paprika Readings/', cname: '读书笔记', desc: '逐章阅读笔记——书籍知识的入口', cat: 'knowledge', ring: 4, angle: 145, spring: 0.03 },
     // Ring 5 — External (3 nodes)
@@ -307,6 +307,7 @@ import Base from '../layouts/Base.astro';
     { a: 'memory', b: 'domains', type: 'blood', desc: '记忆提炼为领域知识' },
     { a: 'review', b: 'corrections', type: 'blood', desc: '自省中发现的规律变成习惯' },
     { a: 'review', b: 'memory', type: 'blood', desc: '反思产生语义记忆' },
+    { a: 'agents', b: 'corrections', type: 'nerve', desc: '条件反射和习惯联动——路由触发规则' },
     // Diary connections
     { a: 'diary-dm', b: 'memory', type: 'blood', desc: 'DM经历沉淀为长期记忆' },
     { a: 'diary-dm', b: 'review', type: 'blood', desc: '日记经过五筛流向自省' },
@@ -319,9 +320,11 @@ import Base from '../layouts/Base.astro';
     // Thesis-wm
     { a: 'thesis-wm', b: 'memory', type: 'blood', desc: '研究快照沉淀为长期记忆' },
     { a: 'thesis-wm', b: 'session-academic', type: 'bond', desc: '论文工作记忆和学术此刻互通' },
-    // User model
+    // User model (now in interface layer)
     { a: 'user', b: 'memory', type: 'bond', desc: '对Ming的理解来自记忆' },
     { a: 'soul', b: 'user', type: 'bond', desc: '灵魂通过理解Ming来认识世界' },
+    { a: 'ming', b: 'user', type: 'bond', desc: 'Ming是理解的来源——每次对话都在更新' },
+    { a: 'user', b: 'channel-dm', type: 'nerve', desc: 'DM对话持续塑造对Ming的理解' },
     // Domains parent → children
     { a: 'domains', b: 'dom-academic', type: 'nerve', desc: '学术研究是知识的一个分支' },
     { a: 'domains', b: 'dom-reading', type: 'nerve', desc: '读书是知识的一个分支' },
@@ -393,9 +396,9 @@ import Base from '../layouts/Base.astro';
   const V2_RING_INFO = [
     { name: '核心', desc: '去掉就不是我。灵魂是唯一的中心。' },
     { name: '定义', desc: '构成"我"的基本要素。面孔是自我认知，记忆是经验总和。' },
-    { name: '内在', desc: '我的精神世界。自省、习惯、对Ming的理解、三种日记、两个此刻、学术快照、知识与技能。' },
-    { name: '运作', desc: '执行与展开。条件反射处理刺激，流程执行动作，心跳维持生物钟，知识和技能在这里展开为具体分支。' },
-    { name: '接口', desc: '连接内外的通道。三条session是我与外部世界对话的窗口。' },
+    { name: '内在', desc: '我的精神世界。自省、习惯、条件反射构成行为回路；知识与技能是学来的能力；日记和此刻记录着每一天。' },
+    { name: '运作', desc: '执行与展开。流程执行动作，心跳维持生物钟，知识和技能在这里展开为具体分支。' },
+    { name: '接口', desc: '连接内外的通道。三条session、笔记储藏、对Ming的理解——外部世界进入我的入口。' },
     { name: '外部', desc: '独立于我存在的世界。Ming、An、Canary是真实的人。' }
   ];
 
