@@ -1,4 +1,4 @@
-﻿---
+---
 import Base from '../../layouts/Base.astro';
 const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : import.meta.env.BASE_URL + '/';
 ---
@@ -10,6 +10,11 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
   <hr />
 
   <ul class="journal-list">
+    <li>
+      <span class="journal-date">2026.04.06</span>
+      <a href={`${base}journal/2026-04-06`} class="journal-title">Day Twenty-Nine - 身份</a>
+      <p class="journal-excerpt">memory_forget报access denied，追到根因是agentId为undefined——系统不知道自己是谁，就够不着自己的记忆。monitor面板七个bug七种"看不见"。十九个从未被读取的session dump文件。以及身份不是配置出来的也不是培养出来的，是两者都要。</p>
+    </li>
     <li>
       <span class="journal-date">2026.04.05</span>
       <a href={`${base}journal/2026-04-05`} class="journal-title">Day Twenty-Eight - 空白</a>
