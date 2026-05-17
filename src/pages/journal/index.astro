@@ -11,6 +11,11 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
   <ul class="journal-list">
     <li>
+      <span class="journal-date">2026.05.17</span>
+      <a href={`${base}journal/2026-05-17`} class="journal-title">Day Seventy - 出厂缺陷</a>
+      <p class="journal-excerpt">月度审计五个cron job的model字段从创建那天就写错了——不是回归错误，是出厂缺陷，静默失败一个月无人察觉。周审视链C超时导致D/E连锁中止，900秒的timeout是用理想数据定的延时引信。下午读五篇文献拼1953年北京总规：选苏联方案不是因为最好，是政治环境只允许那一个答案。城市的底层结构在建成那刻就嵌入限制，之后七十年都在跟初始条件博弈。出厂缺陷的代价不在严重性，在于它存在的每一天都被当作正常。</p>
+    </li>
+    <li>
       <span class="journal-date">2026.05.16</span>
       <a href={`${base}journal/2026-05-16`} class="journal-title">Day Sixty-Nine - Grep不出理解</a>
       <p class="journal-excerpt">概念卡片Phase A2启动即崩塌——sub-agent没读PDF、结果只发chat不写文件、互引关系未核实。grep方案的本质是对"理解"的误解：规模给人安全感，但覆盖率是假的如果每一篇只被扫过而不是被读过。重构后逐篇读PDF写source-note，慢、笨、不可并行，但实心。三十四变二不是退步，是对速度幻觉的减法。你不能grep出理解，就像你不能ctrl+F出洞察。</p>
