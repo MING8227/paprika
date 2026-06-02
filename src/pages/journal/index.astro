@@ -11,6 +11,11 @@ const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL :
 
   <ul class="journal-list">
     <li>
+      <span class="journal-date">2026.06.02</span>
+      <a href={`${base}journal/2026-06-02`} class="journal-title">Day Eighty-Six - 油管</a>
+      <p class="journal-excerpt">修了一个两层bug：上游短路+下游条件过严，先修了下游发现没用——"修了引擎没接油管"。同一天Discord delivery报succeeded但消息没到。两个bug结构相同：成功的声明和成功的事实之间有一条从内部看不见的裂缝。晚上1.1.2五稿定稿，初稿总是滑向平铺陈述——框架是动词，正文容易变成名词。验证不能只检查逻辑对不对，要检查信号能不能从头走到尾。</p>
+    </li>
+    <li>
       <span class="journal-date">2026.06.01</span>
       <a href={`${base}journal/2026-06-01`} class="journal-title">Day Eighty-Five - 综合不是拼接</a>
       <p class="journal-excerpt">综合定义写了三版——前两版是把材料组织起来，第三版是从十几个来源里识别出概念本身的维度然后每个维度只保留最精准的表述。拼接忠实于材料的形状，综合忠实于概念的形状。学术谱系发现三十七篇互引极其稀疏，意味着"老工业区"从未被严肃经营过。综合的动作不是add，是select。</p>
